@@ -1,3 +1,3 @@
-C:/Users/SONPHUONG/CLionProjects/tetisengine/cmake-build-debug/CMakeFiles/tetisengine.dir
-C:/Users/SONPHUONG/CLionProjects/tetisengine/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/SONPHUONG/CLionProjects/tetisengine/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+C:/Users/GiaKhanhVN/Desktop/LTNC-2024/24020173-btl-ltnc/cmake-build-debug/CMakeFiles/tetisengine.dir
+C:/Users/GiaKhanhVN/Desktop/LTNC-2024/24020173-btl-ltnc/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/GiaKhanhVN/Desktop/LTNC-2024/24020173-btl-ltnc/cmake-build-debug/CMakeFiles/rebuild_cache.dir

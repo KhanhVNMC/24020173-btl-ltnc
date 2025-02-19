@@ -9,7 +9,7 @@
 					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
 					"minimumCMakeVersion" : 
 					{
-						"string" : "3.29"
+						"string" : "3.24"
 					},
 					"projectIndex" : 0,
 					"source" : ".",
@@ -39,7 +39,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "tetisengine::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-tetisengine-Debug-b5186d31494dda07cc82.json",
+					"jsonFile" : "target-tetisengine-Debug-c15025e20340fa1d593c.json",
 					"name" : "tetisengine",
 					"projectIndex" : 0
 				}
@@ -49,12 +49,12 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "C:/Users/SONPHUONG/CLionProjects/tetisengine/cmake-build-debug",
-		"source" : "C:/Users/SONPHUONG/CLionProjects/tetisengine"
+		"build" : "C:/Users/GiaKhanhVN/Desktop/LTNC-2024/24020173-btl-ltnc/cmake-build-debug",
+		"source" : "C:/Users/GiaKhanhVN/Desktop/LTNC-2024/24020173-btl-ltnc"
 	},
 	"version" : 
 	{
 		"major" : 2,
-		"minor" : 7
+		"minor" : 4
 	}
 }

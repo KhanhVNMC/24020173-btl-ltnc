@@ -101,7 +101,9 @@
 			"sourceIndexes" : 
 			[
 				2,
-				4
+				4,
+				5,
+				6
 			]
 		}
 	],
@@ -133,6 +135,16 @@
 		{
 			"backtrace" : 1,
 			"path" : "tetris_engine.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "playfield_event.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "tetromino_gen_blueprint.h",
 			"sourceGroupIndex" : 1
 		}
 	],
