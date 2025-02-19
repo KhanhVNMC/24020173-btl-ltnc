@@ -128,7 +128,7 @@ public:
     bool holdButtonPressed = false; /* simple HOLD button buffering */
 
     // task manager
-    map<long, queue<function<void()>>> scheduledTasks;
+    map<long, vector<function<void()>>> scheduledTasks;
 
     /**
      * Schedules a task to be executed after a certain number of frames.
@@ -141,7 +141,7 @@ public:
     long scheduleDelayedTask(const long frames, const function<void()> &task) {
         if (task == nullptr) throw invalid_argument("Task could not be null!");
         const long execOnFrame = framesPassed + frames;
-        scheduledTasks[execOnFrame].push(task);
+        scheduledTasks[execOnFrame].push_back(task);
         return execOnFrame;
     };
 
@@ -965,20 +965,13 @@ inline void TetrisEngine::gameLoopStart() {
         framesPassed++;
 
         // scheduled task handling
-        while (!scheduledTasks.empty()) {
-            // get this frame's scheduled tasks
-            scheduledTasks[framesPassed];
-
-            if (const auto it = scheduledTasks.begin(); it->first <= framesPassed) {
-                auto tasks = it->second;
-                scheduledTasks.erase(it);
-                // run all tasks scheduled for this frame
-                while (!tasks.empty()) {
-                    auto task = tasks.front();
-                    tasks.pop();
-                    task();
-                }
-            } else break;
+        // get this frame's scheduled tasks
+        auto tasks = scheduledTasks[framesPassed];
+        scheduledTasks.erase(framesPassed);
+        if (tasks.empty()) {
+            for (auto task: tasks) {
+                task();
+            }
         }
 
         // lost-frames compensation mechanism
