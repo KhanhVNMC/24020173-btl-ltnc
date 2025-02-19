@@ -109,7 +109,7 @@ int main() {
     e->gravity = 1;
 
     e->onFrameEndCallback = []{
-        //e->printBoard();
+        e->printBoard();
     };
 
     e->start();

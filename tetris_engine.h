@@ -71,7 +71,7 @@ public:
     // gravity, in G (TGM based)
     double defaultGravity = 0.0156; // 0.0156 cells per frame
     // lock delay, 0.5s by default (half of target frame rate)
-    int lockDelay;
+    int lockDelay = 0.5 * 60;
     // hold toggle, different from the HOLD flag that the context uses
     bool holdEnabled = true;
 
@@ -742,7 +742,6 @@ inline void TetrisEngine::moveCellOnGameGravity() {
                     Tetromino *piece = this->fallingPiece; // Store a reference to the current piece
                     piece->locking = true;
                     // Schedule a delayed task to lock the piece after the lockDelay (30 frames) time
-                    cout << "task schedulededed" << endl;
                     this->pieceLockTaskId = scheduleDelayedTask(lockDelay, [piece, this] {
                         // After the delay, reset the task ID
                         this->pieceLockTaskId = -1;
@@ -753,6 +752,8 @@ inline void TetrisEngine::moveCellOnGameGravity() {
                             fallingPiece->lockIn();
                         }
                     });
+                    cout << "task schedulededed at frame " << pieceLockTaskId << endl;
+
                     break; // Stop moving the piece down after scheduling the lock
                 }
             }
@@ -966,13 +967,18 @@ inline void TetrisEngine::gameLoopStart() {
 
         // scheduled task handling
         // get this frame's scheduled tasks
-        auto tasks = scheduledTasks[framesPassed];
-        scheduledTasks.erase(framesPassed);
-        if (tasks.empty()) {
-            for (auto task: tasks) {
-                task();
+        auto it = scheduledTasks.find(framesPassed); // unlike java floorkey, we find key first and then execute
+        if (it != scheduledTasks.end()) { // if head - points to -> end = cant find?
+            auto& tasks = it->second; // java .getValue() equiv
+            scheduledTasks.erase(it);
+            if (!tasks.empty()) { // executed designated tasks
+                cout << "frame with task: " << framesPassed << endl;
+                for (auto& task : tasks) {
+                    task();
+                }
             }
         }
+
 
         // lost-frames compensation mechanism
         auto frameTimeEnd = chrono::high_resolution_clock::now();
