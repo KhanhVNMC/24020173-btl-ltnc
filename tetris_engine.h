@@ -54,20 +54,20 @@ static constexpr int MOVE_LEFT = 1, MOVE_RIGHT = 2, CW_ROTATION = 3, CCW_ROTATIO
 class TetrisEngine {
 public:
     /** static config, cannot be changed within the context of the Engine **/
-    bool showGhostPiece; // if ghost piece is displayed or not
+    bool showGhostPiece = true; // if ghost piece is displayed or not
     // how many actions can be done before the piece locks in
-    int pieceMovementThreshold;
+    int pieceMovementThreshold = 15;
     // if the SRS system should be used
-    bool useSRS;
+    bool useSRS = true;
     // line clears delay, after a piece locks in
     // Delay duration for cleared lines to remain empty before the board updates.
     // This creates a visual effect of gravity, simulating a brief pause
     // before the remaining tetrominoes fall down.
     // The user CANNOT interact with the game during this period
-    int lineClearsDelay;
+    int lineClearsDelay = 10;
 
     /** dynamic config, CAN be changed within the context of the Engine **/
-    double softDropFactor; // TETR.IO replication, default is 24, max can be 1_000_000
+    double softDropFactor = 24; // TETR.IO replication, default is 24, max can be 1_000_000
     // gravity, in G (TGM based)
     double defaultGravity = 0.0156; // 0.0156 cells per frame
     // lock delay, 0.5s by default (half of target frame rate)
@@ -92,8 +92,8 @@ public:
     int comboCount = -1; // the combo amount (2+ consecutive line clears w/o break), the combo begins at 2 lines
 
     // pieces queue and hold piece
-    MinoTypeEnum *holdPiece = nullptr; // the hold piece will be "spawned" again when recall
-    queue<const MinoTypeEnum*> nextQueue; // the next queue
+    MinoTypeEnum* holdPiece = nullptr; // the hold piece will be "spawned" again when recall
+    queue<MinoTypeEnum*> nextQueue; // the next queue
 
     // actual gravity variable that will be used by the game loop,
     // this can be multiplied with the SDF to make soft drop
@@ -335,7 +335,7 @@ public:
      * Spawn a Tetromino in the playfield, movable by the player
      * @param type
      */
-    void putPieceInPlayfield(const MinoTypeEnum *type);
+    void putPieceInPlayfield(MinoTypeEnum *type);
 
     /**
 	 * Start the game loop
@@ -355,7 +355,7 @@ public:
 class Tetromino {
 public:
     int x = 0, y = 0; // Current coordinates of the top-left corner of the Tetromino on the playfield grid.
-    MinoTypeEnum type; // The type of Tetromino (e.g., T_MINO, Z_MINO, L_MINO) being represented.
+    MinoTypeEnum* type; // The type of Tetromino (e.g., T_MINO, Z_MINO, L_MINO) being represented.
     int rotationState = 0; // 0, R, 2, L represented as 0, 1, 2, 3
     int size; // The size of the Tetromino's bounding box (usually 3x3).
 
@@ -365,11 +365,11 @@ public:
     // link the parent
     TetrisEngine *parent;
 
-    explicit Tetromino(TetrisEngine *parent, const MinoTypeEnum &type) : type() {
+    explicit Tetromino(TetrisEngine *parent, MinoTypeEnum* type) : type() {
         this->parent = parent;
         this->type = type;
         // the size of this tetromino bounding box, ranging from 2 (O piece) to 4 (I piece)
-        this->size = static_cast<int>(type.getStruct(0).size());
+        this->size = static_cast<int>(type->getStruct(0).size());
         parent->manipulationCount = 0; // new piece, 0 manipulation
     }
 
@@ -379,7 +379,7 @@ public:
      * @return a 2D array representing the current structure of the tetromino
      */
     [[nodiscard]] vector<vector<int> > getStruct() const {
-        return type.getStruct(rotationState);
+        return type->getStruct(rotationState);
     }
 
     /**
@@ -391,8 +391,7 @@ public:
     */
     [[nodiscard]] bool occupyAt(const int x, const int y) const {
         if (this->x <= x && x < this->x + size // b1 <= x < b1 + size_t
-            && this->y <= y && y < this->y + size
-                ) {
+            && this->y <= y && y < this->y + size) {
             // b1 <= y < b1 + size_t
             return getStruct()[y - this->y][x - this->x] >= 1;
         }
@@ -419,13 +418,13 @@ public:
         const auto minoStruct = this->getStruct(); // the structure of this mino with the rotation state applied
         // a Mino can have as many "minoes" inside them as you want, each has an x, y coordinate pair
         vector<vector<int> > relative;
-        relative.reserve(type.blockCount);
+        relative.reserve(type->blockCount);
 
         for (int ry = 0; ry < minoStruct.size(); ry++) {
             for (int rx = 0; rx < minoStruct[ry].size(); rx++) {
                 if (const int mx = minoStruct[ry][rx]; mx != 0) {
-                    // Skip empty spaces (0s)
-                    relative.push_back({x + rx, y + ry}); // Add transformed coordinates
+                    // skip empty spaces (0s)
+                    relative.push_back({x + rx, y + ry}); // add transformed coordinates
                 }
             }
         }
@@ -450,8 +449,12 @@ public:
         return true;
     }
 
-    static constexpr int R = 1;
-    static constexpr int L = 3;
+    static constexpr int R = 1; // right
+    static constexpr int L = 3; // left
+    // compass for rotation
+    //      [0]
+    // [3]  rot  [1]
+    //      [2]
 
     /**
      * Gets the kick sequence based on the initial and target rotation states.
@@ -465,7 +468,7 @@ public:
      */
     [[nodiscard]] vector<vector<int> > getKickSequenceCheck(const int initialState, const int finalState) const {
         // if SRS is not enabled, ignore the kick sequence, only allow basic rotation
-        if (!parent->useSRS || type.ordinal == MinoType::O_MINO.ordinal) {
+        if (!parent->useSRS || type->ordinal == MinoType::O_MINO.ordinal) {
             // O Tetromino does not kick (how do u rotate an O)
             return {{0, 0}};
         }
@@ -483,7 +486,7 @@ public:
         else index = -1;
 
         // I-pieces use a different kick table because they're longer
-        return (type.ordinal == MinoType::I_MINO.ordinal ? I_KICK_TABLE : OTHERS_KICK_TABLE)[index];
+        return (type->ordinal == MinoType::I_MINO.ordinal ? I_KICK_TABLE : OTHERS_KICK_TABLE)[index];
     }
 
     /**
@@ -552,7 +555,7 @@ public:
             // get the position relative to the playfield and set the cell
             // to this tetromino color (type). This step is very important
             // because the color presents itself as the "presence" of a piece (color > 0 == present)
-            parent->playfield[minoPosition[0]][minoPosition[1]] = type.ordinal + 1;
+            parent->playfield[minoPosition[0]][minoPosition[1]] = type->ordinal + 1;
         }
         parent->manipulationCount = 0; // reset everything all over
         parent->onMinoLocked(this); // fire the event
@@ -686,7 +689,7 @@ inline void TetrisEngine::onMinoLocked(Tetromino *locked) {
 // on user hold
 inline void TetrisEngine::onUserHold() {
     if (!holdEnabled || !canHold || !this->fallingPiece) return; // Exit if holding is not allowed or disabled altogether
-    MinoTypeEnum *toHold = &this->fallingPiece->type; // Store the type of the falling piece
+    MinoTypeEnum* toHold = this->fallingPiece->type; // Store the type of the falling piece
 
     /*
      * When the player presses HOLD, if there is no currently held piece, the system takes the falling piece and
@@ -770,7 +773,7 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
 
     // tea-spin detection
     // only trigger if the locked piece is a T mino AND the last action was ROTATE (CCW and CW)
-    if (locked->type.ordinal == MinoType::T_MINO.ordinal && (locked->lastActionDone == CW_ROTATION || locked->lastActionDone == CCW_ROTATION)) {
+    if (locked->type->ordinal == MinoType::T_MINO.ordinal && (locked->lastActionDone == CW_ROTATION || locked->lastActionDone == CCW_ROTATION)) {
         // Assuming you track whether the last move was a rotation:
         const int lockedX = locked->x, lockedY = locked->y;
 
@@ -817,7 +820,7 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
 
     // DETECT mini spins (except T) [mimicking the TETR.IO All-Spin ruleset]
     // only if not a T piece AND last action is ROTATE
-    if (locked->type.ordinal != MinoType::T_MINO.ordinal && (locked->lastActionDone == CW_ROTATION || locked->lastActionDone == CCW_ROTATION)) {
+    if (locked->type->ordinal != MinoType::T_MINO.ordinal && (locked->lastActionDone == CW_ROTATION || locked->lastActionDone == CCW_ROTATION)) {
         // if the last rotation was a kick, it is considered a mini spin
         if (lastSpinKickUsed != 0) {
             isSpin = false; // foolproof
@@ -871,7 +874,7 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
                 PlayfieldEvent(
                         clearedLines,
                         perfectClear,
-                        &locked->type,
+                        locked->type,
                         isSpin, isMiniSpin
                 )
         );
@@ -899,11 +902,11 @@ inline void TetrisEngine::updatePlayFieldLineClears(const vector<int> &clearedLi
     this->clearDelayActive = false;
 }
 
-inline void TetrisEngine::putPieceInPlayfield(const MinoTypeEnum *type) {
+inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum *type) {
     if (type == nullptr || stopped) return; // if stopped or topped out, return
 
     // create the dynamic tetromino instance
-    this->fallingPiece = new Tetromino(this, *type);
+    this->fallingPiece = new Tetromino(this, type);
     // set the initial X, Y position
     this->fallingPiece->x = type->ordinal == MinoType::O_MINO.ordinal ? 4 : 3;
     this->fallingPiece->y = static_cast<int>(playfield[0].size()) - 22; // the piece will always spawn on the 22nd row of the board

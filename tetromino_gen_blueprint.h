@@ -20,13 +20,13 @@ public:
      * Grab the entire bag of Tetrominoes.
      * @return a vector of Tetrominoes.
      */
-    virtual std::vector<const MinoTypeEnum*> grabTheEntireBag() const = 0;
+    virtual std::vector<MinoTypeEnum*> grabTheEntireBag() const = 0;
 
     /**
      * Get the next Tetromino in the bag.
      * @return the next Tetromino.
      */
-    virtual const MinoTypeEnum* next() const = 0;
+    virtual MinoTypeEnum* next() const = 0;
 
     virtual ~TetrominoGenerator() = default;
 };

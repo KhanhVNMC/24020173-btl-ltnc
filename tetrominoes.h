@@ -98,13 +98,13 @@ public:
 };
 
 namespace MinoType {
-    static const MinoTypeEnum T_MINO({{0, 1, 0}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::T_PIECE, 0);
-    static const MinoTypeEnum Z_MINO({{1, 1, 0}, {0, 1, 1}, {0, 0, 0}}, LegacyMino::Z_PIECE, 1);
-    static const MinoTypeEnum S_MINO({{0, 1, 1}, {1, 1, 0}, {0, 0, 0}}, LegacyMino::S_PIECE, 2);
-    static const MinoTypeEnum L_MINO({{0, 0, 1}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::L_PIECE, 3);
-    static const MinoTypeEnum J_MINO({{1, 0, 0}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::J_PIECE, 4);
-    static const MinoTypeEnum I_MINO({{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}, LegacyMino::I_PIECE, 5);
-    static const MinoTypeEnum O_MINO({{1, 1}, {1, 1}}, LegacyMino::O_PIECE, 6);
+    static MinoTypeEnum T_MINO({{0, 1, 0}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::T_PIECE, 0);
+    static MinoTypeEnum Z_MINO({{1, 1, 0}, {0, 1, 1}, {0, 0, 0}}, LegacyMino::Z_PIECE, 1);
+    static MinoTypeEnum S_MINO({{0, 1, 1}, {1, 1, 0}, {0, 0, 0}}, LegacyMino::S_PIECE, 2);
+    static MinoTypeEnum L_MINO({{0, 0, 1}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::L_PIECE, 3);
+    static MinoTypeEnum J_MINO({{1, 0, 0}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::J_PIECE, 4);
+    static MinoTypeEnum I_MINO({{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}, LegacyMino::I_PIECE, 5);
+    static MinoTypeEnum O_MINO({{1, 1}, {1, 1}}, LegacyMino::O_PIECE, 6);
 }
 
 #endif //TETROMINOES_H

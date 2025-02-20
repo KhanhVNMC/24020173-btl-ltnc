@@ -40,7 +40,7 @@ public:
 
 private:
     // The bag is mutable so that it can be modified in a const method.
-    mutable std::vector<const MinoTypeEnum*> bag;
+    mutable std::vector<MinoTypeEnum*> bag;
     mutable TetrioRNG random;
 
     /**
@@ -56,8 +56,6 @@ private:
         bag.push_back(&MinoType::I_MINO);
         bag.push_back(&MinoType::J_MINO);
         bag.push_back(&MinoType::T_MINO);
-
-        random.shuffleList(bag);
     }
 
 public:
@@ -74,11 +72,11 @@ public:
      * If the bag is empty, it is refilled.
      * The bag is then copied and cleared.
      */
-    std::vector<const MinoTypeEnum*> grabTheEntireBag() const override {
+    std::vector<MinoTypeEnum*> grabTheEntireBag() const override {
         if (bag.empty()) {
             refillBag();
         }
-        std::vector<const MinoTypeEnum*> currentBag = bag;
+        std::vector<MinoTypeEnum*> currentBag = bag;
         bag.clear();
         return currentBag;
     }
@@ -88,11 +86,11 @@ public:
      * If the bag is empty, it is refilled.
      * The first element is removed and returned.
      */
-    const MinoTypeEnum* next() const override {
+    MinoTypeEnum* next() const override {
         if (bag.empty()) {
             refillBag();
         }
-        const MinoTypeEnum* nextMino = bag.front();
+        MinoTypeEnum* nextMino = bag.front();
         bag.erase(bag.begin());
         return nextMino;
     }
