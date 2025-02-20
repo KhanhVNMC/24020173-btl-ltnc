@@ -6,7 +6,7 @@
 #include "tetromino_gen_blueprint.h"
 
 class Tetromino;
-/*************** SRS KICK TABLE *****************/
+/*************** BEGIN SRS KICK TABLE *****************/
 /** @see https://harddrop.com/wiki/SRS **/
 static vector<vector<vector<int> > > I_KICK_TABLE = {
         // 0 -> R
@@ -48,8 +48,7 @@ static const vector<vector<vector<int> > > OTHERS_KICK_TABLE = {
 
 /* LAST ACTION */
 static constexpr int MOVE_LEFT = 1, MOVE_RIGHT = 2, CW_ROTATION = 3, CCW_ROTATION = 4;
-
-/*************** SRS KICK TABLE *****************/
+/*************** END OF SRS KICK TABLE *****************/
 
 class TetrisEngine {
 public:
@@ -69,10 +68,10 @@ public:
     /** dynamic config, CAN be changed within the context of the Engine **/
     double softDropFactor = 24; // TETR.IO replication, default is 24, max can be 1_000_000
     // gravity, in G (TGM based)
-    double defaultGravity = 0.0156; // 0.0156 cells per frame
+    double defaultGravity = 1; // 0.0156 cells per frame
     // lock delay, 0.5s by default (half of target frame rate)
-    int lockDelay = 0.5 * 60;
-    // hold toggle, different from the HOLD flag that the context uses
+    const int lockDelay = 0.5 * 60;
+    // hold toggle, different from the HOLD flag that the context uses (canHold)
     bool holdEnabled = true;
 
     /**** end of configurations ********/
@@ -95,7 +94,9 @@ public:
     MinoTypeEnum* holdPiece = nullptr; // the hold piece will be "spawned" again when recall
     queue<MinoTypeEnum*> nextQueue; // the next queue
 
-    // actual gravity variable that will be used by the game loop,
+    // actual gravity variable that will be used by the game loop, (NOT the one you SHOULD EVER FUCKING TOUCH!!!!!!!),
+    // @see defaultGravity
+    // IF YOU WANT TO SET IT YOU FUCKING NIGGER
     // this can be multiplied with the SDF to make soft drop
     double gravity = this->defaultGravity;
 
@@ -335,7 +336,7 @@ public:
      * Spawn a Tetromino in the playfield, movable by the player
      * @param type
      */
-    void putPieceInPlayfield(MinoTypeEnum *type);
+    void putPieceInPlayfield(MinoTypeEnum* type);
 
     /**
 	 * Start the game loop
@@ -355,7 +356,7 @@ public:
 class Tetromino {
 public:
     int x = 0, y = 0; // Current coordinates of the top-left corner of the Tetromino on the playfield grid.
-    MinoTypeEnum* type; // The type of Tetromino (e.g., T_MINO, Z_MINO, L_MINO) being represented.
+    MinoTypeEnum* type = nullptr; // The type of Tetromino (e.g., T_MINO, Z_MINO, L_MINO) being represented.
     int rotationState = 0; // 0, R, 2, L represented as 0, 1, 2, 3
     int size; // The size of the Tetromino's bounding box (usually 3x3).
 
@@ -378,7 +379,7 @@ public:
      *
      * @return a 2D array representing the current structure of the tetromino
      */
-    [[nodiscard]] vector<vector<int> > getStruct() const {
+    [[nodiscard]] const vector<vector<int> > &getStruct() const {
         return type->getStruct(rotationState);
     }
 
@@ -403,7 +404,7 @@ public:
     *
     * @return a 2D array representing the x, y coordinates of each mino relative to the board
     */
-    [[nodiscard]] vector<vector<int>> getRelativeMinoCoordinates() const {
+    [[nodiscard]] vector<vector<int> > getRelativeMinoCoordinates() const {
         return this->getRelativeMinoCoordinates(this->x, this->y);
     }
 
@@ -415,7 +416,7 @@ public:
      * @return a 2D array representing the x, y coordinates of each mino relative to the board with the specified offset
      */
     [[nodiscard]] vector<vector<int> > getRelativeMinoCoordinates(const int x, const int y) const {
-        const auto minoStruct = this->getStruct(); // the structure of this mino with the rotation state applied
+        const auto& minoStruct = this->getStruct(); // the structure of this mino with the rotation state applied
         // a Mino can have as many "minoes" inside them as you want, each has an x, y coordinate pair
         vector<vector<int> > relative;
         relative.reserve(type->blockCount);
@@ -519,7 +520,7 @@ public:
             // increment the kick identifier
             ++kickUsed;
 
-            // this will return false if the tetromino wont fit
+            // this will return false if the tetromino won't fit
             if (canFitBeingAt(testingX, testingY)) {
                 // set the new position
                 this->x = testingX;
@@ -679,7 +680,6 @@ inline void TetrisEngine::onMinoLocked(Tetromino *locked) {
     // allow user to hold again
     this->canHold = true;
     // new mino
-    cout << "dsjisdjfiosdjf" << endl;
     this->updatePlayfieldState(locked);
     // Place the next piece in playfield, this also generates
     // a new piece at the end of the queue
@@ -755,8 +755,6 @@ inline void TetrisEngine::moveCellOnGameGravity() {
                             fallingPiece->lockIn();
                         }
                     });
-                    cout << "task schedulededed at frame " << pieceLockTaskId << endl;
-
                     break; // Stop moving the piece down after scheduling the lock
                 }
             }
@@ -849,7 +847,7 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
             // the board is shifted in bulk at the end
             nullifyRow(y);
             clearedLines.push_back(y); // tell the listener which line got cleared
-        } else if (!isRowEmpty(y)) { // even if a single row has a mino, this aint a PC
+        } else if (!isRowEmpty(y)) { // even if a single row has a mino, this ain't a PC
             perfectClear = false;
         }
     }
@@ -902,13 +900,13 @@ inline void TetrisEngine::updatePlayFieldLineClears(const vector<int> &clearedLi
     this->clearDelayActive = false;
 }
 
-inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum *type) {
+inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum* type) {
     if (type == nullptr || stopped) return; // if stopped or topped out, return
 
     // create the dynamic tetromino instance
     this->fallingPiece = new Tetromino(this, type);
     // set the initial X, Y position
-    this->fallingPiece->x = type->ordinal == MinoType::O_MINO.ordinal ? 4 : 3;
+    this->fallingPiece->x = (type->ordinal == MinoType::O_MINO.ordinal) ? 4 : 3;
     this->fallingPiece->y = static_cast<int>(playfield[0].size()) - 22; // the piece will always spawn on the 22nd row of the board
     // reset this measurement
     this->cellMoved = 0;
@@ -941,9 +939,9 @@ inline void TetrisEngine::gameLoopStart() {
         // if the falling piece is null, spawns a new one
         if (this->fallingPiece == nullptr && !clearDelayActive) {
             if (!nextQueue.empty()) {
-                MinoTypeEnum nextMino = *nextQueue.front();
+                MinoTypeEnum* nextMino = nextQueue.front();
                 nextQueue.pop();
-                this->putPieceInPlayfield(&nextMino);
+                this->putPieceInPlayfield(nextMino);
             }
         }
 
@@ -970,18 +968,13 @@ inline void TetrisEngine::gameLoopStart() {
 
         // scheduled task handling
         // get this frame's scheduled tasks
-        auto it = scheduledTasks.find(framesPassed); // unlike java floorkey, we find key first and then execute
-        if (it != scheduledTasks.end()) { // if head - points to -> end = cant find?
-            auto& tasks = it->second; // java .getValue() equiv
-            scheduledTasks.erase(it);
-            if (!tasks.empty()) { // executed designated tasks
-                cout << "frame with task: " << framesPassed << endl;
-                for (auto& task : tasks) {
-                    task();
-                }
+        auto tasks = scheduledTasks[framesPassed];
+        scheduledTasks.erase(framesPassed);
+        if (!tasks.empty()) {
+            for (auto& task: tasks) {
+                task();
             }
         }
-
 
         // lost-frames compensation mechanism
         auto frameTimeEnd = chrono::high_resolution_clock::now();

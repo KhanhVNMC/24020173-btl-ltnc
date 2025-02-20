@@ -108,6 +108,11 @@ int main() {
 
     e->onFrameEndCallback = []{
         e->printBoard();
+        if (std::rand() > 50) {
+            e->moveLeft();
+        } else {
+            e->moveRight();
+        }
     };
 
     e->start();

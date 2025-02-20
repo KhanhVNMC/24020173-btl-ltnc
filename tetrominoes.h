@@ -74,8 +74,7 @@ public:
      * @param rotation state of this tetromino
      * @return the 2d structure
      */
-public:
-    [[nodiscard]] const vector<vector<int>> &getStruct(const int rotation) const {
+    public: [[nodiscard]] const vector<vector<int>>& getStruct(const int rotation) const {
         return rotations[rotation];
     }
 
@@ -84,8 +83,8 @@ public:
      *
      * @param a the matrix
      * @return the rotated matrix
-     */
-    static vector<vector<int>> rotateClockwise(const vector<vector<int>> &a) {
+    */
+    private: static vector<vector<int>> rotateClockwise(const vector<vector<int>> &a) {
         const size_t m = a.size();
         vector<vector<int>> rotated(m, vector<int>(m, 0));
         for (size_t x = 0; x < m; ++x) {
