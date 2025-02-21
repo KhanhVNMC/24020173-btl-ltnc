@@ -1,6 +1,6 @@
 #include <windows.h>
 
-#include "tetris_engine.h"
+#include "tetris_engine.cpp"
 #include <bits/stdc++.h>
 
 using namespace std;

@@ -1,6 +1,7 @@
 #ifndef TETROMINOES_H
 #define TETROMINOES_H
-#include <bits/stdc++.h>
+#include <vector>
+#include <stdexcept>
 using namespace std;
 
 namespace LegacyMino {
@@ -21,12 +22,12 @@ class MinoTypeEnum {
      * The amount of individual minoes in a Mino
      */
 public:
-    int blockCount;
+    int blockCount = -1;
 
     /**
      * Replicate of Java's enum
      */
-    int ordinal;
+    int ordinal = -1;
 
     /**
      * Construct an enum for MinoType
@@ -35,29 +36,31 @@ public:
      * @param ordinal
      */
     MinoTypeEnum(const vector<vector<int>> &minoShape, const vector<vector<int> > &legacyStruct, int ordinal) {
-        if (minoShape.size() != minoShape[0].size()) throw invalid_argument("Shape is not square");
-        blockCount = 0;
+        if (minoShape.size() != minoShape[0].size()) {
+            throw invalid_argument("Shape is not square");
+        }
+        this->blockCount = 0;
 
         // count the minoes
         for (size_t i = 0; i < minoShape.size(); ++i) {
             for (size_t j = 0; j < minoShape.size(); ++j) {
                 if (minoShape[i][j] != 0) {
-                    blockCount++;
+                    this->blockCount++;
                 }
             }
         }
 
         // assign legacy shapes
-        legacyShape = legacyStruct;
+        this->legacyShape = legacyStruct;
 
         auto shape = minoShape;
         // default rotation state 0
-        rotations.push_back(shape);
+        this->rotations.push_back(shape);
 
         //precomputes rotations
         for (int i = 0; i < 3; ++i) {
             shape = rotateClockwise(shape);
-            rotations.push_back(shape);
+            this->rotations.push_back(shape);
         }
 
         // enum action baby

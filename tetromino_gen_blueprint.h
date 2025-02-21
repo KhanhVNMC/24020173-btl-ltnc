@@ -4,12 +4,8 @@
 
 #ifndef TETISENGINE_TETROMINO_GEN_BLUEPRINT_H
 #define TETISENGINE_TETROMINO_GEN_BLUEPRINT_H
-
 #pragma once
-#include <vector>
 #include "tetrominoes.h"
-
-// Assumes MinoType is defined elsewhere.
 
 /**
  * Represents a generator for Tetrominoes.
