@@ -168,16 +168,18 @@ TetrisEngine* e;
 
 int main() {
     SevenBagGenerator bag(123);
-    TetrisEngine engine(&bag);
+    auto* cfg = TetrisConfig::builder();
+    cfg->setGravity(1).setSecondsBeforePieceLock(0.5);
+
+    TetrisEngine engine(cfg, &bag);
 
     e = &engine;
 
-    e->defaultGravity = 1;
-
     e->onFrameEndCallback = []{
         clearScreen();
-        randomAction(e);
-        //handleInput(e);
+
+        //randomAction(e);
+        handleInput(e);
         e->printBoard();
     };
 
@@ -186,4 +188,7 @@ int main() {
     };
 
     e->start();
+
+    delete e;
+    delete cfg;
 }

@@ -10,7 +10,7 @@
  *<br>
  * @author GiaKhanhVN (24020173)
  * @porter GiaKhanhVN (24020173)
- * @portedFrom Java (Java 16SE)
+ * @portedFrom Java (Java 16 LTS)
  */
 #ifndef TETRIS_ENGINE_CPP
 #define TETRIS_ENGINE_CPP
@@ -28,6 +28,7 @@
 #include "tetrominoes.h"
 #include "playfield_event.h"
 #include "tetromino_gen_blueprint.h"
+#include "tetris_config.h"
 
 // engine constants
 /**
@@ -101,6 +102,9 @@ static constexpr int MOVE_LEFT = 1, MOVE_RIGHT = 2, CW_ROTATION = 3, CCW_ROTATIO
 
 class TetrisEngine {
 public:
+    /**** configurations ********/
+    TetrisConfig* config;
+
     /** static config, cannot be changed within the context of the Engine **/
     bool showGhostPiece = true; // if ghost piece is displayed or not
     // how many actions can be done before the piece locks in
@@ -119,7 +123,7 @@ public:
     // gravity, in G (TGM based)
     double defaultGravity = 0.0156; // 0.0156 cells per frame
     // lock delay, 0.5s by default (half of target frame rate)
-    const int lockDelay = 0.5 * 60;
+    int lockDelay = 0.5 * 60;
     // hold toggle, different from the HOLD flag that the context uses (canHold)
     bool holdEnabled = true;
     /**** end of configurations ********/
@@ -128,8 +132,10 @@ public:
     vector<vector<int> > playfield{10, vector<int>(40, 0)}; // 10x40 matrix, a tetromino should spawn on the 22nd row
     // the active piece (falling)
     Tetromino* fallingPiece = nullptr;
+
     // the tetrominoes generator, can be implemented using the given interface (JAVA EXCLUSIVE, IN C++, ITS VIRTUAL)
     TetrominoGenerator* pieceGenerator = nullptr;
+
     // if hold is available or not
     bool canHold = true;
 
@@ -182,6 +188,8 @@ public:
     /**
      * Schedules a task to be executed after a certain number of frames.
      *
+     * @apiNote A delay of 0 <b>not be executed immediately</b>; the task will be scheduled for the next frame!
+     *
      * @param frames The delay in frames after which the task should be executed.
      * @param task   The task to be executed (must implement Runnable).
      * @return       The frame number at which the task is scheduled to be executed.
@@ -194,11 +202,35 @@ public:
         return execOnFrame;
     };
 
+    /**
+     * Cancel every tasks scheduled for this frame, use with care
+     * @param frameExecuted The frame number at which your tasks are expected to be executed
+     */
     void cancelTask(const long frameExecuted) {
         scheduledTasks.erase(frameExecuted);
     }
 
-    TetrisEngine(TetrominoGenerator* generator) {
+    /**
+     * Initialize a Modern, Guideline-compliant Tetris Engine
+     * @see https://tetris.wiki/Tetris_Guideline
+     *
+     * @param config     the configuration instance of engine behaviors
+     * @param generator  the pieces generator to use
+     */
+    TetrisEngine(TetrisConfig* config, TetrominoGenerator* generator) {
+        this->config = config;
+
+        // configuration: static config will be set ONCE but dynamic ones (can be changed after TetrisConfig build)
+        // can be updated on demand
+        // static fields (cant be changed after the initial build)
+        this->showGhostPiece = config->ghostPieceEnabled;
+        this->useSRS = config->srsEnabled;
+        this->pieceMovementThreshold = abs(config->pieceMovementThreshold);
+        this->lineClearsDelay = (int) round(abs(config->lineClearsDelaySecond) * TARGETTED_FRAME_RATE);
+
+        // dynamic field will be set using a method (can be used outside the engine too)
+        this->updateMutableConfig();
+
         // initialize the piece generator with given seed
         this->pieceGenerator = generator;
         // push the entire first bag to the queue
@@ -208,6 +240,22 @@ public:
         for (auto piece : bag) {
             nextQueue.push(piece);
         }
+    }
+
+    /**
+     * Updates mutable configuration settings for the Tetris Engine based on the current configuration
+     * core {@link TetrisConfig}
+     */
+    void updateMutableConfig() {
+        // if the user can press HOLD
+        this->holdEnabled = config->holdEnabled;
+        // lock delay = |seconds| * framerate
+        this->lockDelay = (int) round(abs(config->secondsBeforePieceLock) * TARGETTED_FRAME_RATE);
+        // the soft drop scalar (soft-drop factor)
+        this->softDropFactor = abs(config->softDropFactor);
+        // update gravity amount
+        this->defaultGravity = abs(config->gravity);
+        this->gravity = defaultGravity;
     }
 
     /**
@@ -846,7 +894,7 @@ inline void TetrisEngine::onUserHold() {
     this->canHold = false; // disable further holding until the next piece is placed
 }
 
-// called when a piece is manipulated (rotated, moved by the player)
+// called when a piece is manipulated (rotated by the player)
 inline void TetrisEngine::onPieceManipulation() {
     // if the player has not exceeded the allowed manipulation count
     // (rotating or moving the piece too much)
@@ -856,12 +904,14 @@ inline void TetrisEngine::onPieceManipulation() {
         // reset the task ID as no lock task is active anymore
         this->pieceLockTaskId = -1;
     }
-        // if there is an active lock task and a falling piece exists
+    // otherwise,
+    // if there is an active lock task and a falling piece exists
     else if (this->pieceLockTaskId != -1 && fallingPiece != nullptr) {
         // force the piece to perform a hard drop, locking it instantly
         fallingPiece->hardDrop();
     }
-    // increment the manipulation counter since a move/rotation just occurred
+
+    // increment the manipulation counter since a rotation just occurred
     manipulationCount++;
 }
 
@@ -1120,13 +1170,23 @@ inline void TetrisEngine::gameLoopStart() {
         framesPassed++;
 
         // scheduled task handling (this is more primitive than Java because of c++ libs)
-        // get this frame's scheduled tasks
-        auto tasks = scheduledTasks[framesPassed];
-        scheduledTasks.erase(framesPassed);
-        if (!tasks.empty()) {
-            // execute all tasks assigned to this frame
-            for (auto& task: tasks) {
-                task();
+        // find the first key that is strictly greater than framesPassed
+        auto it = scheduledTasks.upper_bound(framesPassed);
+        // if it is not the beginning, step back to get the greatest key <= framesPassed
+        if (it != scheduledTasks.begin()) {
+            --it; // this is so fucking bad, why c++ don't have treemap
+            // ensure that this key is indeed <= framesPassed
+            if (it->first <= framesPassed) {
+                // c++ debugger bullshitery
+                long key = it->first;
+
+                // remove the key from the map
+                vector<function<void()>> tasks = move(it->second);
+                scheduledTasks.erase(key);
+                // ???
+                for (auto& task : tasks) {
+                    task();
+                }
             }
         }
 
