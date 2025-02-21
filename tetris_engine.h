@@ -5,6 +5,27 @@
 #include "playfield_event.h"
 #include "tetromino_gen_blueprint.h"
 
+// engine constants
+static constexpr float TARGETTED_FRAME_RATE = 60.0F; // 60FPS (TGM standard)
+static constexpr double FRAME_INTERVAL_MS = 1000.0 / TARGETTED_FRAME_RATE; // in milliseconds
+
+// engine convention
+/**
+ * Constant representing the value used to indicate ghost pieces on the playfield.
+ * Ghost pieces show the potential landing position of the currently falling tetromino
+ * without affecting the actual state of the playfield. This constant is a random negative
+ * number to differentiate it from regular pieces.
+ */
+static constexpr int GHOST_PIECE_CONVENTION = -121;
+/**
+ * Constant representing the value used to indicate garbage minos in the playfield.
+ * Garbage minos are typically used in modes where players receive pieces that may
+ * obstruct their playfield, such as in multiplayer Tetris games. This constant is set
+ * to a value greater than the maximum number of existing MinoType values to avoid
+ * collision with regular pieces.
+ */
+static constexpr int GARBAGE_MINO_CONVENTION = 8; // TODO
+
 class Tetromino;
 /*************** BEGIN SRS KICK TABLE *****************/
 /** @see https://harddrop.com/wiki/SRS **/
@@ -63,25 +84,24 @@ public:
     // This creates a visual effect of gravity, simulating a brief pause
     // before the remaining tetrominoes fall down.
     // The user CANNOT interact with the game during this period
-    int lineClearsDelay = 10;
+    int lineClearsDelay = 0;
 
     /** dynamic config, CAN be changed within the context of the Engine **/
     double softDropFactor = 24; // TETR.IO replication, default is 24, max can be 1_000_000
     // gravity, in G (TGM based)
-    double defaultGravity = 1; // 0.0156 cells per frame
+    double defaultGravity = 0.0156; // 0.0156 cells per frame
     // lock delay, 0.5s by default (half of target frame rate)
     const int lockDelay = 0.5 * 60;
     // hold toggle, different from the HOLD flag that the context uses (canHold)
     bool holdEnabled = true;
-
     /**** end of configurations ********/
 
     // playfield related stuff
     vector<vector<int> > playfield{10, vector<int>(40, 0)}; // 10x40 matrix, a tetromino should spawn on the 22nd row
     // the active piece (falling)
-    Tetromino *fallingPiece = nullptr;
-    // the tetrominoes generator, can be implemented using the given interface
-    TetrominoGenerator* pieceGenerator;
+    Tetromino* fallingPiece = nullptr;
+    // the tetrominoes generator, can be implemented using the given interface (JAVA EXCLUSIVE, IN C++, ITS VIRTUAL)
+    TetrominoGenerator* pieceGenerator = nullptr;
     // if hold is available or not
     bool canHold = true;
 
@@ -126,7 +146,7 @@ public:
     function<void(int)> onComboBreaksCallback = nullptr; // on user broke the combo
 
     // input buffering
-    bool holdButtonPressed = false; /* simple HOLD button buffering */
+    bool holdButtonPressed = false; /* HOLD button buffering */
 
     // task manager
     map<long, vector<function<void()>>> scheduledTasks;
@@ -168,44 +188,35 @@ public:
      * This will stop the gameloop and invalidate every user interactions
      * after this method call
      */
-    void stop() {
-        if (stopped) throw invalid_argument("Already stopped!");
-        this->stopped = true;
-
-        if (this->fallingPiece) {
-            delete this->fallingPiece;
-        }
-
-        this->fallingPiece = nullptr;
-    }
+    void stop();
 
     /**
      * Moves the falling piece one unit to the left if it exists.
      * This method delegates the horizontal movement to the falling piece's
      * translation method.
      */
-    void moveLeft() const;
+    void moveLeft();
 
     /**
      * Moves the falling piece one unit to the right if it exists.
      * This method delegates the horizontal movement to the falling piece's
      * translation method.
      */
-    void moveRight() const;
+    void moveRight();
 
     /**
      * Rotates the falling piece clockwise if it exists.
      *
      * This method delegates the rotation to the falling piece's rotate method.
      */
-    void rotateCW() const;
+    void rotateCW();
 
     /**
      * Rotates the falling piece counterclockwise if it exists.
      *
      * This method delegates the rotation to the falling piece's rotate method.
      */
-    void rotateCCW() const;
+    void rotateCCW();
 
     /**
      * Toggles the soft drop feature, which increases the falling speed of the
@@ -221,7 +232,7 @@ public:
      * This method calls the hardDrop method of the falling piece,
      * which moves it directly to the bottom of the playfield.
      */
-    void hardDrop() const;
+    void hardDrop();
 
     /**
      * Holds the current falling piece, if it exists.
@@ -230,6 +241,64 @@ public:
      * of saving the piece and potentially placing a new piece.
      */
     void hold();
+
+    /**
+     * Get the current combo count
+     * @return combo count
+     */
+    int getComboCount() {
+        return max(0, comboCount);
+    }
+
+    /**
+     * If hold is available or not (also return false when DISABLED)
+     * @return true if available
+     */
+    bool canUseHold() {
+        return this->holdEnabled && this->canHold;
+    }
+
+    /**
+	 * Get the hold piece type
+	 * @return MinoTypeEnum of the current hold piece
+	 */
+    MinoTypeEnum* getHoldPiece() {
+        return this->holdPiece;
+    }
+
+    /**
+     * Get the NEXT queue
+     * @return the current next queue
+     */
+    queue<MinoTypeEnum*> &getNextQueue() {
+        return this->nextQueue;
+    }
+
+    /**
+     * Get the falling tetromino type
+     * @return the type of the falling tetromino
+     */
+    MinoTypeEnum* getFallingMinoType();
+
+    /**
+     * Resets the playfield of this instance (matrix).
+     * The Hold piece and Next queue are left intact, preserving their state.
+     *
+     * @apiNote Use with caution.
+     */
+    void resetPlayfield() {
+        playfield.assign(10, std::vector<int>(40, 0));
+    }
+
+    /**
+	 * Raises garbage lines on the playfield by shifting cells upwards and filling
+	 * new lines
+	 *
+	 * @param height    the number of garbage lines to rise
+	 * @param holeIndex the index of the column that will have a hole (empty cell)
+	 *                  in the new lines
+	 */
+    void raiseGarbage(int height, int holeIndex);
 
     /**
      * Check if there's a mino at given coordinates
@@ -320,17 +389,7 @@ public:
      * to "put" the next piece to the playfield instead of doing it
      * by itself
      */
-     void pushNextPieceToPlayfield() {
-        // append a new piece from the generator to the end
-        // of the next queue
-        this->appendNextQueue();
-        // instead of pushing by itself, it will set it to null to signal
-        // the main game loop to spawn the piece
-        if (this->fallingPiece) {
-            delete this->fallingPiece;
-        }
-        this->fallingPiece = nullptr;
-    }
+     void pushNextPieceToPlayfield();
 
     /**
      * Spawn a Tetromino in the playfield, movable by the player
@@ -634,19 +693,27 @@ public:
     }
 };
 
-inline void TetrisEngine::moveLeft() const {
+inline void TetrisEngine::stop() {
+    if (stopped) throw invalid_argument("Already stopped!");
+    this->stopped = true;
+
+    delete this->fallingPiece;
+    this->fallingPiece = nullptr;
+}
+
+inline void TetrisEngine::moveLeft() {
     if (this->fallingPiece != nullptr) fallingPiece->translateHorizontally(true);
 }
 
-inline void TetrisEngine::moveRight() const {
+inline void TetrisEngine::moveRight() {
     if (this->fallingPiece != nullptr) fallingPiece->translateHorizontally(false);
 }
 
-inline void TetrisEngine::rotateCW() const {
+inline void TetrisEngine::rotateCW() {
     if (this->fallingPiece != nullptr) fallingPiece->rotate(false);
 }
 
-inline void TetrisEngine::rotateCCW() const {
+inline void TetrisEngine::rotateCCW() {
     if (this->fallingPiece != nullptr) fallingPiece->rotate(true);
 }
 
@@ -655,13 +722,56 @@ inline void TetrisEngine::softDropToggle(const bool on) {
     if (on) this->gravity *= softDropFactor;
 }
 
-inline void TetrisEngine::hardDrop() const {
+inline void TetrisEngine::hardDrop() {
     if (this->fallingPiece != nullptr) fallingPiece->hardDrop();
 }
 
 inline void TetrisEngine::hold() {
     if (this->fallingPiece != nullptr) this->holdButtonPressed = true;
     // Signals the main game loop to execute onUserHold()
+}
+
+inline MinoTypeEnum* TetrisEngine::getFallingMinoType() {
+    if (fallingPiece != nullptr) return fallingPiece->type;
+    return nullptr;
+}
+
+inline void TetrisEngine::raiseGarbage(int height, int holeIndex) {
+    // because the board is ACTUALLY not physically shifted during the clear delay active period
+    // raising garbage during this time will cause the board to fracture, leaving behind empty lines
+    if (clearDelayActive) {
+        cerr << "You should NOT interact with the board during clear delay, it will fuck the board up!" << endl;
+        return;
+    }
+
+    // prerequisites, if height is too high or holeIndex is out of bounds, fuck off
+    if (height >= this->playfield[0].size() || holeIndex >= this->playfield.size()) {
+        throw invalid_argument("What is wrong with you?");
+    }
+
+    // if there is no height to raise, return (probably user error)
+    if (height <= 0 || holeIndex < 0) return;
+
+    // from top to bottom
+    // for each row, starting from the top to where the garbage starts rising
+    // shift everything upwards by "height" units
+    for (int y = 0; y < this->playfield[0].size() - height; --y) {
+        for (int x = 0; x < this->playfield.size(); ++x) {
+            // for each cell in the current row, copy the cell "height" rows below it
+            playfield[x][y] = playfield[x][y + height];
+        }
+    }
+
+    // now fill the new garbage lines with blocks, leaving a hole at "holeIndex"
+    for (int y = this->playfield[0].size() - height; y < this->playfield[0].size(); ++y) {
+        for (int x = 0; x < this->playfield.size(); ++x) {
+            playfield[x][y] = holeIndex == x ? 0 : GARBAGE_MINO_CONVENTION; // 0 for the "air"
+        }
+    }
+
+    if (this->fallingPiece != nullptr) {
+        this->fallingPiece->invalidateGhostPieceCache();
+    }
 }
 
 // this will start after the start() method
@@ -688,8 +798,8 @@ inline void TetrisEngine::onMinoLocked(Tetromino *locked) {
 
 // on user hold
 inline void TetrisEngine::onUserHold() {
-    if (!holdEnabled || !canHold || !this->fallingPiece) return; // Exit if holding is not allowed or disabled altogether
-    MinoTypeEnum* toHold = this->fallingPiece->type; // Store the type of the falling piece
+    if (!canUseHold()) return; // return if holding is not allowed or disabled altogether
+    MinoTypeEnum* toHold = this->fallingPiece->type; // get & store the type of the falling piece
 
     /*
      * When the player presses HOLD, if there is no currently held piece, the system takes the falling piece and
@@ -742,20 +852,20 @@ inline void TetrisEngine::moveCellOnGameGravity() {
                 // try to move the piece down by one cell
                 // if the piece can't move down further (landed) and no lock task is active
                 if (const bool landed = !fallingPiece->translateDown(); landed && this->pieceLockTaskId == -1) {
-                    Tetromino *piece = this->fallingPiece; // Store a reference to the current piece
+                    Tetromino* piece = this->fallingPiece; // store a reference to the current piece
                     piece->locking = true;
-                    // Schedule a delayed task to lock the piece after the lockDelay (30 frames) time
+                    // schedule a delayed task to lock the piece after the lockDelay (default 30frames) time
                     this->pieceLockTaskId = scheduleDelayedTask(lockDelay, [piece, this] {
-                        // After the delay, reset the task ID
+                        // after the delay, reset the task ID
                         this->pieceLockTaskId = -1;
 
-                        // Check if the piece is still the same and is still on the ground
+                        // check if the piece is still the same and is still on the ground
                         if (piece == this->fallingPiece && this->fallingPiece->onGround()) {
-                            // If so, lock the piece in place
+                            // if so, lock the piece in place
                             fallingPiece->lockIn();
                         }
                     });
-                    break; // Stop moving the piece down after scheduling the lock
+                    break; // stop moving the piece down after scheduling the lock
                 }
             }
         }
@@ -830,7 +940,11 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
     vector<int> clearedLines;
     bool perfectClear = true; // pc flag
 
+    // 0 = up; 39 = bottom
+    // top -> down
     for (int y = 0; y < this->playfield[0].size(); ++y) {
+        // if the row is empty, skip this check altogether
+        if (isRowEmpty(y)) continue;
         bool hasHoles = false;
 
         // Check if the row has any holes
@@ -847,7 +961,7 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
             // the board is shifted in bulk at the end
             nullifyRow(y);
             clearedLines.push_back(y); // tell the listener which line got cleared
-        } else if (!isRowEmpty(y)) { // even if a single row has a mino, this ain't a PC
+        } else { // even if a single row has a mino, this ain't a PC
             perfectClear = false;
         }
     }
@@ -885,7 +999,7 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
         this->clearDelayActive = true; // activate clear delay, halting piece spawning temporarily
         if (lineClearsDelay > 0) {
             // schedule playfield update to clear lines after delay (if > 0)
-            scheduleDelayedTask(lineClearsDelay, [this, &clearedLines] {
+            scheduleDelayedTask(lineClearsDelay, [this, clearedLines] {
                 this->updatePlayFieldLineClears(clearedLines);
             });
         } else updatePlayFieldLineClears(clearedLines); // run instantly if 0
@@ -898,6 +1012,16 @@ inline void TetrisEngine::updatePlayFieldLineClears(const vector<int> &clearedLi
         clearRow(row);
     }
     this->clearDelayActive = false;
+}
+
+inline void TetrisEngine::pushNextPieceToPlayfield()  {
+    // append a new piece from the generator to the end
+    // of the next queue
+    this->appendNextQueue();
+    // instead of pushing by itself, it will set it to null to signal
+    // the main game loop to spawn the piece
+    delete this->fallingPiece;
+    this->fallingPiece = nullptr;
 }
 
 inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum* type) {
@@ -924,8 +1048,7 @@ inline void TetrisEngine::gameLoopStart() {
 
     // fire pre-start events
     this->onEngineStart();
-    this->startedAt = static_cast<long>(chrono::duration_cast<chrono::milliseconds>(
-            chrono::system_clock::now().time_since_epoch()).count());
+    this->startedAt = static_cast<long>(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
     // the flag to look for
     this->started = true;
@@ -937,6 +1060,7 @@ inline void TetrisEngine::gameLoopStart() {
         auto frameTimeBegin = chrono::high_resolution_clock::now();
 
         // if the falling piece is null, spawns a new one
+        // only if the clear delay period is not active
         if (this->fallingPiece == nullptr && !clearDelayActive) {
             if (!nextQueue.empty()) {
                 MinoTypeEnum* nextMino = nextQueue.front();
@@ -947,7 +1071,10 @@ inline void TetrisEngine::gameLoopStart() {
 
         // hold handling
         if (this->holdButtonPressed) {
-            this->onUserHold();
+            if (this->fallingPiece != nullptr) {
+                // c++ bullshittery
+                this->onUserHold();
+            }
             this->holdButtonPressed = false;
         }
 
@@ -966,11 +1093,12 @@ inline void TetrisEngine::gameLoopStart() {
         // increment frame counter, used for scheduling
         framesPassed++;
 
-        // scheduled task handling
+        // scheduled task handling (this is more primitive than Java because of c++ libs)
         // get this frame's scheduled tasks
         auto tasks = scheduledTasks[framesPassed];
         scheduledTasks.erase(framesPassed);
         if (!tasks.empty()) {
+            // execute all tasks assigned to this frame
             for (auto& task: tasks) {
                 task();
             }
@@ -978,9 +1106,8 @@ inline void TetrisEngine::gameLoopStart() {
 
         // lost-frames compensation mechanism
         auto frameTimeEnd = chrono::high_resolution_clock::now();
-        this->lastFrameTime = static_cast<long>(chrono::duration_cast<chrono::milliseconds>(
-                frameTimeEnd - frameTimeBegin).count());
-        double parkPeriod = max(0.0, 16.66 - lastFrameTime);
+        this->lastFrameTime = static_cast<long>(chrono::duration_cast<chrono::milliseconds>(frameTimeEnd - frameTimeBegin).count());
+        double parkPeriod = max(0.0, FRAME_INTERVAL_MS - lastFrameTime);
 
         // if top out, execute the onTopOut external call
         // Usually, onTopOut will be assigned to TetrisEngine#stop(), which will

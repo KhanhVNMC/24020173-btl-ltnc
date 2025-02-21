@@ -1,3 +1,5 @@
+#include <windows.h>
+
 #include "tetris_engine.h"
 #include <bits/stdc++.h>
 
@@ -96,6 +98,72 @@ public:
     }
 };
 
+void randomAction(TetrisEngine* e) {
+    // List of possible actions
+    std::vector<std::function<void()>> actions = {
+            [e] { e->moveLeft(); },
+            [e] { e->moveRight(); },
+            [e] { e->rotateCW(); },
+            [e] { e->rotateCCW(); },
+            //[e] { e->hardDrop(); },
+            [e] { e->hold(); },
+            [e] { e->softDropToggle(true); }
+    };
+
+    // Pick a random action and execute it
+    int randomIndex = std::rand() % actions.size();
+    actions[randomIndex]();
+}
+
+void clearScreen() {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    DWORD cellCount;
+    DWORD count;
+    COORD homeCoords = {0, 0};
+
+    if (hConsole == INVALID_HANDLE_VALUE) return;
+
+    // Get console buffer size
+    if (!GetConsoleScreenBufferInfo(hConsole, &csbi)) return;
+    cellCount = csbi.dwSize.X * csbi.dwSize.Y;
+
+    // Fill the entire buffer with spaces
+    FillConsoleOutputCharacter(hConsole, ' ', cellCount, homeCoords, &count);
+
+    // Reset color attributes
+    FillConsoleOutputAttribute(hConsole, csbi.wAttributes, cellCount, homeCoords, &count);
+
+    // Move cursor to top-left
+    SetConsoleCursorPosition(hConsole, homeCoords);
+}
+
+void handleInput(TetrisEngine* engine) {
+    if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
+        engine->moveLeft();
+    }
+    if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
+        engine->moveRight();
+    }
+    if (GetAsyncKeyState(VK_UP) & 0x8000 || GetAsyncKeyState('X') & 0x8000) {
+        engine->rotateCW();
+    }
+    if (GetAsyncKeyState('Z') & 0x8000) {
+        engine->rotateCCW();
+    }
+    if (GetAsyncKeyState(VK_DOWN) & 0x8000) {
+        engine->softDropToggle(true);
+    } else {
+        engine->softDropToggle(false);
+    }
+    if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
+        engine->hardDrop();
+    }
+    if (GetAsyncKeyState('C') & 0x8000) {
+        engine->hold();
+    }
+}
+
 TetrisEngine* e;
 
 int main() {
@@ -104,15 +172,17 @@ int main() {
 
     e = &engine;
 
-    e->gravity = 1;
+    e->defaultGravity = 1;
 
     e->onFrameEndCallback = []{
+        clearScreen();
+        randomAction(e);
+        //handleInput(e);
         e->printBoard();
-        if (std::rand() > 50) {
-            e->moveLeft();
-        } else {
-            e->moveRight();
-        }
+    };
+
+    e->onTopOutCallback = [] {
+        e->resetPlayfield();
     };
 
     e->start();

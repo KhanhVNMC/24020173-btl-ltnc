@@ -74,7 +74,7 @@ public:
      * @param rotation state of this tetromino
      * @return the 2d structure
      */
-    public: [[nodiscard]] const vector<vector<int>>& getStruct(const int rotation) const {
+    public: [[nodiscard]] const vector<vector<int> > &getStruct(const int rotation) const {
         return rotations[rotation];
     }
 
