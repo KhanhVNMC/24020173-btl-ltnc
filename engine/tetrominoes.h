@@ -107,6 +107,7 @@ namespace MinoType {
     static MinoTypeEnum J_MINO({{1, 0, 0}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::J_PIECE, 4);
     static MinoTypeEnum I_MINO({{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}, LegacyMino::I_PIECE, 5);
     static MinoTypeEnum O_MINO({{1, 1}, {1, 1}}, LegacyMino::O_PIECE, 6);
+    static const int valuesLength = 7; // fuck it
 }
 
 #endif //TETROMINOES_H

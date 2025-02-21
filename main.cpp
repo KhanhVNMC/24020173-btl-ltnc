@@ -4,6 +4,9 @@
 #include <bits/stdc++.h>
 
 using namespace std;
+#define currentTimeMillis() std::chrono::duration_cast<std::chrono::milliseconds>( \
+                                  std::chrono::steady_clock::now().time_since_epoch()).count()
+
 
 // SevenBagGenerator implementation.
 class SevenBagGenerator : public TetrominoGenerator {
@@ -167,6 +170,8 @@ void handleInput(TetrisEngine* engine) {
 TetrisEngine* e;
 
 int main() {
+    std::ios::sync_with_stdio(false);
+
     SevenBagGenerator bag(123);
     auto* cfg = TetrisConfig::builder();
     cfg->setGravity(1).setSecondsBeforePieceLock(0.5);
@@ -175,11 +180,18 @@ int main() {
 
     e = &engine;
 
-    e->onFrameEndCallback = []{
+    e->onTickEndCallback = []{
         clearScreen();
 
-        //randomAction(e);
-        handleInput(e);
+        cout << "Milliseconds-Per-Tick (last; included renderer ::stdout): " << e->lastTickTime << "ms" << endl;
+        auto timePassed = (System_currentTimeMillis() - e->startedAt) / 1000.0;
+        cout << "Ticks Per Second (approx.): " << (e->ticksPassed / timePassed) << " | target-tps: " << EngineTimer::TARGETTED_TICK_RATE << " " << "(ts: " << e->ticksPassed << " / tp: " << timePassed << ")" << endl;
+        cout << "CPU Time: EXPECTED_SLEEP[" << e->dExpectedSleepTime << "] ACTUAL_SLEEP[" << e->dActualSleepTime << "] (Overshot: " << ((e->dActualSleepTime / e->dExpectedSleepTime) * 100) << "%)" << endl;
+
+        if (e->ticksPassed % 2 == 0) {
+            randomAction(e);
+            //handleInput(e);
+        }
         e->printBoard();
     };
 

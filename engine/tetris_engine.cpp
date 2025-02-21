@@ -19,10 +19,12 @@
 #include <iostream>
 #include <functional>
 #include <queue>
-#include <chrono>
 #include <cmath>
 #include <thread>
 #include <map>
+
+// java mimick
+#include "javalibs/jsystemstd.h"
 
 // internal libraries
 #include "tetrominoes.h"
@@ -32,11 +34,13 @@
 
 // engine constants
 /**
- * @caution The framerate (or tick rate) is tied to MANY important aspects of the Engine (gravity, timeout, intervals, ...)
- * <br><b>DO NOT CHANGE THE FRAMERATE WITHOUT ADJUSTING OTHER VALUES!</b>
+ * @caution The tick rate is tied to MANY important aspects of the Engine (gravity, timeout, intervals, ...)
+ * <br><b>DO NOT CHANGE THE TICK-RATE WITHOUT ADJUSTING OTHER VALUES!</b>
  */
-static constexpr float TARGETTED_FRAME_RATE = 60.0F; // 60FPS (TGM standard)
-static constexpr double FRAME_INTERVAL_MS = 1000.0 / TARGETTED_FRAME_RATE; // in milliseconds
+namespace EngineTimer {
+    static constexpr float  TARGETTED_TICK_RATE  = 60.0F; // 60 TPS (aka 60 FPS in Tetris: Grand Master standard)
+    static constexpr double TICK_INTERVAL_MS     = 1000.0F / TARGETTED_TICK_RATE; // in milliseconds
+}
 
 // engine convention
 /**
@@ -53,7 +57,7 @@ static constexpr int GHOST_PIECE_CONVENTION = -121;
  * to a value greater than the maximum number of existing MinoType values to avoid
  * collision with regular pieces.
  */
-static constexpr int GARBAGE_MINO_CONVENTION = 8; // TODO
+static constexpr int GARBAGE_MINO_CONVENTION = MinoType::valuesLength + 1;
 
 class Tetromino;
 /*************** BEGIN SRS KICK TABLE *****************/
@@ -102,6 +106,9 @@ static constexpr int MOVE_LEFT = 1, MOVE_RIGHT = 2, CW_ROTATION = 3, CCW_ROTATIO
 
 class TetrisEngine {
 public:
+    double dExpectedSleepTime = 0.0;
+    double dActualSleepTime = 0.0;
+
     /**** configurations ********/
     TetrisConfig* config;
 
@@ -121,8 +128,8 @@ public:
     /** dynamic config, CAN be changed within the context of the Engine **/
     double softDropFactor = 24; // TETR.IO replication, default is 24, max can be 1_000_000
     // gravity, in G (TGM based)
-    double defaultGravity = 0.0156; // 0.0156 cells per frame
-    // lock delay, 0.5s by default (half of target frame rate)
+    double defaultGravity = 0.0156; // 0.0156 cells per tick
+    // lock delay, 0.5s by default (half of target tick-rate)
     int lockDelay = 0.5 * 60;
     // hold toggle, different from the HOLD flag that the context uses (canHold)
     bool holdEnabled = true;
@@ -155,8 +162,8 @@ public:
     double gravity = this->defaultGravity;
 
     // internal systems flags / values
-    long framesPassed = 0;
-    long lastFrameTime = 0;
+    long ticksPassed = 0;
+    long lastTickTime = 0;
     long startedAt = -1;
     // indicates whether the engine is currently started or not
     bool started = false;
@@ -170,7 +177,7 @@ public:
     bool clearDelayActive = false;
 
     // external calls for various engine events
-    function<void()> onFrameEndCallback = nullptr; // run at every frame end
+    function<void()> onTickEndCallback = nullptr; // run at every tick end
     function<void()> onTopOutCallback = [this] {
         this->stop();
     }; // game over, duh
@@ -186,28 +193,28 @@ public:
     map<long, vector<function<void()>>> scheduledTasks;
 
     /**
-     * Schedules a task to be executed after a certain number of frames.
+     * Schedules a task to be executed after a certain number of ticks.
      *
-     * @apiNote A delay of 0 <b>not be executed immediately</b>; the task will be scheduled for the next frame!
+     * @apiNote A delay of 0 <b>not be executed immediately</b>; the task will be scheduled for the next tick!
      *
-     * @param frames The delay in frames after which the task should be executed.
+     * @param ticks The delay in ticks after which the task should be executed.
      * @param task   The task to be executed (must implement Runnable).
-     * @return       The frame number at which the task is scheduled to be executed.
+     * @return       The tick number at which the task is scheduled to be executed.
      * @throws IllegalArgumentException if the task is null.
      */
-    long scheduleDelayedTask(const long frames, const function<void()> &task) {
+    long scheduleDelayedTask(const long ticks, const function<void()> &task) {
         if (task == nullptr) throw invalid_argument("Task could not be null!");
-        const long execOnFrame = framesPassed + frames;
-        scheduledTasks[execOnFrame].push_back(task);
-        return execOnFrame;
+        const long execOnTick = ticksPassed + ticks;
+        scheduledTasks[execOnTick].push_back(task);
+        return execOnTick;
     };
 
     /**
-     * Cancel every tasks scheduled for this frame, use with care
-     * @param frameExecuted The frame number at which your tasks are expected to be executed
+     * Cancel every tasks scheduled for this tick, use with care
+     * @param tickExecuted The tick number at which your tasks are expected to be executed
      */
-    void cancelTask(const long frameExecuted) {
-        scheduledTasks.erase(frameExecuted);
+    void cancelTask(const long tickExecuted) {
+        scheduledTasks.erase(tickExecuted);
     }
 
     /**
@@ -226,7 +233,7 @@ public:
         this->showGhostPiece = config->ghostPieceEnabled;
         this->useSRS = config->srsEnabled;
         this->pieceMovementThreshold = abs(config->pieceMovementThreshold);
-        this->lineClearsDelay = (int) round(abs(config->lineClearsDelaySecond) * TARGETTED_FRAME_RATE);
+        this->lineClearsDelay = (int) round(abs(config->lineClearsDelaySecond) * EngineTimer::TARGETTED_TICK_RATE);
 
         // dynamic field will be set using a method (can be used outside the engine too)
         this->updateMutableConfig();
@@ -249,8 +256,8 @@ public:
     void updateMutableConfig() {
         // if the user can press HOLD
         this->holdEnabled = config->holdEnabled;
-        // lock delay = |seconds| * framerate
-        this->lockDelay = (int) round(abs(config->secondsBeforePieceLock) * TARGETTED_FRAME_RATE);
+        // lock delay = |seconds| * tickrate
+        this->lockDelay = (int) round(abs(config->secondsBeforePieceLock) * EngineTimer::TARGETTED_TICK_RATE);
         // the soft drop scalar (soft-drop factor)
         this->softDropFactor = abs(config->softDropFactor);
         // update gravity amount
@@ -391,8 +398,8 @@ public:
     // this will start after the start() method
     void onEngineStart();
 
-    // this will run every single frame
-    void onFrameRun();
+    // this will run every single tick
+    void onTickRun();
 
     // on mino placed
     void onMinoLocked(Tetromino *locked);
@@ -410,7 +417,7 @@ public:
 
     double cellMoved = 0.0;
 
-    // this runs on each frame and simulates the effect of gravity on the piece
+    // this runs on each tick and simulates the effect of gravity on the piece
     void moveCellOnGameGravity();
 
     // row manipulation
@@ -453,7 +460,7 @@ public:
         // at least the total number of available tetromino types.
         do {
             this->nextQueue.push(this->pieceGenerator->next());
-        } while (this->nextQueue.size() < 7); // TODO, REPLACE CONST BY MinoType.values().length
+        } while (this->nextQueue.size() < MinoType::valuesLength);
     }
 
     /**
@@ -853,8 +860,8 @@ inline void TetrisEngine::onEngineStart() {
     this->pushNextPieceToPlayfield();
 }
 
-// this will run every single frame
-inline void TetrisEngine::onFrameRun() {
+// this will run every single tick
+inline void TetrisEngine::onTickRun() {
     // handle gravity
     this->moveCellOnGameGravity();
 }
@@ -915,9 +922,9 @@ inline void TetrisEngine::onPieceManipulation() {
     manipulationCount++;
 }
 
-// This runs on each frame and simulates the effect of gravity on the piece
+// This runs on each tick and simulates the effect of gravity on the piece
 inline void TetrisEngine::moveCellOnGameGravity() {
-    // accumulate the movement caused by gravity in each frame
+    // accumulate the movement caused by gravity in each tick
     cellMoved += gravity;
 
     // once cellMoved reaches or exceeds 1 (a full cell downward movement)
@@ -930,7 +937,7 @@ inline void TetrisEngine::moveCellOnGameGravity() {
                 if (const bool landed = !fallingPiece->translateDown(); landed && this->pieceLockTaskId == -1) {
                     Tetromino* piece = this->fallingPiece; // store a reference to the current piece
                     piece->locking = true;
-                    // schedule a delayed task to lock the piece after the lockDelay (default 30frames) time
+                    // schedule a delayed task to lock the piece after the lockDelay (default 30 ticks; half a sec) time
                     this->pieceLockTaskId = scheduleDelayedTask(lockDelay, [piece, this] {
                         // after the delay, reset the task ID
                         this->pieceLockTaskId = -1;
@@ -1124,7 +1131,7 @@ inline void TetrisEngine::gameLoopStart() {
 
     // fire pre-start events
     this->onEngineStart();
-    this->startedAt = static_cast<long>(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+    this->startedAt = System_currentTimeMillis();
 
     // the flag to look for
     this->started = true;
@@ -1133,7 +1140,7 @@ inline void TetrisEngine::gameLoopStart() {
         // stop on break signal
         if (this->stopped) break;
 
-        auto frameTimeBegin = chrono::high_resolution_clock::now();
+        auto tickTimeBegin = System_nanoTime();
 
         // if the falling piece is null, spawns a new one
         // only if the clear delay period is not active
@@ -1155,28 +1162,28 @@ inline void TetrisEngine::gameLoopStart() {
         }
 
         // run the main internal logic
-        onFrameRun();
+        onTickRun();
 
         // run the external call
-        if (this->onFrameEndCallback != nullptr) {
+        if (this->onTickEndCallback != nullptr) {
             try {
-                this->onFrameEndCallback();
+                this->onTickEndCallback();
             } catch (exception& e) {
                 cerr << e.what() << endl;
             }
         }
 
-        // increment frame counter, used for scheduling
-        framesPassed++;
+        // increment tick counter, used for scheduling
+        ticksPassed++;
 
         // scheduled task handling (this is more primitive than Java because of c++ libs)
-        // find the first key that is strictly greater than framesPassed
-        auto it = scheduledTasks.upper_bound(framesPassed);
-        // if it is not the beginning, step back to get the greatest key <= framesPassed
+        // find the first key that is strictly greater than ticksPassed
+        auto it = scheduledTasks.upper_bound(ticksPassed);
+        // if it is not the beginning, step back to get the greatest key <= ticksPassed
         if (it != scheduledTasks.begin()) {
             --it; // this is so fucking bad, why c++ don't have treemap
-            // ensure that this key is indeed <= framesPassed
-            if (it->first <= framesPassed) {
+            // ensure that this key is indeed <= ticksPassed
+            if (it->first <= ticksPassed) {
                 // c++ debugger bullshitery
                 long key = it->first;
 
@@ -1190,10 +1197,9 @@ inline void TetrisEngine::gameLoopStart() {
             }
         }
 
-        // lost-frames compensation mechanism
-        auto frameTimeEnd = chrono::high_resolution_clock::now();
-        this->lastFrameTime = static_cast<long>(chrono::duration_cast<chrono::milliseconds>(frameTimeEnd - frameTimeBegin).count());
-        double parkPeriod = max(0.0, FRAME_INTERVAL_MS - lastFrameTime);
+        // lost-ticks compensation mechanism
+        this->lastTickTime = (System_nanoTime() - tickTimeBegin) / 1000000;
+        double parkPeriod = max(0.0, EngineTimer::TICK_INTERVAL_MS - lastTickTime);
 
         // if top out, execute the onTopOut external call
         // Usually, onTopOut will be assigned to TetrisEngine#stop(), which will
@@ -1203,10 +1209,13 @@ inline void TetrisEngine::gameLoopStart() {
             this->shouldTopOut = false; // the user may be creative and do something else with this
         }
 
-        // it could be 0, which means: No sleep, execute immediately
+        this->dExpectedSleepTime = parkPeriod;
+        long prev = System_currentTimeMillis();
+        // it could be 0, which means: no sleep, execute immediately
         if (parkPeriod > 0) {
-            this_thread::sleep_for(chrono::milliseconds(static_cast<long>(parkPeriod)));
-        } // frame cap
+            Thread_sleep(parkPeriod);
+        } // tick-rate cap
+        this->dActualSleepTime = System_currentTimeMillis() - prev;
     }
 }
 
@@ -1247,4 +1256,5 @@ inline void TetrisEngine::printBoard() {
     std::cout << "<" << std::string(30, '=') << ">" << std::endl;
 }
 
+#undef long
 #endif //TETRIS_ENGINE_CPP

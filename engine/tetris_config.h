@@ -99,7 +99,7 @@ public:
     }
 
     /**
-     * Sets the gravity, in G, affecting piece fall speed (cells per frame)
+     * Sets the gravity, in G, affecting piece fall speed (cells per tick; aka frames)
      * {@link https://harddrop.com/wiki/Drop#Gravity}
      *
      * @defaultValue 0.156
