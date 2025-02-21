@@ -1,7 +1,0 @@
-# ninja log v6
-32	4267	7616541153983740	CMakeFiles/tetisengine.dir/main.cpp.obj	d5cb0c62547d8bf5
-4268	4903	7616541196351667	tetisengine.exe	820987d495b558ff
-24	442	7616556872462261	build.ninja	a85517b3cdc4c980
-47	137	7616639443878492	CMakeFiles/tetisengine.dir/main.cpp.obj	d5cb0c62547d8bf5
-52	2133	7616639443928589	CMakeFiles/tetisengine.dir/tetrominoes.cpp.obj	c8b723f12661f444
-4	1807	7616640287330997	CMakeFiles/tetisengine.dir/tetris_engine.cpp.obj	c972f59537a8a93
