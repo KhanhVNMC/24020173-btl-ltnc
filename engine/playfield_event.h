@@ -8,8 +8,6 @@
 #include <vector>
 #include "tetrominoes.h"
 
-// Assumes MinoType is defined elsewhere.
-
 /**
  * Represents an event that occurs on the playfield during a game.
  */
