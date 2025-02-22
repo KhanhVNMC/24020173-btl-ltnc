@@ -1,203 +1,340 @@
 #include <windows.h>
+#include <vector>
+#include <queue>
+#include <functional>
+#include <map>
+#include <string>
+#include <thread>
+#include <chrono>
+#include <sstream>
+#include "sbg.h"
 
-#include "engine/tetris_engine.cpp"
-#include <bits/stdc++.h>
-
+/**
+ * ROUGH TRANSLATION OF JFRAME TetrisTest.java
+ */
 using namespace std;
-
-
-// SevenBagGenerator implementation.
-class SevenBagGenerator : public TetrominoGenerator {
-public:
-    // Nested RNG class modeled after TetrioRNG.
-    class TetrioRNG {
-    private:
-        long t;
-    public:
-        explicit TetrioRNG(long seed) : t(seed % 2147483647) {
-            if (t <= 0) {
-                t += 2147483646;
-            }
-        }
-
-        long next() {
-            t = (16807 * t) % 2147483647;
-            return t;
-        }
-
-        float nextFloat() {
-            // Returns a float in [0, 1)
-            return static_cast<float>(next() - 1) / 2147483646.0f;
-        }
-
-        // Shuffles a vector in place.
-        template <typename T>
-        void shuffleList(std::vector<T>& list) {
-            if (list.empty()) return;
-            for (int i = static_cast<int>(list.size()) - 1; i > 0; --i) {
-                int r = static_cast<int>(nextFloat() * (i + 1));
-                std::swap(list[i], list[r]);
-            }
-        }
-    };
-
-private:
-    // The bag is mutable so that it can be modified in a const method.
-    mutable std::vector<MinoTypeEnum*> bag;
-    mutable TetrioRNG random;
-
-    /**
-     * Refills the bag with the seven tetromino types and shuffles it.
-     * Marked const since it may be called from const methods.
-     */
-    void refillBag() const {
-        bag.clear();
-        bag.push_back(&MinoType::Z_MINO);
-        bag.push_back(&MinoType::L_MINO);
-        bag.push_back(&MinoType::O_MINO);
-        bag.push_back(&MinoType::S_MINO);
-        bag.push_back(&MinoType::I_MINO);
-        bag.push_back(&MinoType::J_MINO);
-        bag.push_back(&MinoType::T_MINO);
-    }
-
-public:
-    /**
-     * Constructor.
-     * @param seed Seed for the RNG.
-     */
-    explicit SevenBagGenerator(long seed) : random(seed) {
-        refillBag();
-    }
-
-    /**
-     * Grab the entire bag of Tetrominoes.
-     * If the bag is empty, it is refilled.
-     * The bag is then copied and cleared.
-     */
-    std::vector<MinoTypeEnum*> grabTheEntireBag() const override {
-        if (bag.empty()) {
-            refillBag();
-        }
-        std::vector<MinoTypeEnum*> currentBag = bag;
-        bag.clear();
-        return currentBag;
-    }
-
-    /**
-     * Get the next Tetromino in the bag.
-     * If the bag is empty, it is refilled.
-     * The first element is removed and returned.
-     */
-    MinoTypeEnum* next() const override {
-        if (bag.empty()) {
-            refillBag();
-        }
-        MinoTypeEnum* nextMino = bag.front();
-        bag.erase(bag.begin());
-        return nextMino;
-    }
+const int WIDTH = 550;
+const int HEIGHT = 750;
+TetrisEngine *engine = nullptr;
+HWND g_hwnd = nullptr;
+static long dt = -1;
+static std::string statusText = "";
+const int HOLD_DISPLAY_OFFSET = 70;
+const int COLORS[9] = {
+        -1,         // 0 is empty.
+        0xa000f0,   // T_Mino (Purple)
+        0xf00000,   // Z_Mino (Red)
+        0x00f000,   // S_Mino (Green)
+        0xf0a000,   // L_Mino (Orange)
+        0x3333e6,   // J_Mino (Blue)
+        0x00f0f0,   // I_Mino (Cyan)
+        0xf0f000,   // O_Mino (Yellow)
+        0x969696    // Extra
 };
+const int GHOST = 0x3d3d3d;
 
-void randomAction(TetrisEngine* e) {
-    // List of possible actions
-    std::vector<std::function<void()>> actions = {
-            //[e] { e->moveLeft(); },
-            //[e] { e->moveRight(); },
-            //[e] { e->rotateCW(); },
-            //[e] { e->rotateCCW(); },
-            [e] { e->hardDrop(); },
-            //[e] { e->hold(); },
-            //[e] { e->softDropToggle(true); }
-    };
-
-    // Pick a random action and execute it
-    int randomIndex = std::rand() % actions.size();
-    actions[randomIndex]();
+COLORREF IntToCOLORREF(int color) {
+    int r = (color >> 16) & 0xFF;
+    int g = (color >> 8) & 0xFF;
+    int b = (color) & 0xFF;
+    return RGB(r, g, b);
 }
 
-void clearScreen() {
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    DWORD cellCount;
-    DWORD count;
-    COORD homeCoords = {0, 0};
-
-    if (hConsole == INVALID_HANDLE_VALUE) return;
-
-    // Get console buffer size
-    if (!GetConsoleScreenBufferInfo(hConsole, &csbi)) return;
-    cellCount = csbi.dwSize.X * csbi.dwSize.Y;
-
-    // Fill the entire buffer with spaces
-    FillConsoleOutputCharacter(hConsole, ' ', cellCount, homeCoords, &count);
-
-    // Reset color attributes
-    FillConsoleOutputAttribute(hConsole, csbi.wAttributes, cellCount, homeCoords, &count);
-
-    // Move cursor to top-left
-    SetConsoleCursorPosition(hConsole, homeCoords);
-}
-std::mutex inputMutex;
-void handleInput(TetrisEngine* engine) {
-    std::lock_guard<std::mutex> lock(inputMutex);
-    if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
-        engine->moveLeft();
-    }
-    if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
-        engine->moveRight();
-    }
-    if (GetAsyncKeyState(VK_UP) & 0x8000 || GetAsyncKeyState('X') & 0x8000) {
-        engine->rotateCW();
-    }
-    if (GetAsyncKeyState('Z') & 0x8000) {
-        engine->rotateCCW();
-    }
-    if (GetAsyncKeyState(VK_DOWN) & 0x8000) {
-        engine->softDropToggle(true);
-    } else {
-        engine->softDropToggle(false);
-    }
-    if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
-        engine->hardDrop();
-    }
-    if (GetAsyncKeyState('C') & 0x8000) {
-        engine->hold();
-    }
+void squareAt(HDC hdc, int x, int y, int rad, COLORREF color) {
+    RECT rect = {x, y, x + rad, y + rad};
+    HBRUSH brush = CreateSolidBrush(color);
+    FillRect(hdc, &rect, brush);
+    DeleteObject(brush);
 }
 
-TetrisEngine* e;
+void updateAndPaintMatrix(HDC hdc);
 
-int main() {
-    std::ios::sync_with_stdio(false);
+// split a string by '\n'
+vector<string> splitString(const std::string &str, char delim) {
+    vector<string> tokens;
+    std::istringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delim)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
 
-    SevenBagGenerator bag(123);
-    auto* cfg = TetrisConfig::builder();
-    cfg->setHoldEnabled(true).setLineClearsDelay(0.5);
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+        case WM_CREATE: {
+            g_hwnd = hwnd;
+            SevenBagGenerator *generator = new SevenBagGenerator(123);
+            engine = new TetrisEngine(TetrisConfig::builder(), generator);
+            engine->runOnGameOver([]() {
+                MessageBoxA(NULL, "GAME OVER!", "Game Over", MB_OK);
+                PostQuitMessage(0);
+                exit(0);
+            });
+            engine->onPlayfieldEvent([](const PlayfieldEvent &e) {
+                std::string message;
+                if (e.isSpin() || e.isMiniSpin()) {
+                    std::string minoLetter = e.getLastMino()->name().substr(0, 1);
+                    if (e.isMiniSpin())
+                        message += "Mini\n";
+                    message += minoLetter + "-Spin\n";
+                }
+                int linesCleared = static_cast<int>(e.getLinesCleared().size());
+                switch (linesCleared) {
+                    case 1:
+                        message += "Single";
+                        break;
+                    case 2:
+                        message += "Double";
+                        break;
+                    case 3:
+                        message += "Triple";
+                        break;
+                    case 4:
+                        message += "TETRIS!";
+                        break;
+                    default:
+                        break;
+                }
+                statusText = message;
+                if (e.isPerfectClear()) {
+                    statusText += "\n\nPERFECT\nCLEAR!";
+                }
+                engine->cancelTask(dt);
+                dt = engine->scheduleDelayedTask(60 * 2, []() {
+                    statusText = "";
+                });
+            });
 
-    TetrisEngine* engine = new TetrisEngine(cfg, &bag);
-    system("color a");
-    e = engine;
+            engine->runOnTickEnd([hwnd]() {
+                PostMessage(hwnd, WM_USER + 1, 0, 0);
+            });
+            std::thread engineThread([]() {
+                engine->start();
+            });
+            engineThread.detach();
 
-    e->onTickEndCallback = []{
-        randomAction(e);
-        //handleInput(e);
-        clearScreen();
+            break;
+        }
+        case WM_USER + 1: {
+            InvalidateRect(hwnd, NULL, TRUE);
+            break;
+        }
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+            updateAndPaintMatrix(hdc);
+            EndPaint(hwnd, &ps);
+            break;
+        }
+        case WM_KEYDOWN: {
+            if (engine) {
+                switch (wParam) {
+                    case VK_LEFT:
+                        engine->moveLeft();
+                        break;
+                    case VK_RIGHT:
+                        engine->moveRight();
+                        break;
+                    case VK_UP:
+                    case 'X':
+                        engine->rotateCW();
+                        break;
+                    case 'Z':
+                        engine->rotateCCW();
+                        break;
+                    case VK_DOWN:
+                        engine->softDropToggle(true);
+                        break;
+                    case VK_SPACE:
+                        engine->hardDrop();
+                        break;
+                    case 'C':
+                        engine->hold();
+                        break;
+                    case 'T':
+                        engine->raiseGarbage(3, 9);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            break;
+        }
+        case WM_KEYUP: {
+            if (engine && wParam == VK_DOWN) {
+                engine->softDropToggle(false);
+            }
+            break;
+        }
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
+        default:
+            return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
+    return 0;
+}
 
-        cout << "Milliseconds-Per-Tick (last; included renderer ::stdout): " << e->lastTickTime << "ms" << endl;
-        auto timePassed = (System::currentTimeMillis() - e->startedAt) / 1000.0;
-        cout << "Ticks Per Second (approx.): " << (e->ticksPassed / timePassed) << " | target-tps: " << EngineTimer::TARGETTED_TICK_RATE << " " << "(ts: " << e->ticksPassed << " / tp: " << timePassed << ")" << endl;
-        cout << "CPU Time: EXPECTED_SLEEP[" << e->dExpectedSleepTime << "] ACTUAL_SLEEP[" << e->dActualSleepTime << "] (Overshot: " << ((e->dActualSleepTime / e->dExpectedSleepTime) * 100) << "%)" << endl;
-        cout << "Tetrominoes Pending Deletion: " << e->deletionQueue.size() << " * " << sizeof(Tetromino) << " bytes" << endl;
-        e->printBoard();
-    };
+void updateAndPaintMatrix(HDC hdc) {
+    HDC memDC = CreateCompatibleDC(hdc);
+    HBITMAP memBitmap = CreateCompatibleBitmap(hdc, WIDTH, HEIGHT);
+    HBITMAP oldBmp = (HBITMAP) SelectObject(memDC, memBitmap);
 
-    e->onTopOutCallback = [] {
-        e->resetPlayfield();
-    };
+    RECT rect = {0, 0, WIDTH, HEIGHT};
+    HBRUSH blackBrush = CreateSolidBrush(RGB(0, 0, 0));
+    FillRect(memDC, &rect, blackBrush);
+    DeleteObject(blackBrush);
 
-    e->start();
+    SetBkMode(memDC, TRANSPARENT);
+    SetTextColor(memDC, RGB(255, 255, 255));
 
-    delete e;
-    delete cfg;
+    // Create fonts.
+    HFONT font18 = CreateFontA(18, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                               ANSI_CHARSET, OUT_DEFAULT_PRECIS,
+                               CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+                               DEFAULT_PITCH | FF_SWISS, "Arial");
+    HFONT font25 = CreateFontA(25, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                               ANSI_CHARSET, OUT_DEFAULT_PRECIS,
+                               CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+                               DEFAULT_PITCH | FF_SWISS, "Arial");
+
+    HFONT oldFont = (HFONT) SelectObject(memDC, font18);
+    TextOutA(memDC, 50, 25, "HOLD", 4);
+    TextOutA(memDC, WIDTH - 110, 25, "NEXT", 4);
+
+    // Draw status text if available.
+    if (!statusText.empty()) {
+        vector<string> lines = splitString(statusText, '\n');
+        int yOffset = 200;
+        TEXTMETRIC tm;
+        GetTextMetrics(memDC, &tm);
+        for (const auto &line: lines) {
+            std::string upper;
+            for (char c: line)
+                upper.push_back(toupper(c));
+            TextOutA(memDC, 40, yOffset, upper.c_str(), (int) upper.size());
+            yOffset += tm.tmHeight;
+        }
+    }
+
+    // draw debug info.
+    SelectObject(memDC, font25);
+    char debugStr[128] = {0};
+    sprintf_s(debugStr, "Frame Time / FPS: %d.0ms %.1f",
+              engine->lastTickTime,
+              ((float) engine->ticksPassed / ((System::currentTimeMillis() - engine->startedAt) / 1000.0)));
+    TextOutA(memDC, 20, HEIGHT - 70, debugStr, (int) strlen(debugStr));
+
+    SelectObject(memDC, oldFont);
+    DeleteObject(font18);
+    DeleteObject(font25);
+
+    // --- Draw the playfield ---
+    const vector<vector<int>> &board = engine->getBoardBuffer();
+    int bx = 70 + HOLD_DISPLAY_OFFSET;
+    int by = 50;
+
+    for (size_t col = 0; col < board.size(); col++) {
+        for (int row = 0; row < 22; row++) {
+            int nodeX = bx + (26 * col);
+            int nodeY = by + (26 * row);
+            // Offset row index to draw bottom 22 rows.
+            int boardRow = row + (40 - 22);
+            int cell = board[col][boardRow];
+            int colInt;
+            if (cell == GHOST_PIECE_CONVENTION)
+                colInt = GHOST;
+            else
+                colInt = COLORS[abs(cell)];
+            squareAt(memDC, nodeX, nodeY, 25, IntToCOLORREF(colInt == -1 ? 0x212121 : colInt));
+        }
+    }
+
+    // --- Draw the Next queue ---
+    int qx = 350 + HOLD_DISPLAY_OFFSET;
+    int qy = 70;
+    int index = 0;
+
+    std::queue<MinoTypeEnum *> nextQueue = engine->getNextQueue();
+    while (!nextQueue.empty()) {
+        MinoTypeEnum *piece = nextQueue.front();
+        nextQueue.pop();
+
+        if (index > 4) break; // only renders up to 5 pieces
+
+        int py = qy + (index * 80);
+        for (int gx = 0; gx < 4; gx++) {
+            for (int gy = 0; gy < 2; gy++) {
+                int nX = qx + (26 * gx);
+                int nY = py + (26 * gy);
+                int legacy = piece->renderMatrix[gy][gx];
+                int pieceColor = piece->ordinal + 1;
+                int colorVal = (legacy == 1 ? COLORS[pieceColor] : 0);
+                if (colorVal != 0) {
+                    squareAt(memDC, nX, nY, 25, IntToCOLORREF(colorVal));
+                }
+            }
+        }
+        index++;
+    }
+
+    // --- Draw the Hold piece ---
+    int ohx = 25;
+    int ohy = 70;
+
+    if (engine->getHoldPiece() != nullptr) {
+        MinoTypeEnum *holdPiece = engine->getHoldPiece();
+
+        // legacy shape size is 2x4 (that's why its there)
+        for (int hx = 0; hx < 4; hx++) {
+            for (int hy = 0; hy < 2; hy++) {
+                int nX = ohx + (26 * hx);
+                int nY = ohy + (26 * hy);
+                int pieceColor = holdPiece->ordinal + 1;
+                int colorVal = (holdPiece->renderMatrix[hy][hx] == 1 ? COLORS[pieceColor] : 0);
+                if (colorVal != 0) {
+                    int finalColor = engine->canUseHold() ? colorVal : 0x636363;
+                    squareAt(memDC, nX, nY, 25, IntToCOLORREF(finalColor));
+                }
+            }
+        }
+    }
+
+    BitBlt(hdc, 0, 0, WIDTH, HEIGHT, memDC, 0, 0, SRCCOPY);
+    SelectObject(memDC, oldBmp);
+    DeleteObject(memBitmap);
+    DeleteDC(memDC);
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
+    WNDCLASSEX wc = {0};
+    wc.cbSize = sizeof(WNDCLASSEX);
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = "TetrisWindowClass";
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    RegisterClassEx(&wc);
+
+    // main window
+    HWND hwnd = CreateWindowEx(
+            0,
+            "TetrisWindowClass",
+            "Tetris Engine: C++ Edition - Native Windows.h API Version",
+            WS_CAPTION | WS_SYSMENU | WS_MINIMIZE | WS_OVERLAPPED, // smol window
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            WIDTH, HEIGHT,
+            NULL,
+            NULL,
+            hInstance,
+            NULL
+    );
+    if (!hwnd) { return 0; }
+    ShowWindow(hwnd, nCmdShow);
+    MSG msg = {};
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return 0;
 }

@@ -1,7 +1,7 @@
 /**
  * Tetris Engine: C++ Edition<br>
  * This is a one-to-one, faithful port of the original "Tetris Engine: Java Edition"
- * to C++ for university project(s)<br>
+ * to C++ for university project(s) [also made by me]<br>
  *<br>
  * Below is the description straight from the original version:
  *<br>
@@ -32,14 +32,13 @@
 #include "tetromino_gen_blueprint.h"
 #include "tetris_config.h"
 
-// engine constants
 /**
  * @caution The tick rate is tied to MANY important aspects of the Engine (gravity, timeout, intervals, ...)
  * <br><b>DO NOT CHANGE THE TICK-RATE WITHOUT ADJUSTING OTHER VALUES!</b>
  */
 namespace EngineTimer {
-    static constexpr float  TARGETTED_TICK_RATE  = 60.0F; // 60 TPS (aka 60 FPS in Tetris: Grand Master standard)
-    static constexpr double TICK_INTERVAL_MS     = 1000.0F / TARGETTED_TICK_RATE; // in milliseconds
+    static constexpr float TARGETTED_TICK_RATE = 60.0F; // 60 TPS (aka 60 FPS in "Tetris: The Grand Master")
+    static constexpr double TICK_INTERVAL_MS = 1000.0F / TARGETTED_TICK_RATE; // in milliseconds
 }
 
 /**
@@ -101,28 +100,29 @@ static const vector<vector<vector<int> > > OTHERS_KICK_TABLE = {
 
 /* LAST ACTION */
 static constexpr int MOVE_LEFT = 1, MOVE_RIGHT = 2, CW_ROTATION = 3, CCW_ROTATION = 4;
+
 /*************** END OF SRS KICK TABLE *****************/
 
 class TetrisEngine {
 public:
     double dExpectedSleepTime = 0.0;
     double dActualSleepTime = 0.0;
-
+private:
     /**** configurations ********/
-    TetrisConfig* config;
+    TetrisConfig *config;
 
     /** static config, cannot be changed within the context of the Engine **/
     bool showGhostPiece = true; // if ghost piece is displayed or not
     // how many actions can be done before the piece locks in
     int pieceMovementThreshold = 15;
     // if the SRS system should be used
-    bool useSRS = true;
+    public: bool useSRS = true;
     // line clears delay, after a piece locks in
     // Delay duration for cleared lines to remain empty before the board updates.
     // This creates a visual effect of gravity, simulating a brief pause
     // before the remaining tetrominoes fall down.
     // The user CANNOT interact with the game during this period
-    int lineClearsDelay = 0;
+    private: int lineClearsDelay = 0;
 
     /** dynamic config, CAN be changed within the context of the Engine **/
     double softDropFactor = 24; // TETR.IO replication, default is 24, max can be 1_000_000
@@ -135,24 +135,28 @@ public:
     /**** end of configurations ********/
 
     // playfield related stuff
-    vector<vector<int> > playfield{10, vector<int>(40, 0)}; // 10x40 matrix, a tetromino should spawn on the 22nd row
+    public: vector<vector<int> > playfield{10, vector<int>(40, 0)}; // 10x40 matrix, a tetromino should spawn on the 22nd row
+
     // the active piece (falling)
-    Tetromino* fallingPiece = nullptr;
+    private: Tetromino *fallingPiece = nullptr;
 
     // the tetrominoes generator, can be implemented using the given interface (JAVA EXCLUSIVE, IN C++, ITS VIRTUAL)
-    TetrominoGenerator* pieceGenerator = nullptr;
+    TetrominoGenerator *pieceGenerator = nullptr;
 
     // if hold is available or not
     bool canHold = true;
 
+public:
     // external fields related to the gameplay core
     int lastSpinKickUsed = 0; // 0 is no kick, > 1 is kick
     vector<int> lastKickPositionUsed = {0, 0}; // 0 is no kick, > 1 is kick
+
+public:
     int comboCount = -1; // the combo amount (2+ consecutive line clears w/o break), the combo begins at 2 lines
 
     // pieces queue and hold piece
-    MinoTypeEnum* holdPiece = nullptr; // the hold piece will be "spawned" again when recall
-    queue<MinoTypeEnum*> nextQueue; // the next queue
+    MinoTypeEnum *holdPiece = nullptr; // the hold piece will be "spawned" again when recall
+    queue<MinoTypeEnum *> nextQueue; // the next queue
 
     // actual gravity variable that will be used by the game loop, (NOT the one you SHOULD EVER FUCKING TOUCH!!!!!!!),
     // @see defaultGravity
@@ -164,13 +168,16 @@ public:
     LONG ticksPassed = 0;
     LONG lastTickTime = 0;
     LONG startedAt = -1;
+
     // indicates whether the engine is currently started or not
     bool started = false;
     // indicates if the engine has been stopped
     bool stopped = false;
+
     // indicates if the user should top out (WARNING: This value is FUNCTIONALLY different from 'stopped'
     // and will be reset to "false" after executing the onTopOut() block)
     bool shouldTopOut = false;
+
     // indicates whether the clear delay task is currently active
     // this will temporarily halt the piece spawning process
     bool clearDelayActive = false;
@@ -192,6 +199,7 @@ public:
     // task manager
     map<LONG, vector<function<void()>>> scheduledTasks;
 
+public:
     /**
      * Schedules a task to be executed after a certain number of ticks.
      *
@@ -224,7 +232,7 @@ public:
      * @param config     the configuration instance of engine behaviors
      * @param generator  the pieces generator to use
      */
-    TetrisEngine(TetrisConfig* config, TetrominoGenerator* generator) {
+    TetrisEngine(TetrisConfig *config, TetrominoGenerator *generator) {
         this->config = config;
 
         // configuration: static config will be set ONCE but dynamic ones (can be changed after TetrisConfig build)
@@ -244,7 +252,7 @@ public:
         auto bag = this->pieceGenerator->grabTheEntireBag();
 
         // start the NEXT queue
-        for (auto piece : bag) {
+        for (auto piece: bag) {
             nextQueue.push(piece);
         }
     }
@@ -263,6 +271,77 @@ public:
         // update gravity amount
         this->defaultGravity = abs(config->gravity);
         this->gravity = defaultGravity;
+    }
+
+    /**
+	 * Registers a runnable to execute at the end of each tick. If the total time
+	 * of a tick exceeds 16.6ms, the game logic WILL slow down.
+	 * @apiNote Tick compensation may occurs, use this defensively
+	 *
+	 * @param runnable The code to execute at the end of a tick.
+	 */
+    void runOnTickEnd(function<void()> runnable) {
+        this->onTickEndCallback = runnable;
+    }
+
+    /**
+     * Registers a runnable to execute at the end the game, when the player
+     * lost
+     *
+     * @warning Ensure to either <b>KILL the game loop</b> using stop() or clear the board
+     * before spawning the next mino. Failing to do so can result in the next mino
+     * being blocked upon spawn, leading to undefined behavior. This includes, but
+     * is not limited to, collisions on spawn, game freezes, or invalid board states.
+     *
+     * @apiNote Default behaviour: []{ this->stop(); }
+     *
+     * @param runnable When the game ends (top out).
+     */
+    void runOnGameOver(function<void()> runnable) {
+        this->onTopOutCallback = runnable;
+    }
+
+    /**
+     * Registers a runnable to execute when a tetromino is locked to
+     * the playfield
+     *
+     * @param onMinoEvent The code to execute, accepting the lines cleared
+     * by that action
+     */
+    void runOnMinoLocked(function<void(int)> onMinoEvent) {
+        this->onMinoLockedCallback = onMinoEvent;
+    }
+
+    /**
+     * Registers a consumer to handle playfield events. The provided consumer will
+     * be invoked whenever a playfield event occurs. (e.g. A T-Spin, a line clear...)
+     *
+     * @param onPlayfieldEvent The consumer to handle the playfield event.
+     */
+    void onPlayfieldEvent(function<void(PlayfieldEvent)> onPlayfieldEvent) {
+        this->onPlayfieldEventCallback = onPlayfieldEvent;
+    }
+
+    /**
+     * Registers a consumer to handle combo events. The provided consumer will be
+     * invoked whenever the user performs a combo.
+     *
+     * @param onCombo The consumer to handle the combo event, accepting the current
+     *                combo count as an argument.
+     */
+    void onCombo(function<void(int)> onCombo) {
+        this->onComboCallback = onCombo;
+    }
+
+    /**
+     * Registers a consumer to handle combo break events. The provided consumer will
+     * be invoked whenever the user breaks a combo.
+     *
+     * @param onComboBreaks The consumer to handle the combo break event, accepting
+     *                      the last combo count before the break.
+     */
+    void onComboBreaks(function<void(int)> onComboBreaks) {
+        this->onComboBreaksCallback = onComboBreaks;
     }
 
     /**
@@ -337,7 +416,7 @@ public:
      * If hold is available or not (also return false when DISABLED)
      * @return true if available
      */
-    bool canUseHold() {
+    bool canUseHold() const {
         return this->holdEnabled && this->canHold;
     }
 
@@ -345,7 +424,7 @@ public:
 	 * Get the hold piece type
 	 * @return MinoTypeEnum of the current hold piece
 	 */
-    MinoTypeEnum* getHoldPiece() {
+    MinoTypeEnum *getHoldPiece() {
         return this->holdPiece;
     }
 
@@ -353,7 +432,7 @@ public:
      * Get the NEXT queue
      * @return the current next queue
      */
-    queue<MinoTypeEnum*> &getNextQueue() {
+    queue<MinoTypeEnum *> &getNextQueue() {
         return this->nextQueue;
     }
 
@@ -361,7 +440,14 @@ public:
      * Get the falling tetromino type
      * @return the type of the falling tetromino
      */
-    MinoTypeEnum* getFallingMinoType();
+    MinoTypeEnum *getFallingMinoType();
+
+    /**
+     * Get the amount of ticks passed since the start
+     */
+     LONG getTicksPassed() const {
+         return this->ticksPassed;
+     }
 
     /**
      * Resets the playfield of this instance (matrix).
@@ -407,7 +493,7 @@ public:
      * @return A cloned 2D array representing the game board with the current
      *         falling piece incorporated.
      */
-    const vector<vector<int>> & getBoardBuffer() const;
+    const vector<vector<int>> &getBoardBuffer() const;
 
     /**
      * Check if there's a mino at given coordinates
@@ -417,30 +503,37 @@ public:
      * @return true if has a mino at that position, or, out of bounds
      */
     bool hasMinoAt(const int x, const int y) const {
-        return (x < 0 || y < 0 || x >= playfield.size() || y >= this->playfield[0].size()) || (this->playfield[x][y] > 0);
+        return (x < 0 || y < 0 || x >= playfield.size() || y >= this->playfield[0].size()) ||
+               (this->playfield[x][y] > 0);
     }
 
     /******************** INTERNAL IMPLEMENTATION OF THE TETRIS ENGINE ********************/
+private:
     // this will start after the start() method
     void onEngineStart();
 
     // this will run every single tick
     void onTickRun();
 
-    // on mino placed
-    void onMinoLocked(Tetromino *locked);
-
     // on user hold
     void onUserHold();
 
+public:
+    // on mino placed
+    void onMinoLocked(Tetromino *locked);
+
+private:
     // ID of the scheduled task that locks a piece after it lands
     LONG pieceLockTaskId = -1;
+public:
     // counter to track how many manipulations (moves/rotations) have been made
     mutable int manipulationCount = 0;
 
     // called when a piece is manipulated (rotated, moved by the player)
     void onPieceManipulation();
 
+private:
+    // accumulated cell move
     double cellMoved = 0.0;
 
     // this runs on each tick and simulates the effect of gravity on the piece
@@ -496,13 +589,13 @@ public:
      * to "put" the next piece to the playfield instead of doing it
      * by itself
      */
-     void pushNextPieceToPlayfield();
+    void pushNextPieceToPlayfield();
 
     /**
      * Spawn a Tetromino in the playfield, movable by the player
      * @param type
      */
-    void putPieceInPlayfield(MinoTypeEnum* type);
+    void putPieceInPlayfield(MinoTypeEnum *type);
 
     /**
 	 * Start the game loop
@@ -510,17 +603,9 @@ public:
     void gameLoopStart();
 
     /**
-     * Start the Tetris Engine, beginning to accept user inputs
-    */
-    public: void start() {
-        this->gameLoopStart();
-    }
-
-    /**
      * Memory management bullshit, don't use
      */
-public:
-    vector<Tetromino*> deletionQueue; // queue to delete objects when they're out of scope
+    vector<Tetromino *> deletionQueue; // queue to delete objects when they're out of scope
     /**
      * Mark falling piece as null, will be removed once
      * <code>freeMemoryOfFallingPiece()</code> is called
@@ -535,6 +620,14 @@ public:
 
 public:
     /**
+     * Start the Tetris Engine, beginning to accept user inputs
+    */
+    void start() {
+        this->gameLoopStart();
+    }
+
+public:
+    /**
      * Internal debugging bullshit, dont use
      */
     void printBoard();
@@ -543,7 +636,7 @@ public:
 class Tetromino {
 public:
     int x = 0, y = 0; // Current coordinates of the top-left corner of the Tetromino on the playfield grid.
-    MinoTypeEnum* type = nullptr; // The type of Tetromino (e.g., T_MINO, Z_MINO, L_MINO) being represented.
+    MinoTypeEnum *type = nullptr; // The type of Tetromino (e.g., T_MINO, Z_MINO, L_MINO) being represented.
     int rotationState = 0; // 0, R, 2, L represented as 0, 1, 2, 3
     int size; // The size of the Tetromino's bounding box (usually 3x3).
 
@@ -553,7 +646,7 @@ public:
     // link the parent
     TetrisEngine *parent;
 
-    explicit Tetromino(TetrisEngine* parent, MinoTypeEnum* type) : type() {
+    explicit Tetromino(TetrisEngine *parent, MinoTypeEnum *type) : type() {
         this->parent = parent;
         this->type = type;
         // the size of this tetromino bounding box, ranging from 2 (O piece) to 4 (I piece)
@@ -605,7 +698,7 @@ public:
      * @return a 2D array representing the x, y coordinates of each mino relative to the board with the specified offset
      */
     [[nodiscard]] vector<vector<int> > getRelativeMinoCoordinates(const int x, const int y) const {
-        const auto& minoStruct = this->getStruct(); // the structure of this mino with the rotation state applied
+        const auto &minoStruct = this->getStruct(); // the structure of this mino with the rotation state applied
         // a Mino can have as many "minoes" inside them as you want, each has an x, y coordinate pair
         vector<vector<int> > relative;
         relative.reserve(type->blockCount);
@@ -830,12 +923,13 @@ inline void TetrisEngine::markFallingPieceAsNull() {
 }
 
 inline void TetrisEngine::freeMemoryOfFallingPiece() {
-    for (Tetromino* piece : deletionQueue) {
+    for (Tetromino *piece: deletionQueue) {
         // actually deleting the shit
         delete piece;
     }
     deletionQueue.clear();
 }
+
 /****** END OF BULLSHIT (not really) ***********/
 
 inline void TetrisEngine::stop() {
@@ -880,7 +974,7 @@ inline void TetrisEngine::hold() {
     // Signals the main game loop to execute onUserHold()
 }
 
-inline MinoTypeEnum* TetrisEngine::getFallingMinoType() {
+inline MinoTypeEnum *TetrisEngine::getFallingMinoType() {
     if (fallingPiece != nullptr) return fallingPiece->type;
     return nullptr;
 }
@@ -904,7 +998,7 @@ inline void TetrisEngine::raiseGarbage(int height, int holeIndex) {
     // from top to bottom
     // for each row, starting from the top to where the garbage starts rising
     // shift everything upwards by "height" units
-    for (int y = 0; y < this->playfield[0].size() - height; --y) {
+    for (int y = 0; y < this->playfield[0].size() - height; ++y) {
         for (int x = 0; x < this->playfield.size(); ++x) {
             // for each cell in the current row, copy the cell "height" rows below it
             playfield[x][y] = playfield[x][y + height];
@@ -924,18 +1018,19 @@ inline void TetrisEngine::raiseGarbage(int height, int holeIndex) {
 }
 
 inline const vector<vector<int> > &TetrisEngine::getBoardBuffer() const {
-    if (fallingPiece == nullptr) return playfield; // no copy if there's nothing to modify (this is important for memory)
+    if (fallingPiece == nullptr)
+        return playfield; // no copy if there's nothing to modify (this is important for memory)
     clonedPlayfield = playfield; // shallow copy (no deep)
 
     int fallingPieceType = fallingPiece->type->ordinal + 1; // the piece type (ordinal + 1), because 0 is air
     if (showGhostPiece) {
         // ghost pieces will have a specific convention in the array
-        for (const auto& ghostPos : fallingPiece->getGhostPiecePosition()) {
+        for (const auto &ghostPos: fallingPiece->getGhostPiecePosition()) {
             clonedPlayfield[ghostPos[0]][ghostPos[1]] = GHOST_PIECE_CONVENTION;
         }
     }
     // the falling piece
-    for (const auto& minoPos : fallingPiece->getRelativeMinoCoordinates()) {
+    for (const auto &minoPos: fallingPiece->getRelativeMinoCoordinates()) {
         // if the piece is "falling" (not locked to the board yet)
         // the color index will be the negative version of normal minos.
         // To ignore this, use abs()
@@ -970,7 +1065,7 @@ inline void TetrisEngine::onMinoLocked(Tetromino *locked) {
 // on user hold
 inline void TetrisEngine::onUserHold() {
     if (!canUseHold()) return; // return if holding is not allowed or disabled altogether
-    MinoTypeEnum* toHold = this->fallingPiece->type; // get & store the type of the falling piece
+    MinoTypeEnum *toHold = this->fallingPiece->type; // get & store the type of the falling piece
 
     /*
      * When the player presses HOLD, if there is no currently held piece, the system takes the falling piece and
@@ -1001,8 +1096,8 @@ inline void TetrisEngine::onPieceManipulation() {
         // reset the task ID as no lock task is active anymore
         this->pieceLockTaskId = -1;
     }
-    // otherwise,
-    // if there is an active lock task and a falling piece exists
+        // otherwise,
+        // if there is an active lock task and a falling piece exists
     else if (this->pieceLockTaskId != -1 && fallingPiece != nullptr) {
         // force the piece to perform a hard drop, locking it instantly
         hardDrop();
@@ -1025,7 +1120,7 @@ inline void TetrisEngine::moveCellOnGameGravity() {
                 // try to move the piece down by one cell
                 // if the piece can't move down further (landed) and no lock task is active
                 if (const bool landed = !fallingPiece->translateDown(); landed && this->pieceLockTaskId == -1) {
-                    Tetromino* piece = this->fallingPiece; // store a reference to the current piece
+                    Tetromino *piece = this->fallingPiece; // store a reference to the current piece
                     piece->locking = true;
 
                     // schedule a delayed task to lock the piece after the lockDelay (default 30 ticks; half a sec) time
@@ -1055,7 +1150,8 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
 
     // tea-spin detection
     // only trigger if the locked piece is a T mino AND the last action was ROTATE (CCW and CW)
-    if (locked->type->ordinal == MinoType::T_MINO.ordinal && (locked->lastActionDone == CW_ROTATION || locked->lastActionDone == CCW_ROTATION)) {
+    if (locked->type->ordinal == MinoType::T_MINO.ordinal &&
+        (locked->lastActionDone == CW_ROTATION || locked->lastActionDone == CCW_ROTATION)) {
         // Assuming you track whether the last move was a rotation:
         const int lockedX = locked->x, lockedY = locked->y;
 
@@ -1069,10 +1165,10 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
 
         // the lookup table
         vector<vector<bool> > tMinoRelative = {
-                {c1, c2, /*back*/ c3, c4}, // 0
+                {c1, c2, /*back*/ c3, c4},  // 0
                 {c2, c3, /*back*/ c1, c4},  // 1
-                {c3, c4, /*back*/ c1, c2}, // 2
-                {c4, c1, /*back*/ c2, c3} // 3
+                {c3, c4, /*back*/ c1, c2},  // 2
+                {c4, c1, /*back*/ c2, c3}   // 3
         };
 
         // the front and back of the T mino relative to the rotation state
@@ -1102,7 +1198,8 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
 
     // DETECT mini spins (except T) [mimicking the TETR.IO All-Spin ruleset]
     // only if not a T piece AND last action is ROTATE
-    if (locked->type->ordinal != MinoType::T_MINO.ordinal && (locked->lastActionDone == CW_ROTATION || locked->lastActionDone == CCW_ROTATION)) {
+    if (locked->type->ordinal != MinoType::T_MINO.ordinal &&
+        (locked->lastActionDone == CW_ROTATION || locked->lastActionDone == CCW_ROTATION)) {
         // if the last rotation was a kick, it is considered a mini spin
         if (lastSpinKickUsed != 0) {
             isSpin = false; // foolproof
@@ -1143,9 +1240,13 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
     // update the combo counter
     if (clearedLines.size() > 0) {
         comboCount++; // increment a combo count
-        if (comboCount > 0 && onComboCallback != nullptr) onComboCallback(comboCount);
+        if (comboCount > 0 && onComboCallback != nullptr) {
+            onComboCallback(comboCount);
+        }
     } else if (comboCount > 0) {
-        if (onComboBreaksCallback != nullptr) onComboBreaksCallback(comboCount);
+        if (onComboBreaksCallback != nullptr) {
+            onComboBreaksCallback(comboCount);
+        }
         comboCount = -1; // broke
     }
 
@@ -1188,7 +1289,7 @@ inline void TetrisEngine::updatePlayFieldLineClears(const vector<int> &clearedLi
     this->clearDelayActive = false;
 }
 
-inline void TetrisEngine::pushNextPieceToPlayfield()  {
+inline void TetrisEngine::pushNextPieceToPlayfield() {
     // append a new piece from the generator to the end
     // of the next queue
     this->appendNextQueue();
@@ -1197,7 +1298,7 @@ inline void TetrisEngine::pushNextPieceToPlayfield()  {
     this->markFallingPieceAsNull();
 }
 
-inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum* type) {
+inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum *type) {
     if (type == nullptr || stopped) return; // if stopped or topped out, return
 
     // this is when it's safe to delete older objects (because a new one is initialized below)
@@ -1208,7 +1309,8 @@ inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum* type) {
 
     // set the initial X, Y position
     this->fallingPiece->x = (type->ordinal == MinoType::O_MINO.ordinal) ? 4 : 3;
-    this->fallingPiece->y = static_cast<int>(playfield[0].size()) - 22; // the piece will always spawn on the 22nd row of the board
+    this->fallingPiece->y =
+            static_cast<int>(playfield[0].size()) - 22; // the piece will always spawn on the 22nd row of the board
 
     // reset this measurement
     this->cellMoved = 0;
@@ -1241,7 +1343,7 @@ inline void TetrisEngine::gameLoopStart() {
         if (this->onTickBeginCallback != nullptr) {
             try {
                 this->onTickBeginCallback();
-            } catch (exception& e) {
+            } catch (exception &e) {
                 cerr << e.what() << endl;
             }
         }
@@ -1250,7 +1352,7 @@ inline void TetrisEngine::gameLoopStart() {
         // only if the clear delay period is not active
         if (this->fallingPiece == nullptr && !clearDelayActive) {
             if (!nextQueue.empty()) {
-                MinoTypeEnum* nextMino = nextQueue.front();
+                MinoTypeEnum *nextMino = nextQueue.front();
                 nextQueue.pop();
                 this->putPieceInPlayfield(nextMino);
             }
@@ -1284,7 +1386,7 @@ inline void TetrisEngine::gameLoopStart() {
                 vector<function<void()>> tasks = move(node.mapped());
 
                 // execute one by one
-                for (auto& task : tasks) {
+                for (auto &task: tasks) {
                     task();
                 }
             }
@@ -1294,7 +1396,7 @@ inline void TetrisEngine::gameLoopStart() {
         if (this->onTickEndCallback != nullptr) {
             try {
                 this->onTickEndCallback();
-            } catch (exception& e) {
+            } catch (exception &e) {
                 cerr << e.what() << endl;
             }
         }
@@ -1331,6 +1433,12 @@ inline void TetrisEngine::gameLoopStart() {
 }
 
 inline void TetrisEngine::printBoard() {
+    cout << "Milliseconds-Per-Tick (last; included renderer ::stdout): " << lastTickTime << "ms" << endl;
+    auto timePassed = (System::currentTimeMillis() - startedAt) / 1000.0;
+    cout << "Ticks Per Second (approx.): " << (ticksPassed / timePassed) << " | target-tps: " << EngineTimer::TARGETTED_TICK_RATE << " " << "(ts: " << ticksPassed << " / tp: " << timePassed << ")" << endl;
+    cout << "CPU Time: EXPECTED_SLEEP[" << dExpectedSleepTime << "] ACTUAL_SLEEP[" << dActualSleepTime << "] (Overshot: " << ((dActualSleepTime /  dExpectedSleepTime) * 100) << "%)" << endl;
+    cout << "Tetrominoes Pending Deletion: " << deletionQueue.size() << " * " << sizeof(Tetromino) << " bytes" << endl;
+
     auto buf = getBoardBuffer();
     std::cout << "<" << std::string(20, '=') << ">" << std::endl;
     for (size_t y = 40 - 22; y < buf[0].size(); ++y) {
@@ -1350,4 +1458,5 @@ inline void TetrisEngine::printBoard() {
     std::cout << "<" << std::string(20, '=') << ">" << std::endl;
 }
 
+#undef LONG
 #endif //TETRIS_ENGINE_CPP

@@ -49,7 +49,7 @@ public:
     /**
      * @return The last tetromino used before the event.
      */
-    const MinoTypeEnum* getLastMino() const {
+    MinoTypeEnum* getLastMino() const {
         return lastMino_;
     }
 

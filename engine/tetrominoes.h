@@ -4,19 +4,39 @@
 #include <stdexcept>
 using namespace std;
 
-namespace LegacyMino {
-    const vector<vector<int> > T_PIECE = {{0, 1, 0}, {1, 1, 1}, {0, 0, 0}};
-    const vector<vector<int> > Z_PIECE = {{1, 1, 0}, {0, 1, 1}, {0, 0, 0}};
-    const vector<vector<int> > S_PIECE = {{0, 1, 1}, {1, 1, 0}, {0, 0, 0}};
-    const vector<vector<int> > L_PIECE = {{0, 0, 1}, {1, 1, 1}, {0, 0, 0}};
-    const vector<vector<int> > J_PIECE = {{1, 0, 0}, {1, 1, 1}, {0, 0, 0}};
-    const vector<vector<int> > I_PIECE = {{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}};
-    const vector<vector<int> > O_PIECE = {{1, 1}, {1, 1}};
+namespace RenderMatrixMino {
+    const vector<vector<int> > T_PIECE = {
+            { 0, 1, 0, 0 },
+            { 1, 1, 1, 0 }
+    };
+    const vector<vector<int> > Z_PIECE = {
+            { 1, 1, 0, 0 },
+            { 0, 1, 1, 0 }
+    };
+    const vector<vector<int> > S_PIECE = {
+            { 0, 1, 1, 0 },
+            { 1, 1, 0, 0 }
+    };
+    const vector<vector<int> > L_PIECE = {
+            { 0, 0, 1, 0 },
+            { 1, 1, 1, 0 }
+    };
+    const vector<vector<int> > J_PIECE = {
+            { 1, 0, 0, 0 },
+            { 1, 1, 1, 0 }
+    };
+    const vector<vector<int> > I_PIECE = {
+            { 0, 0, 0, 0 },
+            { 1, 1, 1, 1 }
+    };
+    const vector<vector<int> > O_PIECE = {
+            { 0, 1, 1, 0 },
+            { 0, 1, 1, 0 }
+    };
 }
 
 class MinoTypeEnum {
     vector<vector<vector<int>>> rotations;
-    vector<vector<int>> legacyShape;
 
     /**
      * The amount of individual minoes in a Mino
@@ -30,15 +50,29 @@ public:
     int ordinal = -1;
 
     /**
+     * The 2x4 version of the mino (in Java it's LegacyMino)
+     */
+    vector<vector<int>> renderMatrix;
+
+    /**
+     * Replicate of Java's name()
+     */
+    string name_;
+    string& name() {
+        return name_;
+    }
+
+    /**
      * Construct an enum for MinoType
      * @param minoShape
      * @param legacyStruct
      * @param ordinal
      */
-    MinoTypeEnum(const vector<vector<int>> &minoShape, const vector<vector<int> > &legacyStruct, int ordinal) {
+    MinoTypeEnum(const string enumName, const vector<vector<int>> &minoShape, const vector<vector<int> > &legacyStruct, int ordinal) {
         if (minoShape.size() != minoShape[0].size()) {
             throw invalid_argument("Shape is not square");
         }
+        this->name_ = enumName;
         this->blockCount = 0;
 
         // count the minoes
@@ -51,7 +85,7 @@ public:
         }
 
         // assign legacy shapes
-        this->legacyShape = legacyStruct;
+        this->renderMatrix = legacyStruct;
 
         auto shape = minoShape;
         // default rotation state 0
@@ -100,13 +134,13 @@ public:
 };
 
 namespace MinoType {
-    static MinoTypeEnum T_MINO({{0, 1, 0}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::T_PIECE, 0);
-    static MinoTypeEnum Z_MINO({{1, 1, 0}, {0, 1, 1}, {0, 0, 0}}, LegacyMino::Z_PIECE, 1);
-    static MinoTypeEnum S_MINO({{0, 1, 1}, {1, 1, 0}, {0, 0, 0}}, LegacyMino::S_PIECE, 2);
-    static MinoTypeEnum L_MINO({{0, 0, 1}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::L_PIECE, 3);
-    static MinoTypeEnum J_MINO({{1, 0, 0}, {1, 1, 1}, {0, 0, 0}}, LegacyMino::J_PIECE, 4);
-    static MinoTypeEnum I_MINO({{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}, LegacyMino::I_PIECE, 5);
-    static MinoTypeEnum O_MINO({{1, 1}, {1, 1}}, LegacyMino::O_PIECE, 6);
+    static MinoTypeEnum T_MINO("T_MINO", {{0, 1, 0}, {1, 1, 1}, {0, 0, 0}}, RenderMatrixMino::T_PIECE, 0);
+    static MinoTypeEnum Z_MINO("Z_MINO", {{1, 1, 0}, {0, 1, 1}, {0, 0, 0}}, RenderMatrixMino::Z_PIECE, 1);
+    static MinoTypeEnum S_MINO("S_MINO", {{0, 1, 1}, {1, 1, 0}, {0, 0, 0}}, RenderMatrixMino::S_PIECE, 2);
+    static MinoTypeEnum L_MINO("L_MINO", {{0, 0, 1}, {1, 1, 1}, {0, 0, 0}}, RenderMatrixMino::L_PIECE, 3);
+    static MinoTypeEnum J_MINO("J_MINO", {{1, 0, 0}, {1, 1, 1}, {0, 0, 0}}, RenderMatrixMino::J_PIECE, 4);
+    static MinoTypeEnum I_MINO("I_MINO", {{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}, RenderMatrixMino::I_PIECE, 5);
+    static MinoTypeEnum O_MINO("O_MINO", {{1, 1}, {1, 1}}, RenderMatrixMino::O_PIECE, 6);
     static const int valuesLength = 7; // fuck it
 }
 
