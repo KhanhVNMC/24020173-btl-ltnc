@@ -179,7 +179,8 @@ int main() {
     system("color a");
     e = engine;
 
-    e->onTickBeginCallback = []{
+    e->onTickEndCallback = []{
+
         handleInput(e);
         clearScreen();
 

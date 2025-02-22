@@ -42,7 +42,6 @@ namespace EngineTimer {
     static constexpr double TICK_INTERVAL_MS     = 1000.0F / TARGETTED_TICK_RATE; // in milliseconds
 }
 
-// engine convention
 /**
  * Constant representing the value used to indicate ghost pieces on the playfield.
  * Ghost pieces show the potential landing position of the currently falling tetromino
@@ -386,6 +385,8 @@ public:
 
 private:
     mutable std::vector<std::vector<int>> clonedPlayfield;
+
+public:
     /**
      * Returns a copy of the current playfield with the falling piece, if any,
      * merged into it. The cloned playfield includes the type of the falling
@@ -406,7 +407,6 @@ private:
      * @return A cloned 2D array representing the game board with the current
      *         falling piece incorporated.
      */
-public:
     const vector<vector<int>> & getBoardBuffer() const;
 
     /**
