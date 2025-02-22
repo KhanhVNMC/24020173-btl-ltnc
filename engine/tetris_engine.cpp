@@ -519,7 +519,7 @@ public:
     /**
      * Memory management bullshit, don't use
      */
-private:
+public:
     vector<Tetromino*> deletionQueue; // queue to delete objects when they're out of scope
     /**
      * Mark falling piece as null, will be removed once

@@ -104,9 +104,9 @@ void randomAction(TetrisEngine* e) {
     std::vector<std::function<void()>> actions = {
             //[e] { e->moveLeft(); },
             //[e] { e->moveRight(); },
-            [e] { e->rotateCW(); },
-            [e] { e->rotateCCW(); },
-            //[e] { e->hardDrop(); },
+            //[e] { e->rotateCW(); },
+            //[e] { e->rotateCCW(); },
+            [e] { e->hardDrop(); },
             //[e] { e->hold(); },
             //[e] { e->softDropToggle(true); }
     };
@@ -180,15 +180,15 @@ int main() {
     e = engine;
 
     e->onTickEndCallback = []{
-
-        handleInput(e);
+        randomAction(e);
+        //handleInput(e);
         clearScreen();
 
         cout << "Milliseconds-Per-Tick (last; included renderer ::stdout): " << e->lastTickTime << "ms" << endl;
         auto timePassed = (System::currentTimeMillis() - e->startedAt) / 1000.0;
         cout << "Ticks Per Second (approx.): " << (e->ticksPassed / timePassed) << " | target-tps: " << EngineTimer::TARGETTED_TICK_RATE << " " << "(ts: " << e->ticksPassed << " / tp: " << timePassed << ")" << endl;
         cout << "CPU Time: EXPECTED_SLEEP[" << e->dExpectedSleepTime << "] ACTUAL_SLEEP[" << e->dActualSleepTime << "] (Overshot: " << ((e->dActualSleepTime / e->dExpectedSleepTime) * 100) << "%)" << endl;
-
+        cout << "Tetrominoes Pending Deletion: " << e->deletionQueue.size() << " * " << sizeof(Tetromino) << " bytes" << endl;
         e->printBoard();
     };
 
