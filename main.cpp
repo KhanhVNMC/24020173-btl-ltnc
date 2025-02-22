@@ -102,13 +102,13 @@ public:
 void randomAction(TetrisEngine* e) {
     // List of possible actions
     std::vector<std::function<void()>> actions = {
-            [e] { e->moveLeft(); },
-            [e] { e->moveRight(); },
+            //[e] { e->moveLeft(); },
+            //[e] { e->moveRight(); },
             [e] { e->rotateCW(); },
             [e] { e->rotateCCW(); },
             //[e] { e->hardDrop(); },
-            [e] { e->hold(); },
-            [e] { e->softDropToggle(true); }
+            //[e] { e->hold(); },
+            //[e] { e->softDropToggle(true); }
     };
 
     // Pick a random action and execute it
@@ -138,8 +138,9 @@ void clearScreen() {
     // Move cursor to top-left
     SetConsoleCursorPosition(hConsole, homeCoords);
 }
-
+std::mutex inputMutex;
 void handleInput(TetrisEngine* engine) {
+    std::lock_guard<std::mutex> lock(inputMutex);
     if (GetAsyncKeyState(VK_LEFT) & 0x8000) {
         engine->moveLeft();
     }
@@ -172,13 +173,14 @@ int main() {
 
     SevenBagGenerator bag(123);
     auto* cfg = TetrisConfig::builder();
-    cfg->setGravity(1).setSecondsBeforePieceLock(0.5);
+    cfg->setHoldEnabled(true).setLineClearsDelay(0.5);
 
-    TetrisEngine engine(cfg, &bag);
+    TetrisEngine* engine = new TetrisEngine(cfg, &bag);
+    system("color a");
+    e = engine;
 
-    e = &engine;
-
-    e->onTickEndCallback = []{
+    e->onTickBeginCallback = []{
+        handleInput(e);
         clearScreen();
 
         cout << "Milliseconds-Per-Tick (last; included renderer ::stdout): " << e->lastTickTime << "ms" << endl;
@@ -186,10 +188,6 @@ int main() {
         cout << "Ticks Per Second (approx.): " << (e->ticksPassed / timePassed) << " | target-tps: " << EngineTimer::TARGETTED_TICK_RATE << " " << "(ts: " << e->ticksPassed << " / tp: " << timePassed << ")" << endl;
         cout << "CPU Time: EXPECTED_SLEEP[" << e->dExpectedSleepTime << "] ACTUAL_SLEEP[" << e->dActualSleepTime << "] (Overshot: " << ((e->dActualSleepTime / e->dExpectedSleepTime) * 100) << "%)" << endl;
 
-        if (e->ticksPassed % 2 == 0) {
-            randomAction(e);
-            //handleInput(e);
-        }
         e->printBoard();
     };
 

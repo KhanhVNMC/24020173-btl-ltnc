@@ -177,6 +177,7 @@ public:
     bool clearDelayActive = false;
 
     // external calls for various engine events
+    function<void()> onTickBeginCallback = nullptr; // run at every tick end
     function<void()> onTickEndCallback = nullptr; // run at every tick end
     function<void()> onTopOutCallback = [this] {
         this->stop();
@@ -383,6 +384,31 @@ public:
 	 */
     void raiseGarbage(int height, int holeIndex);
 
+private:
+    mutable std::vector<std::vector<int>> clonedPlayfield;
+    /**
+     * Returns a copy of the current playfield with the falling piece, if any,
+     * merged into it. The cloned playfield includes the type of the falling
+     * piece placed at its current position.
+     *
+     * @apiNote Ghost pieces - if enabled, will be drawn using a specific
+     * convention (e.g., a constant value defined as GHOST_PIECE_CONVENTION).
+     * These "ghost" pieces will be placed on the board where the piece would
+     * land if it continued to fall without any rotation.<br>
+     * <br>
+     * Falling pieces - while still falling (not locked to the board yet),
+     * will be represented by their negative type value. This negative value
+     * differentiates falling pieces from those that are already placed on the
+     * board. If you need to ignore this distinction and treat all pieces
+     * equally, consider using `abs()` (from `cmath`) to retrieve the absolute value of
+     * the piece's type.
+     *
+     * @return A cloned 2D array representing the game board with the current
+     *         falling piece incorporated.
+     */
+public:
+    const vector<vector<int>> & getBoardBuffer() const;
+
     /**
      * Check if there's a mino at given coordinates
      *
@@ -433,7 +459,7 @@ public:
     void clearRow(const int rowIndex) {
         for (int y = rowIndex; y > 0; --y) {
             for (auto &x: playfield) {
-                x[y] = x[y - 1];
+                x[y] = x[y - 1]; // drag the block ABOVE it down, replacing itself
             }
         }
     }
@@ -490,6 +516,27 @@ public:
         this->gameLoopStart();
     }
 
+    /**
+     * Memory management bullshit, don't use
+     */
+private:
+    vector<Tetromino*> deletionQueue; // queue to delete objects when they're out of scope
+    /**
+     * Mark falling piece as null, will be removed once
+     * <code>freeMemoryOfFallingPiece()</code> is called
+     */
+    void markFallingPieceAsNull();
+
+    /**
+     * Should only be called when it is CRUCIAL to free
+     * the memory occupied by <code>this->prepareToDelete</code>
+     */
+    void freeMemoryOfFallingPiece();
+
+public:
+    /**
+     * Internal debugging bullshit, dont use
+     */
     void printBoard();
 };
 
@@ -506,13 +553,15 @@ public:
     // link the parent
     TetrisEngine *parent;
 
-    explicit Tetromino(TetrisEngine *parent, MinoTypeEnum* type) : type() {
+    explicit Tetromino(TetrisEngine* parent, MinoTypeEnum* type) : type() {
         this->parent = parent;
         this->type = type;
         // the size of this tetromino bounding box, ranging from 2 (O piece) to 4 (I piece)
         this->size = static_cast<int>(type->getStruct(0).size());
         parent->manipulationCount = 0; // new piece, 0 manipulation
     }
+
+    ~Tetromino() {}
 
     /**
      * Gets the matrix structure of this tetromino in the current rotation state.
@@ -774,12 +823,31 @@ public:
     }
 };
 
+/**** BEGIN OF MEMORY MANAGEMENT BULLSHIT ****/
+inline void TetrisEngine::markFallingPieceAsNull() {
+    this->deletionQueue.push_back(this->fallingPiece);
+    this->fallingPiece = nullptr;
+}
+
+inline void TetrisEngine::freeMemoryOfFallingPiece() {
+    for (Tetromino* piece : deletionQueue) {
+        // actually deleting the shit
+        delete piece;
+    }
+    deletionQueue.clear();
+}
+/****** END OF BULLSHIT (not really) ***********/
+
 inline void TetrisEngine::stop() {
-    if (stopped) throw invalid_argument("Already stopped!");
+    if (stopped) throw logic_error("Already stopped!");
     this->stopped = true;
 
-    delete this->fallingPiece;
-    this->fallingPiece = nullptr;
+    if (this->fallingPiece != nullptr) {
+        this->markFallingPieceAsNull();
+    }
+    // because stop essentially kills the entire engine,
+    // there's no point waiting when to delete anymore
+    this->freeMemoryOfFallingPiece();
 }
 
 inline void TetrisEngine::moveLeft() {
@@ -855,6 +923,28 @@ inline void TetrisEngine::raiseGarbage(int height, int holeIndex) {
     }
 }
 
+inline const vector<vector<int> > &TetrisEngine::getBoardBuffer() const {
+    if (fallingPiece == nullptr) return playfield; // no copy if there's nothing to modify (this is important for memory)
+    clonedPlayfield = playfield; // shallow copy (no deep)
+
+    int fallingPieceType = fallingPiece->type->ordinal + 1; // the piece type (ordinal + 1), because 0 is air
+    if (showGhostPiece) {
+        // ghost pieces will have a specific convention in the array
+        for (const auto& ghostPos : fallingPiece->getGhostPiecePosition()) {
+            clonedPlayfield[ghostPos[0]][ghostPos[1]] = GHOST_PIECE_CONVENTION;
+        }
+    }
+    // the falling piece
+    for (const auto& minoPos : fallingPiece->getRelativeMinoCoordinates()) {
+        // if the piece is "falling" (not locked to the board yet)
+        // the color index will be the negative version of normal minos.
+        // To ignore this, use abs()
+        clonedPlayfield[minoPos[0]][minoPos[1]] = -fallingPieceType;
+    }
+    return clonedPlayfield;
+}
+
+/******************** INTERNAL IMPLEMENTATION OF THE TETRIS ENGINE ********************/
 // this will start after the start() method
 inline void TetrisEngine::onEngineStart() {
     this->pushNextPieceToPlayfield();
@@ -901,7 +991,7 @@ inline void TetrisEngine::onUserHold() {
     this->canHold = false; // disable further holding until the next piece is placed
 }
 
-// called when a piece is manipulated (rotated by the player)
+// called when a piece is manipulated (moved, rotated by the player)
 inline void TetrisEngine::onPieceManipulation() {
     // if the player has not exceeded the allowed manipulation count
     // (rotating or moving the piece too much)
@@ -915,7 +1005,7 @@ inline void TetrisEngine::onPieceManipulation() {
     // if there is an active lock task and a falling piece exists
     else if (this->pieceLockTaskId != -1 && fallingPiece != nullptr) {
         // force the piece to perform a hard drop, locking it instantly
-        fallingPiece->hardDrop();
+        hardDrop();
     }
 
     // increment the manipulation counter since a rotation just occurred
@@ -937,13 +1027,14 @@ inline void TetrisEngine::moveCellOnGameGravity() {
                 if (const bool landed = !fallingPiece->translateDown(); landed && this->pieceLockTaskId == -1) {
                     Tetromino* piece = this->fallingPiece; // store a reference to the current piece
                     piece->locking = true;
+
                     // schedule a delayed task to lock the piece after the lockDelay (default 30 ticks; half a sec) time
                     this->pieceLockTaskId = scheduleDelayedTask(lockDelay, [piece, this] {
                         // after the delay, reset the task ID
                         this->pieceLockTaskId = -1;
 
                         // check if the piece is still the same and is still on the ground
-                        if (piece == this->fallingPiece && this->fallingPiece->onGround()) {
+                        if (piece != nullptr && piece == this->fallingPiece && this->fallingPiece->onGround()) {
                             // if so, lock the piece in place
                             fallingPiece->lockIn();
                         }
@@ -1103,31 +1194,35 @@ inline void TetrisEngine::pushNextPieceToPlayfield()  {
     this->appendNextQueue();
     // instead of pushing by itself, it will set it to null to signal
     // the main game loop to spawn the piece
-    delete this->fallingPiece;
-    this->fallingPiece = nullptr;
+    this->markFallingPieceAsNull();
 }
 
 inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum* type) {
     if (type == nullptr || stopped) return; // if stopped or topped out, return
 
-    // create the dynamic tetromino instance
+    // this is when it's safe to delete older objects (because a new one is initialized below)
+    this->freeMemoryOfFallingPiece();
+
+    // create the dynamic tetromino instance (this will be placed on the heap)
     this->fallingPiece = new Tetromino(this, type);
+
     // set the initial X, Y position
     this->fallingPiece->x = (type->ordinal == MinoType::O_MINO.ordinal) ? 4 : 3;
     this->fallingPiece->y = static_cast<int>(playfield[0].size()) - 22; // the piece will always spawn on the 22nd row of the board
+
     // reset this measurement
     this->cellMoved = 0;
 
     // check if the user topped out
     if (!this->fallingPiece->canFitBeingAt(this->fallingPiece->x, this->fallingPiece->y)) {
-        delete this->fallingPiece; // halt every user interaction
-        this->fallingPiece = nullptr;
+        this->markFallingPieceAsNull();
         this->shouldTopOut = true; // this will signal the game loop to execute onTopOut
     }
 }
 
 inline void TetrisEngine::gameLoopStart() {
-    if (this->started) throw invalid_argument("This instance is already started");
+    if (this->stopped) throw logic_error("This instance has stopped! You must create a new instance!");
+    if (this->started) throw logic_error("This instance is already started");
 
     // fire pre-start events
     this->onEngineStart();
@@ -1139,8 +1234,17 @@ inline void TetrisEngine::gameLoopStart() {
     for (;;) {
         // stop on break signal
         if (this->stopped) break;
-
+        // count nanoseconds passed for tick compensation if needed
         auto tickTimeBegin = System::nanoTime();
+
+        // run the external callback
+        if (this->onTickBeginCallback != nullptr) {
+            try {
+                this->onTickBeginCallback();
+            } catch (exception& e) {
+                cerr << e.what() << endl;
+            }
+        }
 
         // if the falling piece is null, spawns a new one
         // only if the clear delay period is not active
@@ -1164,18 +1268,6 @@ inline void TetrisEngine::gameLoopStart() {
         // run the main internal logic
         onTickRun();
 
-        // run the external call
-        if (this->onTickEndCallback != nullptr) {
-            try {
-                this->onTickEndCallback();
-            } catch (exception& e) {
-                cerr << e.what() << endl;
-            }
-        }
-
-        // increment tick counter, used for scheduling
-        ticksPassed++;
-
         // scheduled task handling (this is more primitive than Java because of c++ libs)
         // find the first key that is strictly greater than ticksPassed
         auto it = scheduledTasks.upper_bound(ticksPassed);
@@ -1188,26 +1280,45 @@ inline void TetrisEngine::gameLoopStart() {
                 LONG key = it->first;
 
                 // remove the key from the map
-                vector<function<void()>> tasks = move(it->second);
-                scheduledTasks.erase(key);
-                // ???
+                auto node = scheduledTasks.extract(key);
+                vector<function<void()>> tasks = move(node.mapped());
+
+                // execute one by one
                 for (auto& task : tasks) {
                     task();
                 }
             }
         }
 
-        // lost-ticks compensation mechanism
-        this->lastTickTime = (System::nanoTime() - tickTimeBegin) / 1000000;
-        double parkPeriod = max(0.0, EngineTimer::TICK_INTERVAL_MS - lastTickTime);
+        // run the external call
+        if (this->onTickEndCallback != nullptr) {
+            try {
+                this->onTickEndCallback();
+            } catch (exception& e) {
+                cerr << e.what() << endl;
+            }
+        }
 
         // if top out, execute the onTopOut external call
         // Usually, onTopOut will be assigned to TetrisEngine#stop(), which will
         // stop the main game loop, thus trigger the `if (this.stopped) break;` above
         if (shouldTopOut) {
-            if (this->onTopOutCallback != nullptr) this->onTopOutCallback(); // execute one last time
+            // execute one last time (or not, the user can do sth to prevent `stop()` from being called
+            if (this->onTopOutCallback != nullptr) {
+                this->onTopOutCallback();
+            }
             this->shouldTopOut = false; // the user may be creative and do something else with this
+
+            // since the last tetromino caused a top-out, we clear memory right now
+            this->freeMemoryOfFallingPiece();
         }
+
+        // increment tick counter, used for scheduling
+        ticksPassed++;
+
+        // lost-ticks compensation mechanism
+        this->lastTickTime = (System::nanoTime() - tickTimeBegin) / 1000000;
+        double parkPeriod = max(0.0, EngineTimer::TICK_INTERVAL_MS - lastTickTime);
 
         this->dExpectedSleepTime = parkPeriod;
         LONG prev = System::currentTimeMillis();
@@ -1220,40 +1331,23 @@ inline void TetrisEngine::gameLoopStart() {
 }
 
 inline void TetrisEngine::printBoard() {
-    // Copy pointer to the falling piece.
-    Tetromino* fp = fallingPiece;
-    bool hasFallingPiece = (fp != nullptr);
-
-    // Print top border
-    std::cout << "<" << std::string(30, '=') << ">" << std::endl;
-
-    // Loop over each row (y-coordinate)
-    for (size_t y = 0; y < playfield[0].size(); ++y) {
+    auto buf = getBoardBuffer();
+    std::cout << "<" << std::string(20, '=') << ">" << std::endl;
+    for (size_t y = 40 - 22; y < buf[0].size(); ++y) {
         std::cout << "|";
 
         // Loop over each column (x-coordinate)
-        for (size_t x = 0; x < playfield.size(); ++x) {
-            bool has = false;
-
-            // Check if the falling piece overlaps with the current position.
-            if (hasFallingPiece) {
-                has = fp->occupyAt(x, y);
-            }
-
-            // If playfield[x][y] > 0 or the falling piece occupies the cell,
-            // print "[#]" if the falling piece is present; otherwise print "[ ]".
-            // If neither, print " - ".
-            if (playfield[x][y] > 0 || has) {
-                std::cout << (has ? "[#]" : "[ ]");
+        for (size_t x = 0; x < buf.size(); ++x) {
+            int mino = buf[x][y];
+            if (mino != 0) {
+                std::cout << (mino > 0 ? "[]" : (mino == GHOST_PIECE_CONVENTION ? "::" : "[]"));
             } else {
-                std::cout << " - ";
+                std::cout << "  ";
             }
         }
         std::cout << "|" << std::endl;
     }
-
-    // Print bottom border
-    std::cout << "<" << std::string(30, '=') << ">" << std::endl;
+    std::cout << "<" << std::string(20, '=') << ">" << std::endl;
 }
 
 #endif //TETRIS_ENGINE_CPP
