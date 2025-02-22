@@ -71,7 +71,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             engine = new TetrisEngine(config, generator);
 
             engine->runOnGameOver([]() {
-                int msg = MessageBoxA(NULL, "GAME OVER. You topped out! Click Retry to reset your board", "TETRIS: C++ EDITION", MB_RETRYCANCEL | MB_ICONINFORMATION);
+                int msg = MessageBoxA(NULL, "GAME OVER. You topped out! Click Retry to reset your board!", "TETRIS: C++ EDITION", MB_RETRYCANCEL | MB_ICONINFORMATION);
 
                 if (msg == IDRETRY) {
                     engine->resetPlayfield();
