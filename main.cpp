@@ -4,8 +4,6 @@
 #include <bits/stdc++.h>
 
 using namespace std;
-#define currentTimeMillis() std::chrono::duration_cast<std::chrono::milliseconds>( \
-                                  std::chrono::steady_clock::now().time_since_epoch()).count()
 
 
 // SevenBagGenerator implementation.
@@ -184,7 +182,7 @@ int main() {
         clearScreen();
 
         cout << "Milliseconds-Per-Tick (last; included renderer ::stdout): " << e->lastTickTime << "ms" << endl;
-        auto timePassed = (System_currentTimeMillis() - e->startedAt) / 1000.0;
+        auto timePassed = (System::currentTimeMillis() - e->startedAt) / 1000.0;
         cout << "Ticks Per Second (approx.): " << (e->ticksPassed / timePassed) << " | target-tps: " << EngineTimer::TARGETTED_TICK_RATE << " " << "(ts: " << e->ticksPassed << " / tp: " << timePassed << ")" << endl;
         cout << "CPU Time: EXPECTED_SLEEP[" << e->dExpectedSleepTime << "] ACTUAL_SLEEP[" << e->dActualSleepTime << "] (Overshot: " << ((e->dActualSleepTime / e->dExpectedSleepTime) * 100) << "%)" << endl;
 

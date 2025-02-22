@@ -3,7 +3,7 @@
 //
 
 /**
- * Mimic some Java features
+ * Replicate some of Java's standard libraries (namely System, Thread, etc)
  */
 #ifndef TETISENGINE_JSYSTEMSTD_H
 #define TETISENGINE_JSYSTEMSTD_H
@@ -13,59 +13,60 @@
 #include <windows.h>
 #endif
 
-#define long int64_t
+/* Java's long, signed 64-bit integer */
+#define LONG int64_t
 
-#define System_currentTimeMillis() time_since_epoch_ms()
-#define System_nanoTime() time_since_epoch_ns()
-#define Thread_sleep(ms) low_resolution_sleep(ms)
-
-inline static long time_since_epoch_ns() {
-    auto now = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-}
-
-inline static long time_since_epoch_ms() {
-    auto now = std::chrono::system_clock::now();
-    auto duration = now.time_since_epoch();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-}
-
-static void preciseSleep(double seconds) {
-    using namespace std;
-    using namespace std::chrono;
-
-    static double estimate = 5e-3;
-    static double mean = 5e-3;
-    static double m2 = 0;
-    static int64_t count = 1;
-
-    while (seconds > estimate) {
-        auto start = high_resolution_clock::now();
-        this_thread::sleep_for(milliseconds(1));
-        auto end = high_resolution_clock::now();
-
-        double observed = (end - start).count() / 1e9;
-        seconds -= observed;
-
-        ++count;
-        double delta = observed - mean;
-        mean += delta / count;
-        m2   += delta * (observed - mean);
-        double stddev = sqrt(m2 / (count - 1));
-        estimate = mean + stddev;
+namespace System {
+    /**
+     * Returns the current value of the running NOT Java Virtual Machine's
+     * high-resolution time source, in nanoseconds.
+     *
+     * @return the current value of the NOT running Java Virtual Machine's
+     *         high-resolution time source, in nanoseconds
+     * @warning I copied this from Java's offical doc
+     */
+    inline static LONG nanoTime() {
+        auto now = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
     }
 
-    // spin lock
-    auto start = high_resolution_clock::now();
-    while ((high_resolution_clock::now() - start).count() / 1e9 < seconds);
+    /**
+    * Returns the current time in milliseconds.  Note that
+    * while the unit of time of the return value is a millisecond,
+    * the granularity of the value depends on the underlying
+    * operating system and may be larger.  For example, many
+    * operating systems measure time in units of tens of
+    * milliseconds.
+    *
+    * @return  the difference, measured in milliseconds, between
+    *          the current time and midnight, January 1, 1970 UTC.
+    * @warning I copied this from Java's offical doc
+    */
+    inline static LONG currentTimeMillis() {
+        auto now = std::chrono::system_clock::now();
+        auto duration = now.time_since_epoch();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+    }
 }
-inline static void low_resolution_sleep(long milliseconds) {
-#ifndef _WIN32
-    preciseSleep(milliseconds / 1000.0);
-#else
-    timeBeginPeriod(1); // Increase resolution to 1ms
-    Sleep(milliseconds); // Perform the sleep
-    timeEndPeriod(1);   // Restore original resolution
-#endif
+
+namespace Thread {
+    /**
+     * Causes the currently executing thread to sleep (temporarily cease
+     * execution) for the specified number of milliseconds, subject to
+     * the precision and accuracy of system timers and schedulers.
+     *
+     * @param  milliseconds the length of time to sleep in milliseconds
+     * @warning I copied this from Java's offical doc
+     */
+    inline static void sleep(LONG milliseconds) {
+    #ifndef _WIN32
+        // for macos and linux, they dont have bullshit timing slice problems like windows
+        std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+    #else
+        timeBeginPeriod(1); // Increase resolution to 1ms
+        Sleep(milliseconds); // Perform the sleep
+        timeEndPeriod(1);   // Restore original resolution
+    #endif
+    }
 }
 #endif //TETISENGINE_JSYSTEMSTD_H

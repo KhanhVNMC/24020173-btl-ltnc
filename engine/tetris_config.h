@@ -102,7 +102,7 @@ public:
      * Sets the gravity, in G, affecting piece fall speed (cells per tick; aka frames)
      * {@link https://harddrop.com/wiki/Drop#Gravity}
      *
-     * @defaultValue 0.156
+     * @defaultValue 0.156 per tick (assumes 60 TPS)
      *
      * @param gravity the gravity amount to set.
      */

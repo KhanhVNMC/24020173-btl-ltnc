@@ -162,9 +162,9 @@ public:
     double gravity = this->defaultGravity;
 
     // internal systems flags / values
-    long ticksPassed = 0;
-    long lastTickTime = 0;
-    long startedAt = -1;
+    LONG ticksPassed = 0;
+    LONG lastTickTime = 0;
+    LONG startedAt = -1;
     // indicates whether the engine is currently started or not
     bool started = false;
     // indicates if the engine has been stopped
@@ -190,7 +190,7 @@ public:
     bool holdButtonPressed = false; /* HOLD button buffering */
 
     // task manager
-    map<long, vector<function<void()>>> scheduledTasks;
+    map<LONG, vector<function<void()>>> scheduledTasks;
 
     /**
      * Schedules a task to be executed after a certain number of ticks.
@@ -202,9 +202,9 @@ public:
      * @return       The tick number at which the task is scheduled to be executed.
      * @throws IllegalArgumentException if the task is null.
      */
-    long scheduleDelayedTask(const long ticks, const function<void()> &task) {
+    LONG scheduleDelayedTask(const LONG ticks, const function<void()> &task) {
         if (task == nullptr) throw invalid_argument("Task could not be null!");
-        const long execOnTick = ticksPassed + ticks;
+        const LONG execOnTick = ticksPassed + ticks;
         scheduledTasks[execOnTick].push_back(task);
         return execOnTick;
     };
@@ -213,7 +213,7 @@ public:
      * Cancel every tasks scheduled for this tick, use with care
      * @param tickExecuted The tick number at which your tasks are expected to be executed
      */
-    void cancelTask(const long tickExecuted) {
+    void cancelTask(const LONG tickExecuted) {
         scheduledTasks.erase(tickExecuted);
     }
 
@@ -408,7 +408,7 @@ public:
     void onUserHold();
 
     // ID of the scheduled task that locks a piece after it lands
-    long pieceLockTaskId = -1;
+    LONG pieceLockTaskId = -1;
     // counter to track how many manipulations (moves/rotations) have been made
     mutable int manipulationCount = 0;
 
@@ -1131,7 +1131,7 @@ inline void TetrisEngine::gameLoopStart() {
 
     // fire pre-start events
     this->onEngineStart();
-    this->startedAt = System_currentTimeMillis();
+    this->startedAt = System::currentTimeMillis();
 
     // the flag to look for
     this->started = true;
@@ -1140,7 +1140,7 @@ inline void TetrisEngine::gameLoopStart() {
         // stop on break signal
         if (this->stopped) break;
 
-        auto tickTimeBegin = System_nanoTime();
+        auto tickTimeBegin = System::nanoTime();
 
         // if the falling piece is null, spawns a new one
         // only if the clear delay period is not active
@@ -1185,7 +1185,7 @@ inline void TetrisEngine::gameLoopStart() {
             // ensure that this key is indeed <= ticksPassed
             if (it->first <= ticksPassed) {
                 // c++ debugger bullshitery
-                long key = it->first;
+                LONG key = it->first;
 
                 // remove the key from the map
                 vector<function<void()>> tasks = move(it->second);
@@ -1198,7 +1198,7 @@ inline void TetrisEngine::gameLoopStart() {
         }
 
         // lost-ticks compensation mechanism
-        this->lastTickTime = (System_nanoTime() - tickTimeBegin) / 1000000;
+        this->lastTickTime = (System::nanoTime() - tickTimeBegin) / 1000000;
         double parkPeriod = max(0.0, EngineTimer::TICK_INTERVAL_MS - lastTickTime);
 
         // if top out, execute the onTopOut external call
@@ -1210,12 +1210,12 @@ inline void TetrisEngine::gameLoopStart() {
         }
 
         this->dExpectedSleepTime = parkPeriod;
-        long prev = System_currentTimeMillis();
+        LONG prev = System::currentTimeMillis();
         // it could be 0, which means: no sleep, execute immediately
         if (parkPeriod > 0) {
-            Thread_sleep(parkPeriod);
+            Thread::sleep(parkPeriod);
         } // tick-rate cap
-        this->dActualSleepTime = System_currentTimeMillis() - prev;
+        this->dActualSleepTime = System::currentTimeMillis() - prev;
     }
 }
 
@@ -1256,5 +1256,4 @@ inline void TetrisEngine::printBoard() {
     std::cout << "<" << std::string(30, '=') << ">" << std::endl;
 }
 
-#undef long
 #endif //TETRIS_ENGINE_CPP
