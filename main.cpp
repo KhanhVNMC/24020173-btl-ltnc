@@ -65,12 +65,23 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         case WM_CREATE: {
             g_hwnd = hwnd;
             SevenBagGenerator *generator = new SevenBagGenerator(123);
-            engine = new TetrisEngine(TetrisConfig::builder(), generator);
+            TetrisConfig* config = TetrisConfig::builder();
+            config->setLineClearsDelay(0.5);
+
+            engine = new TetrisEngine(config, generator);
+
             engine->runOnGameOver([]() {
-                MessageBoxA(NULL, "GAME OVER!", "Game Over", MB_OK);
+                int msg = MessageBoxA(NULL, "GAME OVER. You topped out! Click Retry to reset your board", "TETRIS: C++ EDITION", MB_RETRYCANCEL | MB_ICONINFORMATION);
+
+                if (msg == IDRETRY) {
+                    engine->resetPlayfield();
+                    return;
+                }
+
                 PostQuitMessage(0);
                 exit(0);
             });
+
             engine->onPlayfieldEvent([](const PlayfieldEvent &e) {
                 std::string message;
                 if (e.isSpin() || e.isMiniSpin()) {
