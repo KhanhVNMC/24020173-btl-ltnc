@@ -1310,8 +1310,7 @@ inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum *type) {
 
     // set the initial X, Y position
     this->fallingPiece->x = (type->ordinal == MinoType::O_MINO.ordinal) ? 4 : 3;
-    this->fallingPiece->y =
-            static_cast<int>(playfield[0].size()) - 22; // the piece will always spawn on the 22nd row of the board
+    this->fallingPiece->y = static_cast<int>(playfield[0].size()) - 22; // the piece will always spawn on the 22nd row of the board
 
     // reset this measurement
     this->cellMoved = 0;

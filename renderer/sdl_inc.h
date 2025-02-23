@@ -6,8 +6,9 @@
 #define SDL_INC_H
 #include "../engine/tetris_engine.cpp"
 #include "disk_cache.h"
-#define TETRIS_BOARD "assets/tetris_board.bmp"
-#define TETROMINOES "assets/tetrominoes.bmp"
+
+#define TETRIS_BOARD "../assets/tetris_board.bmp"
+#define TETROMINOES "../assets/tetrominoes.bmp"
 
 static int TETROMINOES_TO_SPRITES[] = {
     0, // empty
@@ -29,7 +30,7 @@ typedef struct {
 mino_render_component render_mino_at(const int offsetX, const int offsetY, const int bx, const int by, const int color) {
     const mino_render_component mino = {
         {color * 31, 0, 30, 30}, // because the tetromino sprite is 30x30 with 1 pixel gap
-        {offsetX + 5 + (34 * bx), offsetY - 25 + (34 * by), 34, 34}
+        {offsetX + 4 + (30 * bx), offsetY - 30 + (30 * by), 30, 30}
     };
     return mino;
 }
@@ -47,14 +48,17 @@ void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, Tet
 
     // render the board
     const SDL_Rect boardDest = {0, 0, 350, 660};
-    const SDL_Rect dstRect = {ox + holdPieceOffsetX, oy, 350, 660}; // Same size as srcRect
+    const SDL_Rect dstRect = {ox + holdPieceOffsetX, oy, 295, 600}; // Same size as srcRect
 
     SDL_RenderCopy(renderer, texture, &boardDest, &dstRect);
+    //render_component(renderer, render_mino_at(ox + holdPieceOffsetX, oy, 0, 2, 0));
+
+
     auto& buffer = engine->getBoardBuffer();
     //    SDL_RenderCopy(renderer, tetrominoesSprites, &pieceSrc, &pieceDest);
-    for (int y = 0; y < 20; y++) {
+    for (int y = 0; y < 22; y++) {
         for (int x = 0; x < 10; x++) {
-            int color = abs(buffer[x][20 + y]);
+            int color = abs(buffer[x][18 + y]);
             if (color == 0 || color == GHOST_PIECE_CONVENTION) continue;
             render_component(renderer, render_mino_at(ox + holdPieceOffsetX, oy, x, y, color));
         }
