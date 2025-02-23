@@ -281,7 +281,7 @@ public:
 	 *
 	 * @param runnable The code to execute at the end of a tick.
 	 */
-    void runOnTickEnd(function<void()>& runnable) {
+    void runOnTickEnd(function<void()> runnable) {
         this->onTickEndCallback = std::move(runnable);
     }
 
