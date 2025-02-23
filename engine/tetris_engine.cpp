@@ -22,6 +22,7 @@
 #include <cmath>
 #include <thread>
 #include <map>
+#include <utility>
 
 // java mimick
 #include "javalibs/jsystemstd.h"
@@ -259,7 +260,7 @@ public:
 
     /**
      * Updates mutable configuration settings for the Tetris Engine based on the current configuration
-     * core {@link TetrisConfig}
+     * core {@link TetrisConfig}\endlink
      */
     void updateMutableConfig() {
         // if the user can press HOLD
@@ -276,12 +277,12 @@ public:
     /**
 	 * Registers a runnable to execute at the end of each tick. If the total time
 	 * of a tick exceeds 16.6ms, the game logic WILL slow down.
-	 * @apiNote Tick compensation may occurs, use this defensively
+	 * @apiNote Tick compensation may occur, use this defensively
 	 *
 	 * @param runnable The code to execute at the end of a tick.
 	 */
-    void runOnTickEnd(function<void()> runnable) {
-        this->onTickEndCallback = runnable;
+    void runOnTickEnd(function<void()>& runnable) {
+        this->onTickEndCallback = std::move(runnable);
     }
 
     /**
@@ -298,7 +299,7 @@ public:
      * @param runnable When the game ends (top out).
      */
     void runOnGameOver(function<void()> runnable) {
-        this->onTopOutCallback = runnable;
+        this->onTopOutCallback = std::move(runnable);
     }
 
     /**
@@ -309,7 +310,7 @@ public:
      * by that action
      */
     void runOnMinoLocked(function<void(int)> onMinoEvent) {
-        this->onMinoLockedCallback = onMinoEvent;
+        this->onMinoLockedCallback = std::move(onMinoEvent);
     }
 
     /**
@@ -319,7 +320,7 @@ public:
      * @param onPlayfieldEvent The consumer to handle the playfield event.
      */
     void onPlayfieldEvent(function<void(PlayfieldEvent)> onPlayfieldEvent) {
-        this->onPlayfieldEventCallback = onPlayfieldEvent;
+        this->onPlayfieldEventCallback = std::move(onPlayfieldEvent);
     }
 
     /**
@@ -330,7 +331,7 @@ public:
      *                combo count as an argument.
      */
     void onCombo(function<void(int)> onCombo) {
-        this->onComboCallback = onCombo;
+        this->onComboCallback = std::move(onCombo);
     }
 
     /**
@@ -341,7 +342,7 @@ public:
      *                      the last combo count before the break.
      */
     void onComboBreaks(function<void(int)> onComboBreaks) {
-        this->onComboBreaksCallback = onComboBreaks;
+        this->onComboBreaksCallback = std::move(onComboBreaks);
     }
 
     /**
@@ -408,7 +409,7 @@ public:
      * Get the current combo count
      * @return combo count
      */
-    int getComboCount() {
+    int getComboCount() const {
         return max(0, comboCount);
     }
 
@@ -424,7 +425,7 @@ public:
 	 * Get the hold piece type
 	 * @return MinoTypeEnum of the current hold piece
 	 */
-    MinoTypeEnum *getHoldPiece() {
+    MinoTypeEnum* getHoldPiece() const {
         return this->holdPiece;
     }
 
@@ -432,7 +433,7 @@ public:
      * Get the NEXT queue
      * @return the current next queue
      */
-    queue<MinoTypeEnum *> &getNextQueue() {
+    queue<MinoTypeEnum* > &getNextQueue() {
         return this->nextQueue;
     }
 
@@ -543,7 +544,7 @@ private:
     // nullify a row by setting all of its cells to empty (0)
     // this creates the "line-disappear" effect
     void nullifyRow(const int rowIndex) {
-        for (auto &x: playfield) {
+        for (auto &x: this->playfield) {
             x[rowIndex] = 0;
         }
     }
@@ -551,7 +552,7 @@ private:
     // clear the row by shifting down all rows above it by one
     void clearRow(const int rowIndex) {
         for (int y = rowIndex; y > 0; --y) {
-            for (auto &x: playfield) {
+            for (auto &x: this->playfield) {
                 x[y] = x[y - 1]; // drag the block ABOVE it down, replacing itself
             }
         }
@@ -559,7 +560,7 @@ private:
 
     // true if the row is empty
     bool isRowEmpty(const int rowIndex) const {
-        for (auto &x: playfield) {
+        for (auto &x: this->playfield) {
             if (x[rowIndex] != 0) return false;
         }
         return true;
@@ -630,7 +631,7 @@ public:
     /**
      * Internal debugging bullshit, dont use
      */
-    void printBoard();
+    void printBoard() const;
 };
 
 class Tetromino {
@@ -654,7 +655,7 @@ public:
         parent->manipulationCount = 0; // new piece, 0 manipulation
     }
 
-    ~Tetromino() {}
+    ~Tetromino() = default;
 
     /**
      * Gets the matrix structure of this tetromino in the current rotation state.
@@ -1432,7 +1433,7 @@ inline void TetrisEngine::gameLoopStart() {
     }
 }
 
-inline void TetrisEngine::printBoard() {
+inline void TetrisEngine::printBoard() const {
     cout << "Milliseconds-Per-Tick (last; included renderer ::stdout): " << lastTickTime << "ms" << endl;
     auto timePassed = (System::currentTimeMillis() - startedAt) / 1000.0;
     cout << "Ticks Per Second (approx.): " << (ticksPassed / timePassed) << " | target-tps: " << EngineTimer::TARGETTED_TICK_RATE << " " << "(ts: " << ticksPassed << " / tp: " << timePassed << ")" << endl;
