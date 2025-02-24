@@ -100,7 +100,7 @@ void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, Tet
     // the board will pulse red once the 17th row has a mino in it
     if (!engine->isRowEmpty(DANGER_THRESHOLD)) {
         // pulsing red (based on tick rate)
-        float pulseStrength = ((sin(engine->ticksPassed * 0.1) + 2) / 4) + 0.25;
+        double pulseStrength = ((sin(engine->ticksPassed * 0.1) + 2) / 4) + 0.25; // what the fuck
         SDL_SetRenderDrawColor(renderer, 255 * pulseStrength, 0, 0, 255); // red
     } else {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white
@@ -109,6 +109,11 @@ void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, Tet
     SDL_RenderFillRects(renderer, utilities, 6); // UTILS
     // reset the color to make sure the entire screen isn't white / red
     SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+
+    render_component(renderer, disk_cache::bmp_load_and_cache(renderer, "../assets/hold_sam.bmp"), {
+            {0, 0, 180, 40},
+            {ox - (MINO_SIZE), oy + (Y_OFFSET / 2), 180, 40}
+        }, 1);
 
     // render the HOLD piece
     MinoTypeEnum* heldPiece = engine->getHoldPiece();

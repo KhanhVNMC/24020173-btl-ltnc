@@ -12,7 +12,7 @@ using namespace std;
 
 namespace disk_cache {
     // BMP Cache
-    inline static unordered_map<string, SDL_Texture*> bmpCache;
+    inline static unordered_map<string, SDL_Texture*> cache;
 
     /**
      * Load RAMDISK based BMP files
@@ -22,8 +22,8 @@ namespace disk_cache {
      * @return
      */
     static SDL_Texture* bmp_load_and_cache(SDL_Renderer* renderer, const string& filename) {
-        if (bmpCache.find(filename) != bmpCache.end()) {
-            return bmpCache[filename];
+        if (cache.find(filename) != cache.end()) {
+            return cache[filename];
         }
 
         // bmp as surface
@@ -34,6 +34,7 @@ namespace disk_cache {
         }
 
         // convert to SDL-compliance texture
+        SDL_SetColorKey(surface, SDL_TRUE, SDL_MapRGB(surface->format, 255, 0, 255));
         SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
         SDL_FreeSurface(surface);
 
@@ -43,7 +44,7 @@ namespace disk_cache {
         }
 
         // cache the bmp file up so that i can call it
-        bmpCache[filename] = texture;
+        cache[filename] = texture;
         return texture;
     }
 }
