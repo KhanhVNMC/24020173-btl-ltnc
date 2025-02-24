@@ -50,8 +50,8 @@ constexpr int MINO_SIZE = 30;
 constexpr int PLAYFIELD_RENDER_OFFSET = MINO_SIZE * 5;
 // the NEXT queue is rendered at the end of the playfield PLUS 2 minoes worth of gap
 constexpr int NEXT_RENDER_OFFSET = PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * 10) + (MINO_SIZE * 1);
-// the NEXT queue and HOLD indicator is shifted 2 minoes down
-constexpr int Y_OFFSET = MINO_SIZE * 2;
+// the NEXT queue and HOLD indicator is shifted 4 minoes down
+constexpr int Y_OFFSET = MINO_SIZE * 4;
 
 struct_render_component render_mino_at(const int offsetX, const int offsetY, const int bx, const int by, const int color) {
     return {
@@ -61,17 +61,54 @@ struct_render_component render_mino_at(const int offsetX, const int offsetY, con
     };
 }
 
+// properties
+#define BOARD_HEIGHT 22
+#define BOARD_WIDTH 10
+#define BORDER_WIDTH 3
+
+// the board will turn red once the 17th row has a mino in it
+#define DANGER_THRESHOLD 40 - 17
+
 // render the entire fucking shit
 void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, TetrisEngine* engine) {
-    SDL_Texture* texture = disk_cache::bmp_load_and_cache(renderer, TETRIS_BOARD);
-    SDL_Texture* tetrominoesSprites = disk_cache::bmp_load_and_cache(renderer, TETROMINOES);
-
     // render the board
-    const SDL_Rect boardDest = {0, 0, 350, 660};
-    const SDL_Rect dstRect = {ox + PLAYFIELD_RENDER_OFFSET, oy, 295, 600}; // Same size as srcRect
+    // white border around the playfield
+    const SDL_Rect borders[3] = {
+            // left border
+            { ox + PLAYFIELD_RENDER_OFFSET - BORDER_WIDTH, oy + (MINO_SIZE * 2), BORDER_WIDTH, MINO_SIZE * (BOARD_HEIGHT - 2) },
+            // bottom border
+            { ox + PLAYFIELD_RENDER_OFFSET - BORDER_WIDTH, oy + (MINO_SIZE * BOARD_HEIGHT), MINO_SIZE * BOARD_WIDTH + (2 * BORDER_WIDTH), BORDER_WIDTH },
+            // right border
+            { ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH), oy + (MINO_SIZE * 2), BORDER_WIDTH, MINO_SIZE * (BOARD_HEIGHT - 2) }
+    };
 
-    //SDL_RenderCopy(renderer, texture, &boardDest, &dstRect);
-    //render_component(renderer, render_mino_at(ox + holdPieceOffsetX, oy, 0, 2, 0));
+    // render the NEXT and HOLD headers
+    const SDL_Rect utilities[6] = {
+            // HOLD HEADER
+            {ox - (MINO_SIZE), oy + (Y_OFFSET / 2), (MINO_SIZE * 6), 40},
+            // HOLD BORDERS
+            {ox - (MINO_SIZE), oy + (Y_OFFSET / 2) + 40, BORDER_WIDTH, 100}, // LEFT
+            {ox - (MINO_SIZE), oy + (Y_OFFSET / 2) + 140, (MINO_SIZE * 6), BORDER_WIDTH}, // BOTTOM
+
+            // NEXT HEADER
+            {ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH), oy + (Y_OFFSET / 2), (MINO_SIZE * 6), 40},
+            // NEXT BORDERS
+            {ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH) + (MINO_SIZE * 6) - BORDER_WIDTH, oy + (Y_OFFSET / 2) + 40, BORDER_WIDTH, 460}, // RIGHT
+            {ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH), oy + (Y_OFFSET / 2) + 500, (MINO_SIZE * 6), BORDER_WIDTH} // BTM
+    };
+
+    // the board will pulse red once the 17th row has a mino in it
+    if (!engine->isRowEmpty(DANGER_THRESHOLD)) {
+        // pulsing red (based on tick rate)
+        float pulseStrength = ((sin(engine->ticksPassed * 0.1) + 2) / 4) + 0.25;
+        SDL_SetRenderDrawColor(renderer, 255 * pulseStrength, 0, 0, 255); // red
+    } else {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white
+    }
+    SDL_RenderFillRects(renderer, borders, 3); // BOARD
+    SDL_RenderFillRects(renderer, utilities, 6); // UTILS
+    // reset the color to make sure the entire screen isn't white / red
+    SDL_SetRenderDrawColor(renderer, 0,0,0,255);
 
     // render the HOLD piece
     MinoTypeEnum* heldPiece = engine->getHoldPiece();
@@ -111,13 +148,15 @@ void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, Tet
 
     // render the playfield (22x10)
     auto& buffer = engine->getBoardBuffer();
-    for (int y = 0; y < 22; ++y) { // we render 22 rows and 10 columns, hiding 18 lines
-        for (int x = 0; x < 10; ++x) {
+    for (int y = 0; y < BOARD_HEIGHT; ++y) { // we render 22 rows and 10 columns, hiding 18 lines
+        for (int x = 0; x < BOARD_WIDTH; ++x) {
             int rawBuffer = buffer[x][18 + y]; // hide the buffer zone (18 lines above actual playfield)
             // we do not render minoes at 0es (or we must?)
             if (rawBuffer == 0) {
                 // render empty mino (garbage mino with 10% opacity /shrug/)
-                render_component_tetromino(renderer,render_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, 8), 0.1);
+                if (y >= 2) { // only render the grid if the thing is lower than the buffer zone
+                    render_component_tetromino(renderer,render_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, 8), 0.1);
+                }
                 continue;
             }
 

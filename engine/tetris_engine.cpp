@@ -558,6 +558,7 @@ private:
         }
     }
 
+public:
     // true if the row is empty
     bool isRowEmpty(const int rowIndex) const {
         for (auto &x: this->playfield) {
@@ -566,6 +567,7 @@ private:
         return true;
     }
 
+private:
     // this will run whenever a piece is locked in the playfield
     void updatePlayfieldState(Tetromino *locked);
 

@@ -67,7 +67,8 @@ int main(int argc, char* argv[]) {
         }
 
         SDL_RenderClear(renderer);
-        render_tetris_board(30, 20, renderer, tetris);
+        //SDL_RenderDrawLine(renderer, 100, 100, 100, 100);
+        render_tetris_board(60, 20, renderer, tetris);
         //render_tetris_board(660, 50, renderer, tetris2);
 
         SDL_RenderPresent(renderer); // Show updated frame
