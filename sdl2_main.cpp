@@ -1,13 +1,52 @@
 #include "sbg.h"
 #include "renderer/sdl_inc.h"
 
+void process_input(SDL_Event& event, TetrisEngine* engine) {
+    if (event.type == SDL_KEYDOWN && !event.key.repeat) {  // Avoid key repeat events
+        switch (event.key.keysym.sym) {
+            case SDLK_LEFT:
+                engine->moveLeft();
+                break;
+            case SDLK_RIGHT:
+                engine->moveRight();
+                break;
+            case SDLK_UP:
+            case SDLK_x:
+                engine->rotateCW();
+                break;
+            case SDLK_z:
+                engine->rotateCCW();
+                break;
+            case SDLK_DOWN:
+                engine->softDropToggle(true);
+                break;
+            case SDLK_SPACE:
+                engine->hardDrop();
+                break;
+            case SDLK_c:
+                engine->hold();
+                break;
+            case SDLK_t:
+                engine->raiseGarbage(3, 9);
+                break;
+            default:
+                break;
+        }
+    }
+    else if (event.type == SDL_KEYUP) {  // Handle key releases
+        if (event.key.keysym.sym == SDLK_DOWN) {
+            engine->softDropToggle(false);
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("BMP Partial Render",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                          980, 720, SDL_WINDOW_SHOWN);
+                                          1280, 720, SDL_WINDOW_SHOWN);
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     // Main loop
     int running = 1;
@@ -24,16 +63,17 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_QUIT) {
                 exit(1);
             }
+            process_input(event, tetris);
         }
 
-        SDL_RenderClear(renderer); // Clear screen
-        render_tetris_board(220, 50, renderer, tetris);
+        SDL_RenderClear(renderer);
+        render_tetris_board(30, 20, renderer, tetris);
+        //render_tetris_board(660, 50, renderer, tetris2);
 
         SDL_RenderPresent(renderer); // Show updated frame
     });
 
     tetris->start();
-
     // Cleanup
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

@@ -668,12 +668,14 @@ public:
 
     /**
     * Checks if this tetromino occupies the specified x, y position on the board.
+     *
+    * @deprecated In favor of getRelativeMinoCoordinates()
     *
     * @param x the x-coordinate on the board
     * @param y the y-coordinate on the board
     * @return true if the tetromino occupies the specified coordinates, false otherwise
     */
-    [[nodiscard]] bool occupyAt(const int x, const int y) const {
+    [[maybe_unused]] [[nodiscard]] bool occupyAt(const int x, const int y) const {
         if (this->x <= x && x < this->x + size // b1 <= x < b1 + size_t
             && this->y <= y && y < this->y + size) {
             // b1 <= y < b1 + size_t
@@ -798,7 +800,7 @@ public:
         for (vector<int> kick: kickSequence) {
             // "kick" the tetromino to the new position
             const int testingX = this->x + kick[0];
-            const int testingY = this->y - kick[1]; // the board is upside down, index wise
+            const int testingY = this->y - kick[1]; // the board is upside down, so i subtract instead of add bruh, index wise
 
             // increment the kick identifier
             ++kickUsed;
@@ -821,10 +823,12 @@ public:
             parent->lastSpinKickUsed = kickUsed;
             // the kick offset used (this will be used for T-Spin detection)
             parent->lastKickPositionUsed = kickSequence[kickUsed];
+
             // a successful move
             parent->onPieceManipulation();
             // last action of this piece
             this->lastActionDone = ccw ? CCW_ROTATION : CW_ROTATION;
+
             // invalidate the ghost piece cache, forcing a recalculation
             this->invalidateGhostPieceCache();
         }
@@ -835,7 +839,7 @@ public:
     * positions
     */
     void lockIn() {
-        for (vector<int> minoPosition: getRelativeMinoCoordinates()) {
+        for (vector<int>& minoPosition : getRelativeMinoCoordinates()) {
             // get the position relative to the playfield and set the cell
             // to this tetromino color (type). This step is very important
             // because the color presents itself as the "presence" of a piece (color > 0 == present)
@@ -864,9 +868,11 @@ public:
 
         this->x += left ? -1 : 1;
         parent->onPieceManipulation();
+
         // last action of this piece, 1 = left, 2 = right movement
         this->lastActionDone = left ? MOVE_LEFT : MOVE_RIGHT;
-        // invalidate the ghost piece cache, forcing a recalculation
+
+        // invalidate the ghost piece cache, forcing a recalculation (ghost pieces do not care about Y)
         this->invalidateGhostPieceCache();
         return true;
     }
@@ -877,7 +883,7 @@ public:
      */
     bool translateDown() {
         if (onGround()) return false;
-        ++this->y;
+        ++this->y; // this feels cursed right? the board is upside down, so live with it
         return true;
     }
 
@@ -917,7 +923,7 @@ public:
     }
 };
 
-/**** BEGIN OF MEMORY MANAGEMENT BULLSHIT ****/
+/************** BEGIN OF MEMORY MANAGEMENT BULLSHIT ***************/
 inline void TetrisEngine::markFallingPieceAsNull() {
     this->deletionQueue.push_back(this->fallingPiece);
     this->fallingPiece = nullptr;
@@ -930,8 +936,7 @@ inline void TetrisEngine::freeMemoryOfFallingPiece() {
     }
     deletionQueue.clear();
 }
-
-/****** END OF BULLSHIT (not really) ***********/
+/****** END OF BULLSHIT (not really, the entire code is bs) ***********/
 
 inline void TetrisEngine::stop() {
     if (stopped) throw logic_error("Already stopped!");
@@ -1303,6 +1308,7 @@ inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum *type) {
     if (type == nullptr || stopped) return; // if stopped or topped out, return
 
     // this is when it's safe to delete older objects (because a new one is initialized below)
+    // temu garbage collector
     this->freeMemoryOfFallingPiece();
 
     // create the dynamic tetromino instance (this will be placed on the heap)
