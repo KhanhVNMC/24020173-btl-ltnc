@@ -7,7 +7,6 @@
 #include "../engine/tetris_engine.cpp"
 #include "disk_cache.h"
 
-#define TETRIS_BOARD "../assets/tetris_board.bmp"
 #define TETROMINOES "../assets/tetrominoes.bmp"
 
 // because the internal Enums' ordinal and the sprite.bmp uses different indexes, we map INTERNAL -> BMP
