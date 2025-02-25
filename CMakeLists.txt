@@ -18,6 +18,8 @@ add_executable(tetisengine
         sdl2_main.cpp
         renderer/disk_cache.h
         renderer/sdl_inc.h
+        renderer/particles_system.cpp
+        renderer/particles.h
 )
 
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY} winmm opengl32)

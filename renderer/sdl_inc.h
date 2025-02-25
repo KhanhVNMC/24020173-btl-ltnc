@@ -34,12 +34,12 @@ typedef struct {
  * @param component the struct_render_component
  * @param opacity opacity from 0.0 - 1.0 (0: transparent; 1: opaque)
  */
-void render_component(SDL_Renderer* renderer, SDL_Texture* texture, const struct_render_component& component, const float opacity) {
-    SDL_SetTextureAlphaMod(texture, opacity * 255);
+inline void render_component(SDL_Renderer* renderer, SDL_Texture* texture, const struct_render_component& component, const float opacity) {
+    SDL_SetTextureAlphaMod(texture, static_cast<Uint8>(opacity * 255));
     SDL_RenderCopy(renderer, texture, &component.source, &component.dest);
 }
 
-void render_component_tetromino(SDL_Renderer* renderer, const struct_render_component& mino, const float opacity) {
+inline void render_component_tetromino(SDL_Renderer* renderer, const struct_render_component& mino, const float opacity) {
     render_component(renderer, disk_cache::bmp_load_and_cache(renderer, TETROMINOES), mino, opacity);
 }
 

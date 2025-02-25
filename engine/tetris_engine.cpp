@@ -932,7 +932,7 @@ inline void TetrisEngine::markFallingPieceAsNull() {
 }
 
 inline void TetrisEngine::freeMemoryOfFallingPiece() {
-    for (Tetromino *piece: deletionQueue) {
+    for (Tetromino* piece: deletionQueue) {
         // actually deleting the shit
         delete piece;
     }

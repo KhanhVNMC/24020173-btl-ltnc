@@ -123,7 +123,7 @@ public:
     */
     private: static vector<vector<int>> rotateClockwise(const vector<vector<int>> &a) {
         const size_t m = a.size();
-        vector<vector<int>> rotated(m, vector<int>(m, 0));
+        vector rotated(m, vector<int>(m, 0));
         for (size_t x = 0; x < m; ++x) {
             for (size_t y = 0; y < m; ++y) {
                 rotated[y][m - 1 - x] = a[x][y];
