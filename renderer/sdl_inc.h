@@ -6,23 +6,43 @@
 #define SDL_INC_H
 #include "../engine/tetris_engine.cpp"
 #include "disk_cache.h"
-#include "particles.h"
 
 #define TETROMINOES "../assets/tetrominoes.bmp"
+#define FONT_SHEET "../assets/font.bmp"
+
+// begin text section
+char CHAR_LIST[68] = {
+        ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.',
+        '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=',
+        '>', '?', '@','a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j','k', 'l','m','n',
+        'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '[',
+        '\\', ']', '^', '_', '{', '|', '}', '~'
+};
+
+std::unordered_map<char, int> CHAR_MAP;
+// initialize the font system before use
+void initFontSystem() {
+    for (size_t i = 0; i < 68; i++) {
+        CHAR_MAP[CHAR_LIST[i]] = i;
+    }
+}
 
 // because the internal Enums' ordinal and the sprite.bmp uses different indexes, we map INTERNAL -> BMP
 static unordered_map<int, int> TEXTURE_MAPPER = {
-    { MinoType::Z_MINO.ordinal, 0 },
-    { MinoType::L_MINO.ordinal, 1 },
-    { MinoType::O_MINO.ordinal, 2 },
-    { MinoType::S_MINO.ordinal, 3 },
-    { MinoType::I_MINO.ordinal, 4 },
-    { MinoType::J_MINO.ordinal, 5 },
-    { MinoType::T_MINO.ordinal, 6 },
-    { MinoType::valuesLength + 1, 8} // garbage mino
+        { MinoType::Z_MINO.ordinal, 0 },
+        { MinoType::L_MINO.ordinal, 1 },
+        { MinoType::O_MINO.ordinal, 2 },
+        { MinoType::S_MINO.ordinal, 3 },
+        { MinoType::I_MINO.ordinal, 4 },
+        { MinoType::J_MINO.ordinal, 5 },
+        { MinoType::T_MINO.ordinal, 6 },
+        { MinoType::valuesLength + 1, 8} // garbage mino
 };
 
-// component 1
+/**
+ * General purpose component used to put images
+ * from RAM to VRAM
+ */
 typedef struct {
     SDL_Rect source;
     SDL_Rect dest;
@@ -35,25 +55,84 @@ typedef struct {
  * @param component the struct_render_component
  * @param opacity opacity from 0.0 - 1.0 (0: transparent; 1: opaque)
  */
-inline void render_component(SDL_Renderer* renderer, SDL_Texture* texture, const struct_render_component& component, const float opacity) {
+inline void render_component(SDL_Renderer* renderer, SDL_Texture* texture, const struct_render_component& component, const float opacity, const int angle = 0) {
     SDL_SetTextureAlphaMod(texture, static_cast<Uint8>(opacity * 255));
+    if (angle > 0) {
+        SDL_RenderCopyEx(renderer, texture, &component.source, &component.dest, angle, NULL, SDL_FLIP_NONE);
+        return;
+    }
     SDL_RenderCopy(renderer, texture, &component.source, &component.dest);
 }
 
+/**
+ * Render a single mino in the renderer (GPU)
+ * @param renderer the SDL thingy
+ * @param mino the component to render
+ * @param opacity the opacity (0.0 - 1.0)
+ */
 inline void render_component_tetromino(SDL_Renderer* renderer, const struct_render_component& mino, const float opacity) {
     render_component(renderer, disk_cache::bmp_load_and_cache(renderer, TETROMINOES), mino, opacity);
+}
+
+#define FONT_SHEET_X 1
+#define FONT_SHEET_Y 2
+#define FONT_SHEET_GAP 8
+
+#define FONT_WIDTH 18
+#define FONT_HEIGHT 14
+
+/**
+ * Puts a single character on the renderer's screen (GPU too)
+ * @param x, y coordinates
+ * @param scale the scalar
+ * @param c the character to put
+ * @return the struct ready for render
+ */
+struct_render_component puts_component_char(int x, int y, double scale, char c) {
+    int sheetIndex = CHAR_MAP[c];
+    int sheetRow = (sheetIndex / 15);
+    return {
+            {FONT_SHEET_X + ((FONT_WIDTH + 2) * (sheetIndex % 15)), FONT_SHEET_Y + (sheetRow * (FONT_HEIGHT - 2 + FONT_SHEET_GAP)), FONT_WIDTH, FONT_HEIGHT},
+            {x, y, static_cast<int>(18 * scale), static_cast<int>(14 * scale)},
+    };
+}
+
+/**
+ * too lazy
+ */
+inline void render_component_string(SDL_Renderer* renderer, const int x, const int y, const string str, const double scalar = 5, const float opacity = 1.0f, const int strgap = 40) {
+    auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
+    for (int i = 0; i < str.length(); i++) {
+        render_component(renderer, texture, puts_component_char(x + (strgap * i), y, scalar, str[i]), opacity);
+    }
+}
+
+/***
+ * too lazy
+ */
+inline void render_component_chars(SDL_Renderer* renderer, const int x, const int y, const double opacity, const struct_render_component* components, int size) {
+    auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
+    for (int i = 0; i < size; i++) {
+        render_component(renderer, texture, components[i], opacity);
+    }
 }
 
 // uh, problem?
 constexpr int MINO_SIZE = 30;
 // the size of each mino box is 4 (2x4), we leave 2 minoes worth of gap for the HOLD rendering
-constexpr int PLAYFIELD_RENDER_OFFSET = MINO_SIZE * 5;
+constexpr int PLAYFIELD_RENDER_OFFSET = MINO_SIZE * 5.5;
 // the NEXT queue is rendered at the end of the playfield PLUS 2 minoes worth of gap
 constexpr int NEXT_RENDER_OFFSET = PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * 10) + (MINO_SIZE * 1);
 // the NEXT queue and HOLD indicator is shifted 4 minoes down
 constexpr int Y_OFFSET = MINO_SIZE * 4;
 
-struct_render_component render_mino_at(const int offsetX, const int offsetY, const int bx, const int by, const int color) {
+/**
+ * @param offsetX, offsetY the offsets (linear)
+ * @param bx, by the tetromino coordinate on an imaginary grid (starts at offsetX, offsetY)
+ * @param color the color of the tetromino (use the mapper for MinoType::)
+ * @return the struct ready for render
+ */
+struct_render_component puts_mino_at(const int offsetX, const int offsetY, const int bx, const int by, const int color) {
     return {
             {color * (30 + 1), 0, 30, 30}, // because the tetromino sprite is 30x30 with 1 pixel gap
             // what the fuck, magic numbers
@@ -110,10 +189,13 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
     // reset the color to make sure the entire screen isn't white / red
     SDL_SetRenderDrawColor(renderer, 0,0,0,255);
 
-    render_component(renderer, disk_cache::bmp_load_and_cache(renderer, "../assets/hold_sam.bmp"), {
-            {0, 0, 180, 40},
-            {ox - (MINO_SIZE), oy + (Y_OFFSET / 2), 180, 40}
-        }, 1);
+    // draw HOLD and NEXT text
+    render_component_string(renderer, ox - (MINO_SIZE), oy + (Y_OFFSET / 2) + 5, "hold", 2, 1, 26);
+    render_component_string(renderer, ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH) + 65, oy + (Y_OFFSET / 2) + 5, "next", 2, 1, 26);
+
+    // render sample text // TODO
+    render_component_string(renderer, ox - (MINO_SIZE), oy + (Y_OFFSET / 2) + 300, "t-spin", 1.5, 1, 20);
+    render_component_string(renderer, ox - (MINO_SIZE), oy + (Y_OFFSET / 2) + 325, "triple", 2, 1, 26);
 
     // render the HOLD piece
     MinoTypeEnum* heldPiece = engine->getHoldPiece();
@@ -125,7 +207,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
                 // if the user cant hold, grayscale the mino
                 const int color = !engine->canUseHold() ? 8 : TEXTURE_MAPPER[engine->getHoldPiece()->ordinal];
                 // we don't need to offset X because the HOLD slot is rendered first
-                render_component_tetromino(renderer,render_mino_at(ox, oy + Y_OFFSET, x, y, color), 1);
+                render_component_tetromino(renderer, puts_mino_at(ox, oy + Y_OFFSET, x, y, color), 1);
             }
         }
     }
@@ -145,7 +227,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
                 const int color = TEXTURE_MAPPER[piece->ordinal];
                 // we offset the NEXT by the playfield width + 2 minoes gap
                 // for each tetromino, we move down by 3 minoes
-                render_component_tetromino(renderer,render_mino_at(ox + NEXT_RENDER_OFFSET, oy + Y_OFFSET, x, y + (index * 3), color), 1);
+                render_component_tetromino(renderer,puts_mino_at(ox + NEXT_RENDER_OFFSET, oy + Y_OFFSET, x, y + (index * 3),color), 1);
             }
         }
         index++;
@@ -160,7 +242,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
             if (rawBuffer == 0) {
                 // render empty mino (garbage mino with 10% opacity /shrug/)
                 if (y >= 2) { // only render the grid if the thing is lower than the buffer zone
-                    render_component_tetromino(renderer,render_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, 8), 0.1);
+                    render_component_tetromino(renderer, puts_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, 8), 0.1);
                 }
                 continue;
             }
@@ -176,10 +258,9 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
             int finalColor = TEXTURE_MAPPER[ghostPiece ? engine->getFallingMinoType()->ordinal : colorMinoes];
 
             // render the mino (if ghost piece, render at 35% opacity)
-            render_component_tetromino(renderer,render_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, finalColor), ghostPiece ? 0.35 : 1);
+            render_component_tetromino(renderer, puts_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, finalColor), ghostPiece ? 0.35 : 1);
         }
     }
-    //
 }
 
 #endif //SDL_INC_H
