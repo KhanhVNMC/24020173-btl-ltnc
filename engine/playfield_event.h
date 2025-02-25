@@ -33,7 +33,10 @@ public:
             : linesCleared_(linesCleared), isPerfectClear_(isPerfectClear), lastMino_(lastMino), isSpin_(isSpin), isMiniSpin_(isMiniSpin) {}
 
     /**
-     * @return The indices of lines cleared in this event.
+     * @return A constant reference to a vector containing the indices of the lines cleared in this event.
+     * @apiNote This event is triggered after the lines have been nullified but before gravity has been applied.
+     *          As a result, the line indices may all be set to 0 or another value, depending on the
+     *          implementation of the engine's internal nullifyRow(int rowIndex) function.
      */
     const std::vector<int>& getLinesCleared() const {
         return linesCleared_;

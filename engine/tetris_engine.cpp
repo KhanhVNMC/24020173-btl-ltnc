@@ -544,8 +544,18 @@ private:
     // nullify a row by setting all of its cells to empty (0)
     // this creates the "line-disappear" effect
     void nullifyRow(const int rowIndex) {
-        for (auto &x: this->playfield) {
-            x[rowIndex] = 0;
+        // makes an animation to "wipe" the line (this should not be included in
+        // the base engine, this is for university project only)
+        for (int x = 0; x < 10; ++x) {
+            int minoDelay;
+            if ((minoDelay = lineClearsDelay / 10) <= 1) {
+                this->playfield[x][rowIndex] = 0;
+                continue;
+            }
+            // only play animation if the time budget is > 1 frames
+            scheduleDelayedTask(x * minoDelay, [this, rowIndex, x]() {
+               this->playfield[x][rowIndex] = 0;
+            });
         }
     }
 

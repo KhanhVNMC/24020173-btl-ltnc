@@ -6,6 +6,7 @@
 #define SDL_INC_H
 #include "../engine/tetris_engine.cpp"
 #include "disk_cache.h"
+#include "particles.h"
 
 #define TETROMINOES "../assets/tetrominoes.bmp"
 
@@ -66,10 +67,10 @@ struct_render_component render_mino_at(const int offsetX, const int offsetY, con
 #define BORDER_WIDTH 3
 
 // the board will turn red once the 17th row has a mino in it
-#define DANGER_THRESHOLD 40 - 17
+#define DANGER_THRESHOLD (40 - 17)
 
 // render the entire fucking shit
-void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, TetrisEngine* engine) {
+inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, TetrisEngine* engine) {
     // render the board
     // white border around the playfield
     const SDL_Rect borders[3] = {
@@ -117,12 +118,12 @@ void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, Tet
     // render the HOLD piece
     MinoTypeEnum* heldPiece = engine->getHoldPiece();
     if (heldPiece != nullptr) {
-        auto& renderMatrix = heldPiece->renderMatrix;
+        const auto& renderMatrix = heldPiece->renderMatrix;
         for (int y = 0; y < renderMatrix.size(); ++y) {
             for (int x = 0; x < renderMatrix[0].size(); ++x) {
                 if (renderMatrix[y][x] == 0) continue;
                 // if the user cant hold, grayscale the mino
-                int color = !engine->canUseHold() ? 8 : TEXTURE_MAPPER[engine->getHoldPiece()->ordinal];
+                const int color = !engine->canUseHold() ? 8 : TEXTURE_MAPPER[engine->getHoldPiece()->ordinal];
                 // we don't need to offset X because the HOLD slot is rendered first
                 render_component_tetromino(renderer,render_mino_at(ox, oy + Y_OFFSET, x, y, color), 1);
             }
@@ -134,14 +135,14 @@ void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, Tet
     int index = 0;
     std::queue<MinoTypeEnum *> nextQueue = engine->getNextQueue();
     while (!nextQueue.empty()) {
-        MinoTypeEnum *piece = nextQueue.front();
+        const MinoTypeEnum *piece = nextQueue.front();
         nextQueue.pop();
         if (index > 4) break; // only renders up to 5 pieces
         auto& renderMatrix = piece->renderMatrix;
         for (int y = 0; y < renderMatrix.size(); ++y) {
             for (int x = 0; x < renderMatrix[0].size(); ++x) {
                 if (renderMatrix[y][x] == 0) continue;
-                int color = TEXTURE_MAPPER[piece->ordinal];
+                const int color = TEXTURE_MAPPER[piece->ordinal];
                 // we offset the NEXT by the playfield width + 2 minoes gap
                 // for each tetromino, we move down by 3 minoes
                 render_component_tetromino(renderer,render_mino_at(ox + NEXT_RENDER_OFFSET, oy + Y_OFFSET, x, y + (index * 3), color), 1);
@@ -178,6 +179,7 @@ void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, Tet
             render_component_tetromino(renderer,render_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, finalColor), ghostPiece ? 0.35 : 1);
         }
     }
+    //
 }
 
 #endif //SDL_INC_H

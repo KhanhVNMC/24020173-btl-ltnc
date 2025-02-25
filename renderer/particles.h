@@ -27,7 +27,7 @@ particle_unit spawn_spewing_particle(
     int x, int y,
     int aliveTicks, int texture);
 
-double xOffsetFunction(const particle_unit* particle, int64_t currentTick, int epsilon);
-double yOffsetFunction(const particle_unit* particle, int64_t currentTick, int beta);
+double xOffsetFunction(const particle_unit* particle, double currentTick, int epsilon);
+double yOffsetFunction(const particle_unit* particle, double currentTick, int beta);
 
 #endif //PARTICLES_H

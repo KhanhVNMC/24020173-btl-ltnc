@@ -2,8 +2,8 @@
 // Created by GiaKhanhVN on 2/21/2025.
 //
 
-#ifndef TETISENGINE_TETRIS_CONFIG_H
-#define TETISENGINE_TETRIS_CONFIG_H
+#ifndef TETRISENGINE_TETRIS_CONFIG_H
+#define TETRISENGINE_TETRIS_CONFIG_H
 #pragma once
 
 class TetrisConfig {
@@ -133,4 +133,4 @@ public:
     }
 };
 
-#endif //TETISENGINE_TETRIS_CONFIG_H
+#endif //TETRISENGINE_TETRIS_CONFIG_H

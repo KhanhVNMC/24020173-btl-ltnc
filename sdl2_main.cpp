@@ -42,7 +42,7 @@ void process_input(SDL_Event& event, TetrisEngine* engine) {
 
 int main(int argc, char* argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow("BMP Partial Render",
+    SDL_Window* window = SDL_CreateWindow("Tetris - Nigga Edition",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                           1280, 720, SDL_WINDOW_SHOWN);
 
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
 
     auto *generator = new SevenBagGenerator(123);
     TetrisConfig* config = TetrisConfig::builder();
-    config->setLineClearsDelay(0.5);
+    config->setLineClearsDelay(0.35);
 
     auto *tetris = new TetrisEngine(config, generator);
 
@@ -75,6 +75,7 @@ int main(int argc, char* argv[]) {
     });
 
     tetris->start();
+
     // Cleanup
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

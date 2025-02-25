@@ -29,11 +29,11 @@ particle_unit spawn_spewing_particle(
 }
 
 
-const double GRAVITY_FACTOR = 0.5 * 9.8; // 9.8m/s^2
-double xOffsetFunction(const particle_unit* particle, const int64_t currentTick, const int epsilon) {
-    return particle->x0 + (particle->initial_x_velocity * currentTick) + epsilon;
+constexpr double GRAVITY_FACTOR = 0.5 * 9.8; // 9.8m/s^2
+double xOffsetFunction(const particle_unit* particle, const double currentTick, const int epsilon) {
+    return (particle->x0 + (particle->initial_x_velocity * currentTick) + epsilon);
 }
 
-double yOffsetFunction(const particle_unit* particle, const int64_t currentTick, const int beta) {
-    return particle->y0 + (particle->initial_y_velocity * currentTick) - (GRAVITY_FACTOR * currentTick * currentTick) + beta;
+double yOffsetFunction(const particle_unit* particle, const double currentTick, const int beta) {
+    return (particle->y0 + (particle->initial_y_velocity * currentTick) - (GRAVITY_FACTOR * currentTick * currentTick) + beta);
 }
