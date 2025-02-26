@@ -38,7 +38,7 @@
  * <br><b>DO NOT CHANGE THE TICK-RATE WITHOUT ADJUSTING OTHER VALUES!</b>
  */
 namespace EngineTimer {
-    static constexpr float TARGETTED_TICK_RATE = 144.0F; // 60 TPS (aka 60 FPS in "Tetris: The Grand Master")
+    static constexpr float TARGETTED_TICK_RATE = 60.0F; // 60 TPS (aka 60 FPS in "Tetris: The Grand Master")
     static constexpr double TICK_INTERVAL_MS = 1000.0F / TARGETTED_TICK_RATE; // in milliseconds
 }
 

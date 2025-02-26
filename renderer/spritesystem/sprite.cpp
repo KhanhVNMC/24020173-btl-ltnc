@@ -3,6 +3,7 @@
 //
 
 #include "sprite.h"
+#include <cmath>
 #include "../disk_cache.h"
 
 long RENDER_PASSES = 0;
@@ -36,7 +37,12 @@ void Sprite::scale(const double newScale) {
 }
 
 void Sprite::rotate(const int newRotation) {
-    this->rotationState = newRotation % 360;
+    this->rotationState = (newRotation + 360) % 360;
+}
+
+constexpr double PI = 3.14159265358979323846;
+void Sprite::setDirection(int x, int y) {
+    rotate(static_cast<int>(atan2(y - this->y, x - this->x) * 180.0 / PI) + 90);
 }
 
 void Sprite::render(SDL_Renderer* renderer) {

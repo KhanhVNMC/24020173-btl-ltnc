@@ -44,11 +44,16 @@ public:
     void discard() const;
 
     [[nodiscard]] SpriteTexture* getTexture() const;
+
+    // basic movement & scaling
     void teleport(int x, int y);
     void rotate(int newRotation);
     void scale(double newScale);
-    virtual void onDrawCall() = 0;
 
+    // advanced
+    void setDirection(int x, int y);
+
+    virtual void onDrawCall() = 0;
     void render(SDL_Renderer* renderer);
 };
 

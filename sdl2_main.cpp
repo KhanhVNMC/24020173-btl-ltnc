@@ -100,10 +100,9 @@ int main(int argc, char* argv[]) {
 
         SDL_RenderClear(renderer);
         //SDL_RenderDrawLine(renderer, 100, 100, 100, 100);
-        //render_tetris_board(200, 20, renderer, tetris);
-        //render_tetris_board(660, 50, renderer, tetris2);
-
         SpritesRenderingPipeline::renderEverything(renderer);
+        render_tetris_board(200, 20, renderer, tetris);
+        //render_tetris_board(660, 50, renderer, tetris2);
 
         sprintfcdbg(renderer, tetris);
 
