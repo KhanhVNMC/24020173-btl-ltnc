@@ -1,0 +1,76 @@
+//
+// Created by GiaKhanhVN on 2/26/2025.
+//
+
+#ifndef SPRITE_H
+#define SPRITE_H
+#include <SDL_render.h>
+#include <unordered_map>
+
+typedef struct {
+    int x, y, rot;
+} SpriteLoc;
+
+static long SPRITES_OBJECT_POOL = 0;
+typedef struct {
+    int textureX, textureY;
+    int width, height;
+} SpriteTexture;
+
+class Sprite {
+public:
+    virtual ~Sprite() = default;
+protected:
+    int x = 0, y = 0;
+    int width = 0, height = 0;
+    SpriteTexture* texture = nullptr;
+
+    int rotationState = 0;
+    double scalar = 1;
+
+    int originalTextureX = 0, originalTextureY = 0;
+
+    const long spriteId;
+public:
+    Sprite(SpriteTexture* texture, const int width, const int height, const int initialRotation = 0) : spriteId(SPRITES_OBJECT_POOL++) {
+        this->texture = texture;
+        this->width = width;
+        this->height = height;
+        this->rotationState = initialRotation;
+    }
+
+    [[nodiscard]] SpriteLoc getLocation() const;
+    void spawn();
+    void discard() const;
+
+    [[nodiscard]] SpriteTexture* getTexture() const;
+    void teleport(int x, int y);
+    void rotate(int newRotation);
+    void scale(double newScale);
+    virtual void onDrawCall() = 0;
+
+    void render(SDL_Renderer* renderer);
+};
+
+extern long RENDER_PASSES;
+extern long OBJECT_POOL;
+extern std::unordered_map<long, Sprite*> ACTIVE_SPRITES;
+
+namespace SpritesRenderingPipeline {
+    static std::unordered_map<long, Sprite*>& getSprites() {
+        return ACTIVE_SPRITES;
+    }
+
+    static void renderEverything(SDL_Renderer* renderer) {
+        for (auto&[fst, snd]: ACTIVE_SPRITES) {
+            snd->render(renderer);
+        }
+        RENDER_PASSES++;
+    }
+
+    static long renderPasses() {
+        return RENDER_PASSES;
+    }
+}
+
+#endif //SPRITE_H

@@ -1,5 +1,5 @@
 //
-// Created by SONPHUONG on 2/25/2025.
+// Created by GiaKhanhVN on 2/25/2025.
 //
 
 #ifndef PARTICLES_H
