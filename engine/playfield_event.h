@@ -4,7 +4,6 @@
 
 #ifndef TETISENGINE_PLAYFIELD_EVENT_H
 #define TETISENGINE_PLAYFIELD_EVENT_H
-
 #include <vector>
 #include "tetrominoes.h"
 

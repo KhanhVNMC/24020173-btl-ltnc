@@ -29,6 +29,8 @@ void process_input(SDL_Event& event, TetrisEngine* engine) {
             case SDLK_t:
                 engine->raiseGarbage(3, 9);
                 break;
+            case SDLK_y:
+                show_status_title("", "single", 120);
             default:
                 break;
         }
@@ -93,7 +95,7 @@ int main(int argc, char* argv[]) {
 
         SDL_RenderClear(renderer);
         //SDL_RenderDrawLine(renderer, 100, 100, 100, 100);
-        render_tetris_board(60, 20, renderer, tetris);
+        render_tetris_board(200, 20, renderer, tetris);
         //render_tetris_board(660, 50, renderer, tetris2);
 
         sprintfcdbg(renderer, tetris);

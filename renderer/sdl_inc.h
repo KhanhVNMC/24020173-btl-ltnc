@@ -4,6 +4,8 @@
 
 #ifndef SDL_INC_H
 #define SDL_INC_H
+#include <utility>
+
 #include "../engine/tetris_engine.cpp"
 #include "disk_cache.h"
 
@@ -11,7 +13,7 @@
 #define FONT_SHEET "../assets/font.bmp"
 
 // begin text section
-char CHAR_LIST[68] = {
+inline char CHAR_LIST[68] = {
         ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.',
         '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=',
         '>', '?', '@','a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j','k', 'l','m','n',
@@ -19,11 +21,11 @@ char CHAR_LIST[68] = {
         '\\', ']', '^', '_', '{', '|', '}', '~'
 };
 
-std::unordered_map<char, int> CHAR_MAP;
+inline std::unordered_map<char, int> CHAR_MAP;
 // initialize the font system before use
-void initFontSystem() {
+inline void initFontSystem() {
     for (size_t i = 0; i < 68; i++) {
-        CHAR_MAP[CHAR_LIST[i]] = i;
+        CHAR_MAP[CHAR_LIST[i]] = static_cast<int>(i);
     }
 }
 
@@ -58,7 +60,7 @@ typedef struct {
 inline void render_component(SDL_Renderer* renderer, SDL_Texture* texture, const struct_render_component& component, const float opacity, const int angle = 0) {
     SDL_SetTextureAlphaMod(texture, static_cast<Uint8>(opacity * 255));
     if (angle > 0) {
-        SDL_RenderCopyEx(renderer, texture, &component.source, &component.dest, angle, NULL, SDL_FLIP_NONE);
+        SDL_RenderCopyEx(renderer, texture, &component.source, &component.dest, angle, nullptr, SDL_FLIP_NONE);
         return;
     }
     SDL_RenderCopy(renderer, texture, &component.source, &component.dest);
@@ -86,34 +88,43 @@ inline void render_component_tetromino(SDL_Renderer* renderer, const struct_rend
  * @param x, y coordinates
  * @param scale the scalar
  * @param c the character to put
+ * @param width
  * @return the struct ready for render
  */
-struct_render_component puts_component_char(int x, int y, double scale, char c) {
-    int sheetIndex = CHAR_MAP[c];
-    int sheetRow = (sheetIndex / 15);
+inline struct_render_component puts_component_char(const int x, const int y, const double scale, const char c, const int width = 18) {
+    const int sheetIndex = CHAR_MAP[c];
+    const int sheetRow = (sheetIndex / 15);
     return {
             {FONT_SHEET_X + ((FONT_WIDTH + 2) * (sheetIndex % 15)), FONT_SHEET_Y + (sheetRow * (FONT_HEIGHT - 2 + FONT_SHEET_GAP)), FONT_WIDTH, FONT_HEIGHT},
-            {x, y, static_cast<int>(18 * scale), static_cast<int>(14 * scale)},
+            {x, y, static_cast<int>(width * scale), static_cast<int>(14 * scale)},
     };
 }
 
 /**
  * too lazy
  */
-inline void render_component_string(SDL_Renderer* renderer, const int x, const int y, const string str, const double scalar = 5, const float opacity = 1.0f, const int strgap = 40) {
-    auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
+inline void render_component_string(SDL_Renderer* renderer, const int x, const int y, const string& str, const double scalar = 5, const float opacity = 1.0f, const int strgap = 40, const int width = 18) {
+    const auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
     for (int i = 0; i < str.length(); i++) {
-        render_component(renderer, texture, puts_component_char(x + (strgap * i), y, scalar, str[i]), opacity);
+        render_component(renderer, texture, puts_component_char(x + (strgap * i), y, scalar, str[i], width), opacity);
     }
 }
+
+inline void render_component_string_rvs(SDL_Renderer* renderer, const int x, const int y, const string& str, const double scalar = 5, const float opacity = 1.0f, const int strgap = 40, const int width = 18) {
+    const auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
+    for (int i = 0; i < str.length(); i++) {
+        render_component(renderer, texture, puts_component_char(x + (-strgap * i), y, scalar, str[str.length() - i - 1], width), opacity);
+    }
+}
+
 
 /***
  * too lazy
  */
 inline void render_component_chars(SDL_Renderer* renderer, const int x, const int y, const double opacity, const struct_render_component* components, int size) {
-    auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
+    const auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
     for (int i = 0; i < size; i++) {
-        render_component(renderer, texture, components[i], opacity);
+        render_component(renderer, texture, components[i], static_cast<float>(opacity));
     }
 }
 
@@ -132,12 +143,27 @@ constexpr int Y_OFFSET = MINO_SIZE * 4;
  * @param color the color of the tetromino (use the mapper for MinoType::)
  * @return the struct ready for render
  */
-struct_render_component puts_mino_at(const int offsetX, const int offsetY, const int bx, const int by, const int color) {
+inline struct_render_component puts_mino_at(const int offsetX, const int offsetY, const int bx, const int by, const int color) {
     return {
             {color * (30 + 1), 0, 30, 30}, // because the tetromino sprite is 30x30 with 1 pixel gap
             // what the fuck, magic numbers
             {offsetX + (MINO_SIZE * bx), offsetY + (MINO_SIZE * by), MINO_SIZE, MINO_SIZE}
     };
+}
+
+inline int SPRITES_FRAMES_LEFT[1] = {0};
+inline int SPRITES_FRAMES_TOTAL[1] = {0};
+inline int SPRITES_VAR_CACHE[1] = {0};
+
+#define PFE_SPRITE_INDEX 0
+
+inline string title, subtitle;
+inline void show_status_title(string _title, string _subtitle, const int frame) {
+    title = std::move(_title);
+    subtitle = std::move(_subtitle);
+    SPRITES_FRAMES_LEFT[PFE_SPRITE_INDEX] = frame;
+    SPRITES_FRAMES_TOTAL[PFE_SPRITE_INDEX] = frame;
+    SPRITES_VAR_CACHE[PFE_SPRITE_INDEX] = 0;
 }
 
 // properties
@@ -152,13 +178,16 @@ struct_render_component puts_mino_at(const int offsetX, const int offsetY, const
 inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, TetrisEngine* engine) {
     // render the board
     // white border around the playfield
-    const SDL_Rect borders[3] = {
+    const SDL_Rect borders[4] = {
             // left border
             { ox + PLAYFIELD_RENDER_OFFSET - BORDER_WIDTH, oy + (MINO_SIZE * 2), BORDER_WIDTH, MINO_SIZE * (BOARD_HEIGHT - 2) },
             // bottom border
-            { ox + PLAYFIELD_RENDER_OFFSET - BORDER_WIDTH, oy + (MINO_SIZE * BOARD_HEIGHT), MINO_SIZE * BOARD_WIDTH + (2 * BORDER_WIDTH), BORDER_WIDTH },
+            { ox + PLAYFIELD_RENDER_OFFSET - BORDER_WIDTH - 15, oy + (MINO_SIZE * BOARD_HEIGHT), MINO_SIZE * BOARD_WIDTH + (2 * BORDER_WIDTH) + 15, BORDER_WIDTH },
             // right border
-            { ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH), oy + (MINO_SIZE * 2), BORDER_WIDTH, MINO_SIZE * (BOARD_HEIGHT - 2) }
+            { ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH), oy + (MINO_SIZE * 2), BORDER_WIDTH, MINO_SIZE * (BOARD_HEIGHT - 2) },
+
+            // garbage border
+            { ox + PLAYFIELD_RENDER_OFFSET - BORDER_WIDTH - 15, oy + (MINO_SIZE * 2), BORDER_WIDTH, MINO_SIZE * (BOARD_HEIGHT - 2) },
     };
 
     // render the NEXT and HOLD headers
@@ -173,18 +202,18 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
             {ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH), oy + (Y_OFFSET / 2), (MINO_SIZE * 6), 40},
             // NEXT BORDERS
             {ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH) + (MINO_SIZE * 6) - BORDER_WIDTH, oy + (Y_OFFSET / 2) + 40, BORDER_WIDTH, 460}, // RIGHT
-            {ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH), oy + (Y_OFFSET / 2) + 500, (MINO_SIZE * 6), BORDER_WIDTH} // BTM
+            {ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH), oy + (Y_OFFSET / 2) + 500, (MINO_SIZE * 6), BORDER_WIDTH}, // BTM
     };
 
     // the board will pulse red once the 17th row has a mino in it
     if (!engine->isRowEmpty(DANGER_THRESHOLD)) {
         // pulsing red (based on tick rate)
-        double pulseStrength = ((sin(engine->ticksPassed * 0.1) + 2) / 4) + 0.25; // what the fuck
+        const double pulseStrength = ((sin(engine->ticksPassed * 0.1) + 2) / 4) + 0.25; // what the fuck
         SDL_SetRenderDrawColor(renderer, 255 * pulseStrength, 0, 0, 255); // red
     } else {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white
     }
-    SDL_RenderFillRects(renderer, borders, 3); // BOARD
+    SDL_RenderFillRects(renderer, borders, 4); // BOARD
     SDL_RenderFillRects(renderer, utilities, 6); // UTILS
     // reset the color to make sure the entire screen isn't white / red
     SDL_SetRenderDrawColor(renderer, 0,0,0,255);
@@ -194,8 +223,18 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
     render_component_string(renderer, ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH) + 65, oy + (Y_OFFSET / 2) + 5, "next", 2, 1, 26);
 
     // render sample text // TODO
-    render_component_string(renderer, ox - (MINO_SIZE), oy + (Y_OFFSET / 2) + 300, "t-spin", 1.5, 1, 20);
-    render_component_string(renderer, ox - (MINO_SIZE), oy + (Y_OFFSET / 2) + 325, "triple", 2, 1, 26);
+    if (SPRITES_FRAMES_LEFT[PFE_SPRITE_INDEX] > 0) {
+        const int totalTime = SPRITES_FRAMES_TOTAL[PFE_SPRITE_INDEX];
+        const int currentInterpolation = totalTime - SPRITES_FRAMES_LEFT[PFE_SPRITE_INDEX]--;
+
+        if ((currentInterpolation <= 20 && currentInterpolation % 3 == 0) || (currentInterpolation % 10 == 0)) {
+            SPRITES_VAR_CACHE[PFE_SPRITE_INDEX]++;
+        }
+        const float opacity = currentInterpolation > (totalTime * 0.75) ? (1 - (1.0F / (totalTime * 0.25F) * currentInterpolation)) : 1;
+
+        render_component_string_rvs(renderer, ox - (MINO_SIZE) + 140, oy + (Y_OFFSET / 2) + 300, title, 2, opacity, 15 + SPRITES_VAR_CACHE[PFE_SPRITE_INDEX], 12);
+        render_component_string_rvs(renderer, ox - (MINO_SIZE) + 135, oy + (Y_OFFSET / 2) + 330, subtitle, 2.75, opacity, 19 + SPRITES_VAR_CACHE[PFE_SPRITE_INDEX], 12);
+    }
 
     // render the HOLD piece
     MinoTypeEnum* heldPiece = engine->getHoldPiece();
@@ -215,7 +254,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
     // render the entire NEXT queue (5 pieces visible at once)
     // the X offset of the queue = holdPieceOffsetX + (board width = MINO_SIZE * 10) + padding
     int index = 0;
-    std::queue<MinoTypeEnum *> nextQueue = engine->getNextQueue();
+    std::queue<MinoTypeEnum* > nextQueue = engine->getNextQueue();
     while (!nextQueue.empty()) {
         const MinoTypeEnum *piece = nextQueue.front();
         nextQueue.pop();
