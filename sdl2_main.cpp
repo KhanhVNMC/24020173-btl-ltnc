@@ -1,7 +1,7 @@
 #include "sbg.h"
 #include "renderer/sdl_inc.h"
 #include "renderer/spritesystem/sprite.h"
-#include "renderer/enemies/bigblackbox.cpp"
+#include "renderer/entities/bigblackbox.cpp"
 
 void process_input(SDL_Event& event, TetrisEngine* engine) {
     if (event.type == SDL_KEYDOWN && !event.key.repeat) {  // Avoid key repeat events
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     TetrisConfig* config = TetrisConfig::builder();
     config->setLineClearsDelay(0.35);
 
-    Sprite* sprite = new BigBlackBox();
+    Sprite* sprite = new FlandreScarlet();
     sprite->spawn();
 
     auto *tetris = new TetrisEngine(config, generator);
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
         SDL_RenderClear(renderer);
         //SDL_RenderDrawLine(renderer, 100, 100, 100, 100);
         SpritesRenderingPipeline::renderEverything(renderer);
-        render_tetris_board(200, 20, renderer, tetris);
+        //render_tetris_board(200, 20, renderer, tetris);
         //render_tetris_board(660, 50, renderer, tetris2);
 
         sprintfcdbg(renderer, tetris);

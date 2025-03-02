@@ -10,6 +10,13 @@ long RENDER_PASSES = 0;
 long OBJECT_POOL = 0;
 std::unordered_map<long, Sprite*> ACTIVE_SPRITES;
 
+void Sprite::setupTexture(SpriteTexture* texture, const std::string& textureSpriteFile) {
+    this->textureSheetPath = textureSpriteFile;
+    this->texture = texture;
+    this->originalTextureX = texture->textureX;
+    this->originalTextureY = texture->textureY;
+}
+
 SpriteLoc Sprite::getLocation() const {
     return { x, y, rotationState };
 }
@@ -41,7 +48,7 @@ void Sprite::rotate(const int newRotation) {
 }
 
 constexpr double PI = 3.14159265358979323846;
-void Sprite::setDirection(int x, int y) {
+void Sprite::setDirection(const int x, const int y) {
     rotate(static_cast<int>(atan2(y - this->y, x - this->x) * 180.0 / PI) + 90);
 }
 
@@ -51,7 +58,7 @@ void Sprite::render(SDL_Renderer* renderer) {
     const SDL_Rect source = { this->texture->textureX, this->texture->textureY, this->texture->width, this->texture->height };
     const SDL_Rect dest = { this->x, this->y, static_cast<int>(this->width * scalar), static_cast<int>(this->height * scalar) };
 
-    const auto _textureSDL = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+    const auto _textureSDL = disk_cache::bmp_load_and_cache(renderer, textureSheetPath);
 
     if (this->rotationState == 0) {
         SDL_RenderCopy(renderer, _textureSDL, &source, &dest);

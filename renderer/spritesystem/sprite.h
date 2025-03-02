@@ -5,6 +5,7 @@
 #ifndef SPRITE_H
 #define SPRITE_H
 #include <SDL_render.h>
+#include <string>
 #include <unordered_map>
 
 typedef struct {
@@ -31,6 +32,7 @@ protected:
     int originalTextureX = 0, originalTextureY = 0;
 
     const long spriteId;
+    std::string textureSheetPath = "../assets/SPRITES.bmp";
 public:
     Sprite(SpriteTexture* texture, const int width, const int height, const int initialRotation = 0) : spriteId(SPRITES_OBJECT_POOL++) {
         this->texture = texture;
@@ -39,10 +41,27 @@ public:
         this->rotationState = initialRotation;
     }
 
+
+    void setupTexture(SpriteTexture* texture, const std::string& textureSpriteFile = "../assets/SPRITES.bmp");
+
+    /**
+     * @return the sprite Location object (x,y,rot)
+     */
     [[nodiscard]] SpriteLoc getLocation() const;
+
+    /**
+     * Insert this sprite to the global renderer proc
+     */
     void spawn();
+
+    /**
+     * Remove this sprite from th global renderer process
+     */
     void discard() const;
 
+    /**
+     * @return the texture obj
+     */
     [[nodiscard]] SpriteTexture* getTexture() const;
 
     // basic movement & scaling
@@ -53,6 +72,7 @@ public:
     // advanced
     void setDirection(int x, int y);
 
+    // event callers
     virtual void onDrawCall() = 0;
     void render(SDL_Renderer* renderer);
 };
