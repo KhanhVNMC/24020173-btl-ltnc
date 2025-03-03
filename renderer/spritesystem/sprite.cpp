@@ -8,13 +8,17 @@
 
 long RENDER_PASSES = 0;
 long OBJECT_POOL = 0;
-std::unordered_map<long, Sprite*> ACTIVE_SPRITES;
+std::map<long, Sprite*> ACTIVE_SPRITES;
 
 void Sprite::setupTexture(SpriteTexture* texture, const std::string& textureSpriteFile) {
     this->textureSheetPath = textureSpriteFile;
     this->texture = texture;
     this->originalTextureX = texture->textureX;
     this->originalTextureY = texture->textureY;
+}
+
+void Sprite::flipSprite(int newState) {
+    this->sdlFlipState = newState;
 }
 
 SpriteLoc Sprite::getLocation() const {
@@ -60,10 +64,10 @@ void Sprite::render(SDL_Renderer* renderer) {
 
     const auto _textureSDL = disk_cache::bmp_load_and_cache(renderer, textureSheetPath);
 
-    if (this->rotationState == 0) {
+    if (this->rotationState == 0 && this->sdlFlipState == SDL_FLIP_NONE) {
         SDL_RenderCopy(renderer, _textureSDL, &source, &dest);
         return;
     }
-    SDL_RenderCopyEx(renderer, _textureSDL, &source, &dest, rotationState, nullptr, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(renderer, _textureSDL, &source, &dest, this->rotationState, nullptr,static_cast<const SDL_RendererFlip>(this->sdlFlipState));
 }
 

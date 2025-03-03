@@ -51,29 +51,34 @@ void process_input(SDL_Event& event, TetrisEngine* engine) {
     render_component_string(renderer, 1000, 670, str, 2, 1, 26);
 
     char buffer2[50];
-    snprintf(buffer2, sizeof(buffer2), "etl: %.2f", ((float) tetris->lastTickTime));
+    snprintf(buffer2, sizeof(buffer2), "cpu: %.2f", ((float) tetris->lastTickTime));
     std::string str2(buffer2);
     render_component_string(renderer, 1000, 630, str2, 2, 1, 26);
 
     char buffer3[50];
-    snprintf(buffer3, sizeof(buffer3), "cpu: %.0f ms", tetris->dActualSleepTime);
+    snprintf(buffer3, sizeof(buffer3), "asl: %.0f ms", tetris->dActualSleepTime);
     std::string str3(buffer3);
     render_component_string(renderer, 1000, 590, str3, 2, 1, 26);
 
     char buffer4[50];
-    snprintf(buffer4, sizeof(buffer4), "tsl: %.2f", ((float) tetris->dExpectedSleepTime));
+    snprintf(buffer4, sizeof(buffer4), "esl: %.2f", ((float) tetris->dExpectedSleepTime));
     std::string str4(buffer4);
     render_component_string(renderer, 1000, 550, str4, 2, 1, 26);
 
-    render_component_string(renderer, 980, 510, "engine metrics", 1.5, 1, 20);
+    char buffer5[50];
+    snprintf(buffer5, sizeof(buffer5), "spr: %d", SpritesRenderingPipeline::getSprites().size());
+    std::string str5(buffer5);
+    render_component_string(renderer, 1000, 510, str5, 2, 1, 26);
+
+    render_component_string(renderer, 980, 470, "engine metrics", 1.5, 1, 20);
 }
 
 int main(int argc, char* argv[]) {
     initFontSystem();
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow("Tetris - Nigga Edition",
+    SDL_Window* window = SDL_CreateWindow("Tetris: Galaxy War",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                          1280, 720, SDL_WINDOW_SHOWN);
+                                          1720, 860, SDL_WINDOW_SHOWN);
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -85,7 +90,19 @@ int main(int argc, char* argv[]) {
     TetrisConfig* config = TetrisConfig::builder();
     config->setLineClearsDelay(0.35);
 
-    Sprite* sprite = new FlandreScarlet();
+    Sprite* background = new BackgroundScroll(SDL_FLIP_NONE, 0, 0, 2);
+    background->spawn();
+    Sprite* background2 = new BackgroundScroll(SDL_FLIP_NONE, 1536, 0, 2);
+    background2->spawn();
+
+    Sprite* background3 = new BackgroundScroll(SDL_FLIP_HORIZONTAL, 0, 0, 3);
+    background3->spawn();
+
+    Sprite* background4 = new BackgroundScroll(SDL_FLIP_HORIZONTAL, 1536, 0, 3);
+    background4->spawn();
+
+    Sprite* sprite = new FlandreScarlet(SDL_FLIP_HORIZONTAL);
+    sprite->teleport(100, 150);
     sprite->spawn();
 
     auto *tetris = new TetrisEngine(config, generator);
@@ -99,10 +116,8 @@ int main(int argc, char* argv[]) {
         }
 
         SDL_RenderClear(renderer);
-        //SDL_RenderDrawLine(renderer, 100, 100, 100, 100);
         SpritesRenderingPipeline::renderEverything(renderer);
-        //render_tetris_board(200, 20, renderer, tetris);
-        //render_tetris_board(660, 50, renderer, tetris2);
+        render_tetris_board(50, 20, renderer, tetris);
 
         sprintfcdbg(renderer, tetris);
 

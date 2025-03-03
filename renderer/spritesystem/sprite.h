@@ -6,7 +6,7 @@
 #define SPRITE_H
 #include <SDL_render.h>
 #include <string>
-#include <unordered_map>
+#include <map>
 
 typedef struct {
     int x, y, rot;
@@ -33,6 +33,8 @@ protected:
 
     const long spriteId;
     std::string textureSheetPath = "../assets/SPRITES.bmp";
+
+    int sdlFlipState = SDL_FLIP_NONE;
 public:
     Sprite(SpriteTexture* texture, const int width, const int height, const int initialRotation = 0) : spriteId(SPRITES_OBJECT_POOL++) {
         this->texture = texture;
@@ -71,6 +73,7 @@ public:
 
     // advanced
     void setDirection(int x, int y);
+    void flipSprite(int newState);
 
     // event callers
     virtual void onDrawCall() = 0;
@@ -79,10 +82,10 @@ public:
 
 extern long RENDER_PASSES;
 extern long OBJECT_POOL;
-extern std::unordered_map<long, Sprite*> ACTIVE_SPRITES;
+extern std::map<long, Sprite*> ACTIVE_SPRITES;
 
 namespace SpritesRenderingPipeline {
-    static std::unordered_map<long, Sprite*>& getSprites() {
+    static std::map<long, Sprite*>& getSprites() {
         return ACTIVE_SPRITES;
     }
 
