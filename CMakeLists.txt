@@ -21,6 +21,6 @@ add_executable(tetisengine
         renderer/spritesystem/sprite.cpp
         renderer/spritesystem/sprite.h
         renderer/entities/bigblackbox.cpp
-)
+        renderer/tetris_player.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY} winmm opengl32)

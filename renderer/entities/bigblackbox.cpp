@@ -7,25 +7,31 @@
 
 class FlandreScarlet final : public Sprite {
 public:
-    explicit FlandreScarlet(const SDL_RendererFlip flip, const int width = 50, const int height = 50, const int initialRotation = 0): Sprite(nullptr, width, height, initialRotation) {
+    explicit FlandreScarlet(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 50, const int height = 50, const int initialRotation = 0): Sprite(nullptr, width, height, initialRotation) {
         this->setupTexture(new SpriteTexture{ 0, 41, 110, 93 }, "../assets/flandre.bmp");
-        this->x = 100;
-        this->y = 100;
+        this->x = 0;
+        this->y = 0;
         this->scale(5);
         this->flipSprite(flip);
+    }
+
+    int strictX;
+    int strictY;
+    void teleportStrict(int sx, int sy) {
+        this->strictX = sx;
+        this->strictY = sy;
     }
 
     int calls = 0;
     int frames = 0;
     void onDrawCall() override {
         this->texture->textureX = this->originalTextureX + (128 * calls);
-        //this->teleport(x, 100 + (sin(frames / 20.0) * 40));
+        this->teleport(strictX, strictY + (sin(frames / 20.0) * 5));
         if (frames % 5 == 0) {
             calls = (calls + 1) % 8;
         }
         ++frames;
     }
-
 
     ~FlandreScarlet() override {
         delete this->texture;
@@ -50,7 +56,7 @@ public:
     void onDrawCall() override {
         this->x -= spriteScrollSpeed;
         // if the starmap scrolls pass its ending (edge), snap it back to its "offscreen-right" location
-        if (x == -texture->width * scalar) {
+        if (x <= -texture->width * scalar) {
             x = texture->width * scalar;
         }
     }

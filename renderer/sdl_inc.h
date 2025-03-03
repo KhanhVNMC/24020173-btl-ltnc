@@ -301,5 +301,4 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
         }
     }
 }
-
 #endif //SDL_INC_H
