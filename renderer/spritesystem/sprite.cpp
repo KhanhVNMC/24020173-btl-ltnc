@@ -9,6 +9,7 @@
 long RENDER_PASSES = 0;
 long OBJECT_POOL = 0;
 std::map<long, Sprite*> ACTIVE_SPRITES;
+bool SUSPEND_BACKGROUND = true;
 
 void Sprite::setupTexture(SpriteTexture* texture, const std::string& textureSpriteFile) {
     this->textureSheetPath = textureSpriteFile;

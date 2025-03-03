@@ -4,6 +4,7 @@
 
 #include "../spritesystem/sprite.h"
 #include <cmath>
+#include <iostream>
 
 class FlandreScarlet final : public Sprite {
 public:
@@ -15,6 +16,10 @@ public:
         this->flipSprite(flip);
     }
 
+    /**
+     * The ACTUAL X AND Y POSITIONS, THE PROVIDED SPRITE::X AND ::Y IS FOR
+     * ANIMATION PURPOSES!!!
+     */
     int strictX;
     int strictY;
     void teleportStrict(int sx, int sy) {
@@ -22,17 +27,92 @@ public:
         this->strictY = sy;
     }
 
-    int calls = 0;
+    int targetMoveX = -1;
+    int targetMoveY = -1;
+    int speed = 1;
+    /**
+     * Ease smoothly from one point to another
+     * @param targetX
+     * @param targetY
+     * @param speed_ pixel per frame
+     */
+    void moveSmooth(int targetX, int targetY, int speed_ = 5) {
+        targetMoveX = targetX;
+        targetMoveY = targetY;
+        this->speed = speed_;
+
+        bool moveRight = (targetMoveX > strictX);
+        if (moveRight) {
+            setAnimation(RUN_FORWARD);
+        } else {
+            setAnimation(RUN_BACKWARD);
+        }
+    }
+
+    int maxOffset;
+    int frameSpeed;
+    typedef enum {
+        IDLE,
+        RUN_FORWARD,
+        RUN_BACKWARD,
+    } Animation;
+
+    void setAnimation(int animation) {
+        // reset state
+        textureOffset = 0;
+        // set
+        if (animation == IDLE) {
+            this->texture->textureY = 41;
+            frameSpeed = 5;
+            maxOffset = 8; // there's 8 sprites
+            return;
+        }
+
+        if (animation == RUN_FORWARD) {
+            this->texture->textureY = 136;
+            frameSpeed = 5;
+            maxOffset = 4; // there's 4 sprites
+            return;
+        }
+
+        if (animation == RUN_BACKWARD) {
+            this->texture->textureY = 225;
+            frameSpeed = 5;
+            maxOffset = 4; // there's 4 sprites
+            return;
+        }
+    }
+
     int frames = 0;
+    int textureOffset;
     void onDrawCall() override {
-        this->texture->textureX = this->originalTextureX + (128 * calls);
+        processMove();
+        this->texture->textureX = this->originalTextureX + (128 * textureOffset);
         this->teleport(strictX, strictY + (sin(frames / 20.0) * 5));
-        if (frames % 5 == 0) {
-            calls = (calls + 1) % 8;
+        if (frames % frameSpeed == 0) {
+            textureOffset = (textureOffset + 1) % maxOffset;
         }
         ++frames;
     }
+private:
+    void processMove() {
+        if (targetMoveX == -1 && targetMoveY == -1) return;
 
+        if (targetMoveX != -1 && targetMoveX != strictX) {
+            strictX += targetMoveX > strictX ? speed : -speed;
+        } else {
+            targetMoveX = -1;
+        }
+
+        std::cout << targetMoveY << " " << strictY << std::endl;
+        if (targetMoveY != -1 && targetMoveY != strictY) {
+            strictY += targetMoveY > strictY ? speed : -speed;
+        } else {
+            targetMoveY = -1;
+        }
+    }
+
+public:
     ~FlandreScarlet() override {
         delete this->texture;
     }
@@ -54,7 +134,8 @@ public:
     int calls = 0;
     int frames = 0;
     void onDrawCall() override {
-        this->x -= spriteScrollSpeed;
+        int speed = spriteScrollSpeed;
+        this->x -= speed;
         // if the starmap scrolls pass its ending (edge), snap it back to its "offscreen-right" location
         if (x <= -texture->width * scalar) {
             x = texture->width * scalar;

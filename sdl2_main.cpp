@@ -1,8 +1,18 @@
 #include "sbg.h"
 #include "renderer/sdl_inc.h"
-#include "renderer/tetris_player.cpp"
+#include "renderer/tetris_player.h"
+#include <windows.h>
+#include <iostream>
+
+void AttachConsoleToSDL() {
+    AllocConsole();  // Create a console
+    freopen("CONOUT$", "w", stdout);  // Redirect stdout
+    freopen("CONOUT$", "w", stderr);  // Redirect stderr
+    freopen("CONIN$", "r", stdin);    // Redirect stdin
+}
 
 int main(int argc, char* argv[]) {
+    AttachConsoleToSDL();
     initFontSystem();
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Tetris: Imaginary War",
