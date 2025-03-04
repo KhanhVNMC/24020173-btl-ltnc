@@ -11,6 +11,19 @@
  * @author GiaKhanhVN (24020173)
  * @porter GiaKhanhVN (24020173)
  * @portedFrom Java (Java 16 LTS)
+ *
+ * @copyright STRICTLY PROHIBITED FROM COPYING OR REDISTRIBUTION<br>
+ *<br>
+ * THIS PROJECT IS PROVIDED SOLELY FOR ACADEMIC REVIEW AND GRADING PURPOSES.<br>
+ *<br>
+ * YOU ARE NOT PERMITTED TO:<br>
+ * - Copy, distribute, or modify this project in any form.<br>
+ * - Claim ownership or authorship of this work.<br>
+ * - Use any portion of this code outside of its intended academic purpose.<br>
+ *<br>
+ * VIOLATORS MAY FACE ACADEMIC DISCIPLINARY ACTION OR LEGAL CONSEQUENCES.<br>
+ *<br>
+ * This project remains the intellectual property of <b>GiaKhanhVN</b> UNTIL released under GPL!
  */
 #ifndef TETRIS_ENGINE_CPP
 #define TETRIS_ENGINE_CPP
