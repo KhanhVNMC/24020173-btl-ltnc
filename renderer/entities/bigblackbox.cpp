@@ -22,7 +22,13 @@ public:
      */
     int strictX;
     int strictY;
-    void teleportStrict(int sx, int sy) {
+
+    /**
+     * Teleport and shit
+     * @param sx target x
+     * @param sy target y
+     */
+    void teleportStrict(const int sx, const int sy) {
         this->strictX = sx;
         this->strictY = sy;
     }
@@ -36,13 +42,12 @@ public:
      * @param targetY
      * @param speed_ pixel per frame
      */
-    void moveSmooth(int targetX, int targetY, int speed_ = 5) {
+    void moveSmooth(const int targetX, const int targetY, const int speed_ = 5) {
         targetMoveX = targetX;
         targetMoveY = targetY;
         this->speed = speed_;
 
-        bool moveRight = (targetMoveX > strictX);
-        if (moveRight) {
+        if (targetMoveX > strictX) {
             setAnimation(RUN_FORWARD);
         } else {
             setAnimation(RUN_BACKWARD);
@@ -57,7 +62,7 @@ public:
         RUN_BACKWARD,
     } Animation;
 
-    void setAnimation(int animation) {
+    void setAnimation(const int animation) {
         // reset state
         textureOffset = 0;
         // set
@@ -88,7 +93,7 @@ public:
     void onDrawCall() override {
         processMove();
         this->texture->textureX = this->originalTextureX + (128 * textureOffset);
-        this->teleport(strictX, strictY + (sin(frames / 20.0) * 5));
+        this->teleport(strictX, static_cast<int>(strictY + (sin(frames / 20.0) * 5)));
         if (frames % frameSpeed == 0) {
             textureOffset = (textureOffset + 1) % maxOffset;
         }
@@ -134,11 +139,10 @@ public:
     int calls = 0;
     int frames = 0;
     void onDrawCall() override {
-        int speed = spriteScrollSpeed;
-        this->x -= speed;
+        this->x -= spriteScrollSpeed;
         // if the starmap scrolls pass its ending (edge), snap it back to its "offscreen-right" location
         if (x <= -texture->width * scalar) {
-            x = texture->width * scalar;
+            x = static_cast<int>(texture->width * scalar);
         }
     }
 
