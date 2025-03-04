@@ -9,10 +9,33 @@
 #ifndef TETRIS_PLAYER_CPP
 #define TETRIS_PLAYER_CPP
 
+static int TETRIS_SCORE[5] = { 0,40, 100, 300, 1200 }; // score for each line clears
+static int LEVEL_THRESHOLD = 10; // advance every X levels
+static double LEVELS_GRAVITY[16] = { // speed of each level
+        0, // lvl 0 does not exist
+        0.01667,
+        0.021017,
+        0.026977,
+        0.035256,
+        0.04693,
+        0.06361,
+        0.0879,
+        0.1236,
+        0.1775,
+        0.2598,
+        0.388,
+        0.59,
+        0.92,
+        1.46,
+        2.36,
+};
+
 class TetrisPlayer {
     // internal engine
     TetrisEngine* tetrisEngine;
     queue<int> garbageQueue;
+    long long tetrisScore = 0;
+    int currentTetrisLevel = 0;
 
     long long firstPiecePlacedTime = -1;
     int piecesPlaced = 0;
@@ -48,6 +71,9 @@ public:
         });
         this->tetrisEngine->onPlayfieldEvent([&](PlayfieldEvent event) { playFieldEvent(event); });
 
+        // init gravity to lvl 1
+        updateLevelAndGravity(1);
+
         // boot the engine up
         this->tetrisEngine->start();
     }
@@ -62,29 +88,60 @@ public:
         totalDamage += damage;
     }
 
-    int currentBackToBack;
+    void updateLevelAndGravity(int newLevel) {
+        currentTetrisLevel = newLevel;
+        // increase engine gravity
+        this->tetrisEngine->getCurrentConfig()->setGravity(LEVELS_GRAVITY[min(15, currentTetrisLevel)]);
+        this->tetrisEngine->updateMutableConfig();
+    }
+
+    int clearedLines = 0; // total cleared lines
+    int currentBackToBack = 0; // keep track of back to back(s)
     void playFieldEvent(const PlayfieldEvent& event) {
         const int cleared = (int)event.getLinesCleared().size();
-        // Check for back-to-back events
+
+        // CALCULATE DAMAGE AND SCORE
+        // update the amount of cleared lines
+        clearedLines += cleared;
+
+        // calculate classic tetris scores (ONLY if cleared > 0)
+        if (cleared >= 5) tetrisScore += 2460; // edge case
+        else if (cleared > 0) {
+            int score = (TETRIS_SCORE[event.isSpin() ? 4 : cleared] * currentTetrisLevel) * (event.isSpin() && cleared == 3 ? 1.5 : 1);
+            score += tetrisEngine->getComboCount() * 5;
+            score += max(0, currentBackToBack) * 10;
+
+            tetrisScore += score;
+            int newLevel = 1 + static_cast<int>(clearedLines / LEVEL_THRESHOLD);
+            if (newLevel <= 15 && newLevel != currentTetrisLevel) {
+                updateLevelAndGravity(newLevel);
+            }
+        }
+
+        // check for back-to-back events
         if (cleared >= 4 || ((event.isSpin() || event.isMiniSpin()) && cleared > 0)) {
-            currentBackToBack++; // Increase back-to-back count
+            currentBackToBack++; // increase back-to-back count
             //if (currentBackToBack >= 1) setTextFor(this.backToBackInd, "&6&lB2B x" + this.currentBackToBack); // Update the back-to-back indicator
         } else if (cleared > 0 && currentBackToBack > 0) {
             currentBackToBack = -1; // Reset back-to-back count
             //setTextFor(this.backToBackInd, "&c&lB2B x0"); // Update the back-to-back indicator
             //engine.scheduleDelayedTask(30, () -> setTextFor(this.backToBackInd, "")); // Clear back-to-back indicator after delay
         }
+
         // calculate damage throughput
         int baseDamage = cleared >= 4 ? cleared : (cleared <= 1 ? 0 : (cleared == 2 ? 1 : 2));
         // spin bonus
         if (event.isSpin()) {
             baseDamage = cleared * 2;
         }
+
         // b2b bonus
         baseDamage += max(0, currentBackToBack);
         // combo bonus (primitive)
         baseDamage += static_cast<int>((tetrisEngine->getComboCount()) * 0.5);
-        onDamageSend(baseDamage);
+
+        // fire event
+        if (baseDamage > 0) onDamageSend(baseDamage);
     }
 
     #define Y_OFFSET_STATISTICS 65
@@ -142,6 +199,15 @@ public:
         render_component_string_rvs(renderer, GRID_X_OFFSET + 147, GRID_Y_OFFSET + 405 + 2 * Y_OFFSET_STATISTICS, "time", 1.55, 1, 15, 14);
         render_component_string_rvs(renderer, GRID_X_OFFSET + 140, GRID_Y_OFFSET + 430 + 2 * Y_OFFSET_STATISTICS, msString, 2, 1, 17, 12);
         render_component_string_rvs(renderer, GRID_X_OFFSET + 60, GRID_Y_OFFSET + 420 + 2 * Y_OFFSET_STATISTICS, timeString, 2.75, 1, 22, 12);
+
+        // render VS Score
+        auto scoreString = str_printf("%012d", min(99999999999L, tetrisScore)); // limit to 12 chars
+        render_component_string(renderer, GRID_X_OFFSET + 170, GRID_Y_OFFSET + 605, scoreString, 3, 1, 27, 12);
+
+        // render speed lvl
+        auto levelString = str_printf("%02d/15", currentTetrisLevel); // limit to 12 chars
+        render_component_string(renderer, GRID_X_OFFSET + 500, GRID_Y_OFFSET + 380 + 2 * Y_OFFSET_STATISTICS, "speed lvl", 1.55, 1, 15, 14);
+        render_component_string(renderer, GRID_X_OFFSET + 500, GRID_Y_OFFSET + 405 + 2 * Y_OFFSET_STATISTICS, levelString, 2, 1, 17, 12);
     }
 
     void renderTetrisInterface(const int ox, const int oy) {

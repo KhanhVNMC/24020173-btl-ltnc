@@ -275,6 +275,15 @@ public:
     }
 
     /**
+     * Get the TetrisConfig pointer/reference currently being used
+     * by this instance
+     * @return a pointer to a heap based TetrisConfig
+     */
+    TetrisConfig* getCurrentConfig() {
+        return this->config;
+    }
+
+    /**
      * Updates mutable configuration settings for the Tetris Engine based on the current configuration
      * core {@link TetrisConfig}\endlink
      */
