@@ -228,7 +228,7 @@ public:
 
         SDL_RenderClear(renderer);
         SpritesRenderingPipeline::renderEverything(renderer);
-        renderTetrisInterface(100, 50);
+        renderTetrisInterface(static_cast<int>(100 + (sin(tetrisEngine->ticksPassed / 2.0) * 3)), 50);
 
         sprintfcdbg(this->tetrisEngine, static_cast<int>(SpritesRenderingPipeline::getSprites().size()));
         SDL_RenderPresent(renderer); // Show updated frame
