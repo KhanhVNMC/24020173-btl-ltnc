@@ -87,36 +87,77 @@ public:
         onDamageSend(baseDamage);
     }
 
-    void renderTetrisInterface(const int ox, const int oy) {
-        render_tetris_board(ox, oy, renderer, this->tetrisEngine);
+    #define Y_OFFSET_STATISTICS 65
+    void renderTetrisStatistics(const int ox, const int oy) {
+        const int GRID_X_OFFSET = ox - (MINO_SIZE);
+        const int GRID_Y_OFFSET = oy + (Y_OFFSET / 2);
+        // begin render statistics
 
         // render PPS
-        char ppsString[16];
         const double secondsElapsed = (System::currentTimeMillis() - firstPiecePlacedTime) / 1000.0;
-        snprintf(ppsString, sizeof(ppsString), "%.2f/s", firstPiecePlacedTime == -1 ? 0.0 : piecesPlaced / secondsElapsed);
+        auto ppsString = str_printf("%.2f/s", firstPiecePlacedTime == -1 ? 0.0 : piecesPlaced / secondsElapsed);
 
-        render_component_string_rvs(renderer, ox - (MINO_SIZE) + 147, oy + (Y_OFFSET / 2) + 425, "pieces", 1.55, 1, 15, 14);
-        render_component_string_rvs(renderer, ox - (MINO_SIZE) + 145, oy + (Y_OFFSET / 2) + 450, ppsString, 2, 1, 17, 12);
-        render_component_string_rvs(renderer, ox - (MINO_SIZE) + 25, oy + (Y_OFFSET / 2) + 440, std::to_string(piecesPlaced) + ".", 2.75, 1, 22, 12);
+        // render the text that tells PPS (PIECES PER SECOND)
+        /*
+         * TIME
+         * 0. 0.00/S
+         * [TOTAL PISSES]  [PPS]/S
+         */
+        render_component_string_rvs(renderer, GRID_X_OFFSET + 147, GRID_Y_OFFSET + 405, "pieces", 1.55, 1, 15, 14);
+        render_component_string_rvs(renderer, GRID_X_OFFSET + 145, GRID_Y_OFFSET + 430, ppsString, 2, 1, 17, 12);
+        render_component_string_rvs(renderer, GRID_X_OFFSET + 25, GRID_Y_OFFSET + 420, std::to_string(piecesPlaced) + ".", 2.75, 1, 22, 12);
 
         // render APM
-        char apmString[16];
         const double minutesElapsed = ((System::currentTimeMillis() - firstDamageInflictedTime) / 1000.0) / 60.0;
         const double apm = firstDamageInflictedTime == -1 ? 0.0 : totalDamage / minutesElapsed;
-        snprintf(apmString, sizeof(apmString), apm >= 100 ? "%.1f/m" : "%.2f/m", apm);
+        auto apmString = str_printf(apm >= 100 ? "%.1f/m" : "%.2f/m", apm);
 
-        render_component_string_rvs(renderer, ox - (MINO_SIZE) + 147, oy + (Y_OFFSET / 2) + 425 + 70, "attacks", 1.55, 1, 15, 14);
-        render_component_string_rvs(renderer, ox - (MINO_SIZE) + 140, oy + (Y_OFFSET / 2) + 450 + 70, apmString, 2, 1, 17, 12);
-        render_component_string_rvs(renderer, ox - (MINO_SIZE) + (apm >= 10 ? 0 : 20), oy + (Y_OFFSET / 2) + 440 + 70, std::to_string(min(9999, totalDamage)) + ".", 2.75, 1, 22, 12);
+        // render the text that tells APM (attacks per minute)
+        /*
+         * TIME
+         * 0. 0.00/M
+         * [TOTAL DAMAGE]  [APM]/M
+         */
+        render_component_string_rvs(renderer, GRID_X_OFFSET + 147, GRID_Y_OFFSET + 405 + Y_OFFSET_STATISTICS, "attacks", 1.55, 1, 15, 14);
+        render_component_string_rvs(renderer, GRID_X_OFFSET + 140, GRID_Y_OFFSET + 430 + Y_OFFSET_STATISTICS, apmString, 2, 1, 17, 12);
+        render_component_string_rvs(renderer, GRID_X_OFFSET + (apm >= 10 ? 0 : 20), GRID_Y_OFFSET + 420 + Y_OFFSET_STATISTICS, std::to_string(min(9999, totalDamage)) + ".", 2.75, 1, 22, 12);
+
+        // render time passed
+        const int64_t timePassedMs = System::currentTimeMillis() - tetrisEngine->startedAt;
+        const int64_t timePassedS  = timePassedMs / 1000;
+
+        const int64_t displayMs    = timePassedMs % 1000;
+        const int64_t displayMin   = timePassedS / 60;
+        const int64_t displaySec   = timePassedS % 60;
+
+        auto timeString      = str_printf("%02d:%02d", displayMin, displaySec);
+        auto msString        = str_printf(".%03d", displayMs);
+
+        // render the text that tells time, preview below
+        /*
+         * TIME
+         * 00:00 .000
+         * MM:SS .-MS
+         */
+        render_component_string_rvs(renderer, GRID_X_OFFSET + 147, GRID_Y_OFFSET + 405 + 2 * Y_OFFSET_STATISTICS, "time", 1.55, 1, 15, 14);
+        render_component_string_rvs(renderer, GRID_X_OFFSET + 140, GRID_Y_OFFSET + 430 + 2 * Y_OFFSET_STATISTICS, msString, 2, 1, 17, 12);
+        render_component_string_rvs(renderer, GRID_X_OFFSET + 60, GRID_Y_OFFSET + 420 + 2 * Y_OFFSET_STATISTICS, timeString, 2.75, 1, 22, 12);
     }
 
-    SDL_Event event;
+    void renderTetrisInterface(const int ox, const int oy) {
+        // render the board body first
+        render_tetris_board(ox, oy, renderer, this->tetrisEngine);
+        // and then the statistics
+        renderTetrisStatistics(ox, oy);
+    }
+
+    SDL_Event _event;
     void onTetrisTick() {
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
+        while (SDL_PollEvent(&_event)) {
+            if (_event.type == SDL_QUIT) {
                 exit(1);
             }
-            process_input(event, this->tetrisEngine);
+            process_input(_event, this->tetrisEngine);
         }
 
         SDL_RenderClear(renderer);

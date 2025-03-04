@@ -103,6 +103,7 @@ inline struct_render_component puts_component_char(const int x, const int y, con
 /**
  * too lazy
  */
+// render a string not in reverse
 inline void render_component_string(SDL_Renderer* renderer, const int x, const int y, const string& str, const double scalar = 5, const float opacity = 1.0f, const int strgap = 40, const int width = 18) {
     const auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
     for (int i = 0; i < str.length(); i++) {
@@ -110,6 +111,7 @@ inline void render_component_string(SDL_Renderer* renderer, const int x, const i
     }
 }
 
+// render a string but in reverse
 inline void render_component_string_rvs(SDL_Renderer* renderer, const int x, const int y, const string& str, const double scalar = 5, const float opacity = 1.0f, const int strgap = 40, const int width = 18) {
     const auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
     for (int i = 0; i < str.length(); i++) {
@@ -121,6 +123,7 @@ inline void render_component_string_rvs(SDL_Renderer* renderer, const int x, con
 /***
  * too lazy
  */
+// render individual characters
 inline void render_component_chars(SDL_Renderer* renderer, const int x, const int y, const double opacity, const struct_render_component* components, int size) {
     const auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
     for (int i = 0; i < size; i++) {
@@ -300,5 +303,20 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
             render_component_tetromino(renderer, puts_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, finalColor), ghostPiece ? 0.35 : 1);
         }
     }
+}
+
+inline static std::string str_printf(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    int size = std::vsnprintf(nullptr, 0, format, args);
+    va_end(args);
+    if (size < 0) {
+        return "";
+    }
+    std::vector<char> buffer(size + 1);
+    va_start(args, format);
+    std::vsnprintf(buffer.data(), buffer.size(), format, args);
+    va_end(args);
+    return std::string(buffer.data());
 }
 #endif //SDL_INC_H

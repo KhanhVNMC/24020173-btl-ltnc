@@ -83,7 +83,6 @@ public:
 extern long RENDER_PASSES;
 extern long OBJECT_POOL;
 extern std::map<long, Sprite*> ACTIVE_SPRITES;
-extern bool SUSPEND_BACKGROUND;
 
 namespace SpritesRenderingPipeline {
     static std::map<long, Sprite*>& getSprites() {
@@ -99,10 +98,6 @@ namespace SpritesRenderingPipeline {
 
     static long renderPasses() {
         return RENDER_PASSES;
-    }
-
-    static bool suspendBackground() {
-        return SUSPEND_BACKGROUND;
     }
 }
 
