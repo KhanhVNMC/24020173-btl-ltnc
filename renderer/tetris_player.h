@@ -151,7 +151,7 @@ public:
 
         // render PPS
         const double secondsElapsed = (System::currentTimeMillis() - firstPiecePlacedTime) / 1000.0;
-        auto ppsString = str_printf("%.2f/s", firstPiecePlacedTime == -1 ? 0.0 : piecesPlaced / secondsElapsed);
+        const auto ppsString = str_printf("%.2f/s", firstPiecePlacedTime == -1 ? 0.0 : piecesPlaced / secondsElapsed);
 
         // render the text that tells PPS (PIECES PER SECOND)
         /*
@@ -166,7 +166,7 @@ public:
         // render APM
         const double minutesElapsed = ((System::currentTimeMillis() - firstDamageInflictedTime) / 1000.0) / 60.0;
         const double apm = firstDamageInflictedTime == -1 ? 0.0 : totalDamage / minutesElapsed;
-        auto apmString = str_printf(apm >= 100 ? "%.1f/m" : "%.2f/m", apm);
+        const auto apmString = str_printf(apm >= 100 ? "%.1f/m" : "%.2f/m", apm);
 
         // render the text that tells APM (attacks per minute)
         /*
@@ -186,8 +186,8 @@ public:
         const int64_t displayMin   = timePassedS / 60;
         const int64_t displaySec   = timePassedS % 60;
 
-        auto timeString      = str_printf("%02d:%02d", displayMin, displaySec);
-        auto msString        = str_printf(".%03d", displayMs);
+        const auto timeString      = str_printf("%02d:%02d", displayMin, displaySec);
+        const auto msString        = str_printf(".%03d", displayMs);
 
         // render the text that tells time, preview below
         /*
@@ -200,13 +200,24 @@ public:
         render_component_string_rvs(renderer, GRID_X_OFFSET + 60, GRID_Y_OFFSET + 420 + 2 * Y_OFFSET_STATISTICS, timeString, 2.75, 1, 22, 12);
 
         // render VS Score
-        auto scoreString = str_printf("%012d", min(99999999999L, tetrisScore)); // limit to 12 chars
+        const auto scoreString = str_printf("%012d", min(99999999999L, tetrisScore)); // limit to 12 chars
         render_component_string(renderer, GRID_X_OFFSET + 170, GRID_Y_OFFSET + 605, scoreString, 3, 1, 27, 12);
 
         // render speed lvl
-        auto levelString = str_printf("%02d/15", currentTetrisLevel); // limit to 12 chars
+        const auto levelString = str_printf("%02d/15", currentTetrisLevel); // limit to 12 chars
         render_component_string(renderer, GRID_X_OFFSET + 500, GRID_Y_OFFSET + 380 + 2 * Y_OFFSET_STATISTICS, "speed lvl", 1.55, 1, 15, 14);
         render_component_string(renderer, GRID_X_OFFSET + 500, GRID_Y_OFFSET + 405 + 2 * Y_OFFSET_STATISTICS, levelString, 2, 1, 17, 12);
+    }
+
+    void renderGarbageQueue(const int ox, const int oy) {
+        const int GRID_X_OFFSET = ox - (MINO_SIZE) + 180;
+        const int GRID_Y_OFFSET = oy + (Y_OFFSET) + 530;
+        int yOffset = 0;
+
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // white
+        SDL_Rect sqr = { GRID_X_OFFSET, GRID_Y_OFFSET, 12, 10 };
+        SDL_RenderFillRect(renderer, &sqr);
+        SDL_SetRenderDrawColor(renderer, 0,0,0,255);
     }
 
     void renderTetrisInterface(const int ox, const int oy) {
@@ -214,6 +225,8 @@ public:
         render_tetris_board(ox, oy, renderer, this->tetrisEngine);
         // and then the statistics
         renderTetrisStatistics(ox, oy);
+        // render garbage queue
+        renderGarbageQueue(ox, oy);
     }
 
     SDL_Event _event;
