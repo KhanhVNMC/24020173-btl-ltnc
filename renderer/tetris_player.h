@@ -69,7 +69,7 @@ public:
             }
             this->piecesPlaced++;
         });
-        this->tetrisEngine->onPlayfieldEvent([&](PlayfieldEvent event) { playFieldEvent(event); });
+        this->tetrisEngine->onPlayfieldEvent([&](const PlayfieldEvent& event) { playFieldEvent(event); });
 
         // init gravity to lvl 1
         updateLevelAndGravity(1);
@@ -107,13 +107,12 @@ public:
         // calculate classic tetris scores (ONLY if cleared > 0)
         if (cleared >= 5) tetrisScore += 2460; // edge case
         else if (cleared > 0) {
-            int score = (TETRIS_SCORE[event.isSpin() ? 4 : cleared] * currentTetrisLevel) * (event.isSpin() && cleared == 3 ? 1.5 : 1);
+            double score = (TETRIS_SCORE[event.isSpin() ? 4 : cleared] * currentTetrisLevel) * (event.isSpin() && cleared == 3 ? 1.5 : 1);
             score += tetrisEngine->getComboCount() * 5;
             score += max(0, currentBackToBack) * 10;
 
-            tetrisScore += score;
-            int newLevel = 1 + static_cast<int>(clearedLines / LEVEL_THRESHOLD);
-            if (newLevel <= 15 && newLevel != currentTetrisLevel) {
+            tetrisScore += static_cast<long long>(score);
+            if (const int newLevel = 1 + (clearedLines / LEVEL_THRESHOLD); newLevel <= 15 && newLevel != currentTetrisLevel) {
                 updateLevelAndGravity(newLevel);
             }
         }
@@ -228,7 +227,7 @@ public:
 
         SDL_RenderClear(renderer);
         SpritesRenderingPipeline::renderEverything(renderer);
-        renderTetrisInterface(static_cast<int>(100 + (sin(tetrisEngine->ticksPassed / 2.0) * 3)), 50);
+        renderTetrisInterface(100, 50);
 
         sprintfcdbg(this->tetrisEngine, static_cast<int>(SpritesRenderingPipeline::getSprites().size()));
         SDL_RenderPresent(renderer); // Show updated frame
