@@ -13,6 +13,7 @@ typedef struct {
 } SpriteLoc;
 
 static long SPRITES_OBJECT_POOL = 0;
+
 typedef struct {
     int textureX, textureY;
     int width, height;
@@ -72,7 +73,7 @@ public:
     void scale(double newScale);
 
     // advanced
-    void setDirection(int x, int y);
+    [[maybe_unused]] void setDirection(int x, int y);
     void flipSprite(int newState);
 
     // event callers
@@ -81,7 +82,6 @@ public:
 };
 
 extern long RENDER_PASSES;
-extern long OBJECT_POOL;
 extern std::map<long, Sprite*> ACTIVE_SPRITES;
 
 namespace SpritesRenderingPipeline {

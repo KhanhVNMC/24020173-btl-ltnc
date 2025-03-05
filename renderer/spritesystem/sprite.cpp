@@ -4,10 +4,9 @@
 
 #include "sprite.h"
 #include <cmath>
-#include "../disk_cache.h"
+#include "../sdl_components.h"
 
 long RENDER_PASSES = 0;
-long OBJECT_POOL = 0;
 std::map<long, Sprite*> ACTIVE_SPRITES;
 
 void Sprite::setupTexture(SpriteTexture* texture, const std::string& textureSpriteFile) {
@@ -52,7 +51,8 @@ void Sprite::rotate(const int newRotation) {
 }
 
 constexpr double PI = 3.14159265358979323846;
-void Sprite::setDirection(const int x, const int y) {
+
+[[maybe_unused]] void Sprite::setDirection(const int x, const int y) {
     rotate(static_cast<int>(atan2(y - this->y, x - this->x) * 180.0 / PI) + 90);
 }
 
@@ -70,4 +70,5 @@ void Sprite::render(SDL_Renderer* renderer) {
     }
     SDL_RenderCopyEx(renderer, _textureSDL, &source, &dest, this->rotationState, nullptr,static_cast<const SDL_RendererFlip>(this->sdlFlipState));
 }
+
 

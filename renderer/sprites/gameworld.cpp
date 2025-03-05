@@ -4,11 +4,11 @@
 
 #include "../spritesystem/sprite.h"
 #include <cmath>
-#include <iostream>
 
 class FlandreScarlet final : public Sprite {
 public:
-    explicit FlandreScarlet(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 50, const int height = 50, const int initialRotation = 0): Sprite(nullptr, width, height, initialRotation) {
+    explicit FlandreScarlet(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 50, const int height = 50, const int initialRotation = 0)
+    : Sprite(nullptr, width, height, initialRotation) {
         this->setupTexture(new SpriteTexture{ 0, 41, 110, 93 }, "../assets/flandre.bmp");
         this->x = 0;
         this->y = 0;
@@ -18,13 +18,13 @@ public:
 
     /**
      * The ACTUAL X AND Y POSITIONS, THE PROVIDED SPRITE::X AND ::Y IS FOR
-     * ANIMATION PURPOSES!!!
+     * ANIMATION PURPOSES!!! (INDEPENDENT)
      */
     int strictX;
     int strictY;
 
     /**
-     * Teleport and shit
+     * Teleport and shit (instantly)
      * @param sx target x
      * @param sy target y
      */
@@ -33,8 +33,15 @@ public:
         this->strictY = sy;
     }
 
+    /**
+     * Target position for smooth movement
+     * -1 means no movement is in progress
+     */
     int targetMoveX = -1;
     int targetMoveY = -1;
+    /**
+     * Movement speed in pixels per frame (when you call moveSmooth you can fiddle with this)
+     */
     int speed = 1;
     /**
      * Ease smoothly from one point to another
@@ -88,28 +95,30 @@ public:
         }
     }
 
-    int frames = 0;
     int textureOffset;
     void onDrawCall() override {
         processMove();
+        // offset to render the sprite
         this->texture->textureX = this->originalTextureX + (128 * textureOffset);
-        this->teleport(strictX, static_cast<int>(strictY + (sin(frames / 20.0) * 5)));
-        if (frames % frameSpeed == 0) {
+
+        // sinusoidal (troi noi theo hinh sin)
+        this->teleport(strictX, static_cast<int>(strictY + (sin(SpritesRenderingPipeline::renderPasses() / 20.0) * 5)));
+
+        //advance animation frame if it's time
+        if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
             textureOffset = (textureOffset + 1) % maxOffset;
         }
-        ++frames;
     }
 private:
     void processMove() {
         if (targetMoveX == -1 && targetMoveY == -1) return;
-
+        // move towards the target x position
         if (targetMoveX != -1 && targetMoveX != strictX) {
             strictX += targetMoveX > strictX ? speed : -speed;
         } else {
             targetMoveX = -1;
         }
-
-        std::cout << targetMoveY << " " << strictY << std::endl;
+        // move towards the target Y position
         if (targetMoveY != -1 && targetMoveY != strictY) {
             strictY += targetMoveY > strictY ? speed : -speed;
         } else {
@@ -123,11 +132,15 @@ public:
     }
 };
 
+/**
+ * The star-night background (overlay on top of each other for parallax effect)
+ */
 class BackgroundScroll final : public Sprite {
 private:
     int spriteScrollSpeed = 2;
 public:
-    explicit BackgroundScroll(const SDL_RendererFlip flip, int x, int y, const int spriteScrollSpeed = 2, const int width = 512, const int height = 256, const int initialRotation = 0): Sprite(nullptr, width, height, initialRotation) {
+    explicit BackgroundScroll(const SDL_RendererFlip flip, int x, int y, const int spriteScrollSpeed = 2, const int width = 512, const int height = 256, const int initialRotation = 0):
+    Sprite(nullptr, width, height, initialRotation) {
         this->setupTexture(new SpriteTexture{ 0, 0, 512, 256 }, "../assets/starlight.bmp");
         this->x = x;
         this->y = y;
@@ -136,8 +149,6 @@ public:
         this->flipSprite(flip);
     }
 
-    int calls = 0;
-    int frames = 0;
     void onDrawCall() override {
         this->x -= spriteScrollSpeed;
         // if the starmap scrolls pass its ending (edge), snap it back to its "offscreen-right" location
@@ -145,7 +156,6 @@ public:
             x = static_cast<int>(texture->width * scalar);
         }
     }
-
 
     ~BackgroundScroll() override {
         delete this->texture;

@@ -3,8 +3,8 @@
 //
 #include "../sbg.h"
 #include "spritesystem/sprite.h"
-#include "sdl_inc.h"
-#include "entities/bigblackbox.cpp"
+#include "tetris_renderer.h"
+#include "sprites/gameworld.cpp"
 
 #ifndef TETRIS_PLAYER_CPP
 #define TETRIS_PLAYER_CPP
@@ -33,7 +33,7 @@ static double LEVELS_GRAVITY[16] = { // speed of each level
 class TetrisPlayer {
     // internal engine
     TetrisEngine* tetrisEngine;
-    queue<int> garbageQueue;
+    deque<int> garbageQueue;
     long long tetrisScore = 0;
     int currentTetrisLevel = 0;
 
@@ -210,13 +210,24 @@ public:
     }
 
     void renderGarbageQueue(const int ox, const int oy) {
-        const int GRID_X_OFFSET = ox - (MINO_SIZE) + 180;
-        const int GRID_Y_OFFSET = oy + (Y_OFFSET) + 530;
-        int yOffset = 0;
+        const int GBQ_X_OFFSET = ox - (MINO_SIZE) + 180;
+        const int GBQ_Y_OFFSET = oy + (Y_OFFSET) + 540;
 
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // white
-        SDL_Rect sqr = { GRID_X_OFFSET, GRID_Y_OFFSET, 12, 10 };
-        SDL_RenderFillRect(renderer, &sqr);
+        // to push the garbage up
+        int accumulatedY = 0;
+
+        // garbage is red
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // red
+        for (auto &garbo : garbageQueue) {
+            int toRisePixels = 30 * garbo; // each 30 pixels represent a line in the matrix (playfield)
+
+            // each new "heap" of garbage is rendered above the old one 2 pixels
+            SDL_Rect garbage = { GBQ_X_OFFSET, GBQ_Y_OFFSET - toRisePixels - accumulatedY, 12, toRisePixels };
+            accumulatedY += toRisePixels + 2;
+
+            SDL_RenderFillRect(renderer, &garbage);
+        }
+
         SDL_SetRenderDrawColor(renderer, 0,0,0,255);
     }
 

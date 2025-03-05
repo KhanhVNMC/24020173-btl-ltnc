@@ -1,5 +1,5 @@
 #include "sbg.h"
-#include "renderer/sdl_inc.h"
+#include "renderer/tetris_renderer.h"
 #include "renderer/tetris_player.h"
 #include <windows.h>
 #include <iostream>

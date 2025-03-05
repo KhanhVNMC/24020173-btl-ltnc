@@ -54,10 +54,18 @@ void TetrisPlayer::process_input(SDL_Event &event, TetrisEngine *engine) {
                 engine->hold();
                 break;
             case SDLK_t:
-                engine->raiseGarbage(3, 9);
+                garbageQueue.push_back(1 + std::rand() % 6);
                 break;
             case SDLK_y:
                 show_status_title("", "single", 120);
+                break;
+            case SDLK_e:
+                for (int i = 0; i < 3; i++) {
+                    tetrisEngine->scheduleDelayedTask(5 * i, [&] {
+                        tetrisEngine->raiseGarbage(1, 2);
+                    });
+                }
+                break;
             default:
                 break;
         }

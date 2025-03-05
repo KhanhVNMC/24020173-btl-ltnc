@@ -16,11 +16,11 @@ add_executable(tetisengine
         engine/javalibs/jsystemstd.h
         sbg.h
         sdl2_main.cpp
-        renderer/disk_cache.h
-        renderer/sdl_inc.h
+        renderer/sdl_components.h
+        renderer/tetris_renderer.h
         renderer/spritesystem/sprite.cpp
         renderer/spritesystem/sprite.h
-        renderer/entities/bigblackbox.cpp
-        renderer/tetris_player.h renderer/tetris_player.cpp)
+        renderer/sprites/gameworld.cpp
+        renderer/tetris_player.h renderer/tetris_player.cpp renderer/sprites/fontsprite.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY} winmm opengl32)

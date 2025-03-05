@@ -7,27 +7,7 @@
 #include <utility>
 
 #include "../engine/tetris_engine.cpp"
-#include "disk_cache.h"
-
-#define TETROMINOES "../assets/tetrominoes.bmp"
-#define FONT_SHEET "../assets/font.bmp"
-
-// begin text section
-inline char CHAR_LIST[68] = {
-        ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.',
-        '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=',
-        '>', '?', '@','a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j','k', 'l','m','n',
-        'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '[',
-        '\\', ']', '^', '_', '{', '|', '}', '~'
-};
-
-inline std::unordered_map<char, int> CHAR_MAP;
-// initialize the font system before use
-inline void initFontSystem() {
-    for (size_t i = 0; i < 68; i++) {
-        CHAR_MAP[CHAR_LIST[i]] = static_cast<int>(i);
-    }
-}
+#include "sdl_components.h"
 
 // because the internal Enums' ordinal and the sprite.bmp uses different indexes, we map INTERNAL -> BMP
 static unordered_map<int, int> TEXTURE_MAPPER = {
@@ -40,15 +20,6 @@ static unordered_map<int, int> TEXTURE_MAPPER = {
         { MinoType::T_MINO.ordinal, 6 },
         { MinoType::valuesLength + 1, 8} // garbage mino
 };
-
-/**
- * General purpose component used to put images
- * from RAM to VRAM
- */
-typedef struct {
-    SDL_Rect source;
-    SDL_Rect dest;
-} struct_render_component;
 
 /**
  * Render the given "struct_render_component"
@@ -74,30 +45,6 @@ inline void render_component(SDL_Renderer* renderer, SDL_Texture* texture, const
  */
 inline void render_component_tetromino(SDL_Renderer* renderer, const struct_render_component& mino, const float opacity) {
     render_component(renderer, disk_cache::bmp_load_and_cache(renderer, TETROMINOES), mino, opacity);
-}
-
-#define FONT_SHEET_X 1
-#define FONT_SHEET_Y 2
-#define FONT_SHEET_GAP 8
-
-#define FONT_WIDTH 18
-#define FONT_HEIGHT 14
-
-/**
- * Puts a single character on the renderer's screen (GPU too)
- * @param x, y coordinates
- * @param scale the scalar
- * @param c the character to put
- * @param width
- * @return the struct ready for render
- */
-inline struct_render_component puts_component_char(const int x, const int y, const double scale, const char c, const int width = 18) {
-    const int sheetIndex = CHAR_MAP[c];
-    const int sheetRow = (sheetIndex / 15);
-    return {
-            {FONT_SHEET_X + ((FONT_WIDTH + 2) * (sheetIndex % 15)), FONT_SHEET_Y + (sheetRow * (FONT_HEIGHT - 2 + FONT_SHEET_GAP)), FONT_WIDTH, FONT_HEIGHT},
-            {x, y, static_cast<int>(width * scale), static_cast<int>(14 * scale)},
-    };
 }
 
 /**
@@ -230,7 +177,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
         const int totalTime = SPRITES_FRAMES_TOTAL[PFE_SPRITE_INDEX];
         const int currentInterpolation = totalTime - SPRITES_FRAMES_LEFT[PFE_SPRITE_INDEX]--;
 
-        if ((currentInterpolation <= 20 && currentInterpolation % 3 == 0) || (currentInterpolation % 10 == 0)) {
+        if (engine->ticksPassed % 2 == 0) {
             SPRITES_VAR_CACHE[PFE_SPRITE_INDEX]++;
         }
         const float opacity = currentInterpolation > (totalTime * 0.75) ? (1 - (1.0F / (totalTime * 0.25F) * currentInterpolation)) : 1;
