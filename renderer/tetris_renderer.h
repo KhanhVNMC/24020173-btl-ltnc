@@ -103,21 +103,6 @@ inline struct_render_component puts_mino_at(const int offsetX, const int offsetY
     };
 }
 
-inline int SPRITES_FRAMES_LEFT[1] = {0};
-inline int SPRITES_FRAMES_TOTAL[1] = {0};
-inline int SPRITES_VAR_CACHE[1] = {0};
-
-#define PFE_SPRITE_INDEX 0
-
-inline string title, subtitle;
-inline void show_status_title(string _title, string _subtitle, const int frame) {
-    title = std::move(_title);
-    subtitle = std::move(_subtitle);
-    SPRITES_FRAMES_LEFT[PFE_SPRITE_INDEX] = frame;
-    SPRITES_FRAMES_TOTAL[PFE_SPRITE_INDEX] = frame;
-    SPRITES_VAR_CACHE[PFE_SPRITE_INDEX] = 0;
-}
-
 // properties
 #define BOARD_HEIGHT 22
 #define BOARD_WIDTH 10
@@ -173,20 +158,6 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
     // draw HOLD and NEXT text
     render_component_string(renderer, ox - (MINO_SIZE), oy + (Y_OFFSET / 2) + 5, "hold", 2, 1, 26);
     render_component_string(renderer, ox + PLAYFIELD_RENDER_OFFSET + (MINO_SIZE * BOARD_WIDTH) + 65, oy + (Y_OFFSET / 2) + 5, "next", 2, 1, 26);
-
-    // render sample text // TODO
-    if (SPRITES_FRAMES_LEFT[PFE_SPRITE_INDEX] > 0) {
-        const int totalTime = SPRITES_FRAMES_TOTAL[PFE_SPRITE_INDEX];
-        const int currentInterpolation = totalTime - SPRITES_FRAMES_LEFT[PFE_SPRITE_INDEX]--;
-
-        if (engine->ticksPassed % 2 == 0) {
-            SPRITES_VAR_CACHE[PFE_SPRITE_INDEX]++;
-        }
-        const float opacity = currentInterpolation > (totalTime * 0.75) ? (1 - (1.0F / (totalTime * 0.25F) * currentInterpolation)) : 1;
-
-        render_component_string_rvs(renderer, ox - (MINO_SIZE) + 140, oy + (Y_OFFSET / 2) + 300, title, 2, opacity, 15 + SPRITES_VAR_CACHE[PFE_SPRITE_INDEX], 12);
-        render_component_string_rvs(renderer, ox - (MINO_SIZE) + 135, oy + (Y_OFFSET / 2) + 330, subtitle, 2.75, opacity, 19 + SPRITES_VAR_CACHE[PFE_SPRITE_INDEX], 12);
-    }
 
     // render the HOLD piece
     MinoTypeEnum* heldPiece = engine->getHoldPiece();

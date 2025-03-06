@@ -60,14 +60,13 @@ public:
     void spawn();
 
     /**
-     * Remove this sprite from the global renderer process
-     *
-     * REMEMBER TO DELETE THE OBJECT IF ITS IN THE HEAP OTHERWISE IT WILL BLOW UP
+     * Remove this sprite from the global renderer process, YOU SHOULD
+     * NOT USE ANY REFERENCES/POINTERS TO THIS THIS CLASS AFTER discard()
      */
     void discard() const;
 
     /**
-     * @return the texture obj
+     * @return the texture obj (pointer)
      */
     [[nodiscard]] SpriteTexture* getTexture();
 

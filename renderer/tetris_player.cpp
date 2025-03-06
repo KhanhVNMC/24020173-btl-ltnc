@@ -57,7 +57,6 @@ void TetrisPlayer::process_input(SDL_Event &event, TetrisEngine *engine) {
                 garbageQueue.push_back(1 + std::rand() % 6);
                 break;
             case SDLK_y:
-                show_status_title("", "single", 120);
                 break;
             case SDLK_e:
                 for (int i = 0; i < 3; i++) {

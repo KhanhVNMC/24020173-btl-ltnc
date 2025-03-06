@@ -9,7 +9,7 @@
 #ifndef TETRIS_PLAYER_CPP
 #define TETRIS_PLAYER_CPP
 
-static int TETRIS_SCORE[5] = { 0,40, 100, 300, 1200 }; // score for each line clears
+static int TETRIS_SCORE[5] = { 0,50, 110, 630, 2300 }; // score for each type of line clears
 static int LEVEL_THRESHOLD = 10; // advance every X levels
 static double LEVELS_GRAVITY[16] = { // speed of each level
         0, // lvl 0 does not exist
@@ -89,7 +89,7 @@ public:
     }
 
     void updateLevelAndGravity(int newLevel) {
-        currentTetrisLevel = newLevel;
+        currentTetrisLevel = min(15, newLevel);
         // increase engine gravity
         this->tetrisEngine->getCurrentConfig()->setGravity(LEVELS_GRAVITY[min(15, currentTetrisLevel)]);
         this->tetrisEngine->updateMutableConfig();
@@ -105,14 +105,17 @@ public:
         clearedLines += cleared;
 
         // calculate classic tetris scores (ONLY if cleared > 0)
-        if (cleared >= 5) tetrisScore += 2460; // edge case
+        if (cleared >= 5) tetrisScore += 2860; // edge case??
         else if (cleared > 0) {
-            double score = (TETRIS_SCORE[event.isSpin() ? 4 : cleared] * currentTetrisLevel) * (event.isSpin() && cleared == 3 ? 1.5 : 1);
-            score += tetrisEngine->getComboCount() * 5;
-            score += max(0, currentBackToBack) * 10;
+            // a T-Spin double gives the same score as a TETRIS (QUAD)
+            // a T-Spin Single gives the same score as a TRIPLE
+            // a t-spin TRIPLE gives 1.5x score of TETRIS
+            double score = (TETRIS_SCORE[event.isSpin() ? (cleared == 2 ? 4 : 3) : cleared] * currentTetrisLevel) * (event.isSpin() && cleared == 3 ? 1.5 : 1);
+            score += tetrisEngine->getComboCount() * 5; // each combo gives +5
+            score += max(0, currentBackToBack) * 50; // each back to back gives +50 score
 
             tetrisScore += static_cast<long long>(score);
-            if (const int newLevel = 1 + (clearedLines / LEVEL_THRESHOLD); newLevel <= 15 && newLevel != currentTetrisLevel) {
+            if (const int newLevel = 1 + (clearedLines / LEVEL_THRESHOLD); newLevel != currentTetrisLevel) {
                 updateLevelAndGravity(newLevel);
             }
         }
@@ -204,6 +207,10 @@ public:
         render_component_string(renderer, GRID_X_OFFSET + 170, GRID_Y_OFFSET + 605, scoreString, 3, 1, 27, 12);
 
         // render speed lvl
+        /*
+         * SPEED LVL
+         * 0/15
+         */
         const auto levelString = str_printf("%02d/15", currentTetrisLevel); // limit to 12 chars
         render_component_string(renderer, GRID_X_OFFSET + 500, GRID_Y_OFFSET + 380 + 2 * Y_OFFSET_STATISTICS, "speed lvl", 1.55, 1, 15, 14);
         render_component_string(renderer, GRID_X_OFFSET + 500, GRID_Y_OFFSET + 405 + 2 * Y_OFFSET_STATISTICS, levelString, 2, 1, 17, 12);

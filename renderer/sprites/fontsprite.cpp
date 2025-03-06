@@ -6,12 +6,10 @@
 
 class RenComSprite : public Sprite {
      explicit RenComSprite(struct_render_component rc, const string& texturePath)
-     : Sprite({ rc.source.x, rc.source.y, rc.source.w, rc.source.h }, 0, 0, 0) {
+     : Sprite({ rc.source.x, rc.source.y, rc.source.w, rc.source.h }, rc.dest.w, rc.dest.h, 0) {
         this->setTextureFile(texturePath);
         this->x = rc.dest.x;
         this->y = rc.dest.y;
-        this->width = rc.dest.w;
-        this->height = rc.dest.h;
     }
 
     ~RenComSprite() override {}
