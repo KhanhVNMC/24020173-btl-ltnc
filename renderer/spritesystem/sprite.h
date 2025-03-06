@@ -7,6 +7,7 @@
 #include <SDL_render.h>
 #include <string>
 #include <map>
+#include <iostream>
 
 typedef struct {
     int x, y, rot;
@@ -25,7 +26,7 @@ public:
 protected:
     int x = 0, y = 0;
     int width = 0, height = 0;
-    SpriteTexture* texture = nullptr;
+    SpriteTexture texture{0, 0, 0, 0};
 
     int rotationState = 0;
     double scalar = 1;
@@ -37,15 +38,16 @@ protected:
 
     int sdlFlipState = SDL_FLIP_NONE;
 public:
-    Sprite(SpriteTexture* texture, const int width, const int height, const int initialRotation = 0) : spriteId(SPRITES_OBJECT_POOL++) {
-        this->texture = texture;
+    Sprite(SpriteTexture texture, const int width, const int height, const int initialRotation = 0) : spriteId(SPRITES_OBJECT_POOL++) {
         this->width = width;
         this->height = height;
         this->rotationState = initialRotation;
+        this->setupTexture(texture); // set up the texture for later use
+        this->x = this->y = 0; // default the location to 0, 0 (top left)
     }
 
-
-    void setupTexture(SpriteTexture* texture, const std::string& textureSpriteFile = "../assets/SPRITES.bmp");
+    void setTextureFile(const std::string& textureSpriteFile);
+    void setupTexture(SpriteTexture texture, const std::string& textureSpriteFile = "../assets/SPRITES.bmp");
 
     /**
      * @return the sprite Location object (x,y,rot)
@@ -58,14 +60,16 @@ public:
     void spawn();
 
     /**
-     * Remove this sprite from th global renderer process
+     * Remove this sprite from the global renderer process
+     *
+     * REMEMBER TO DELETE THE OBJECT IF ITS IN THE HEAP OTHERWISE IT WILL BLOW UP
      */
     void discard() const;
 
     /**
      * @return the texture obj
      */
-    [[nodiscard]] SpriteTexture* getTexture() const;
+    [[nodiscard]] SpriteTexture* getTexture();
 
     // basic movement & scaling
     void teleport(int x, int y);
@@ -79,6 +83,19 @@ public:
     // event callers
     virtual void onDrawCall() = 0;
     void render(SDL_Renderer* renderer);
+
+private:
+    bool heapAllocated;
+public:
+    static void* operator new(size_t size) {
+        void* ptr = ::operator new(size);
+        // do not allow this sprite to enter the rendering pipeline if it was NOT on the heap
+        ((Sprite*)ptr)->heapAllocated = true;
+        return ptr;
+    }
+    static void operator delete(void* ptr) {
+        ::operator delete(ptr);
+    }
 };
 
 extern long RENDER_PASSES;

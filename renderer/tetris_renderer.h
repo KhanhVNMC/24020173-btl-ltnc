@@ -22,7 +22,9 @@ static unordered_map<int, int> TEXTURE_MAPPER = {
 };
 
 /**
- * Render the given "struct_render_component"
+ * Render the given "struct_render_component", this will render a static sprite
+ * for dynamically maneuverable sprites, use {@link Sprite} (Heap allocated)
+ *
  * @param renderer the target SDL renderer
  * @param texture the texture (get from CACHE, BMP)
  * @param component the struct_render_component

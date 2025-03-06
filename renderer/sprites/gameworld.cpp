@@ -8,10 +8,8 @@
 class FlandreScarlet final : public Sprite {
 public:
     explicit FlandreScarlet(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 50, const int height = 50, const int initialRotation = 0)
-    : Sprite(nullptr, width, height, initialRotation) {
-        this->setupTexture(new SpriteTexture{ 0, 41, 110, 93 }, "../assets/flandre.bmp");
-        this->x = 0;
-        this->y = 0;
+    : Sprite({ 0, 41, 110, 93 }, width, height, initialRotation) {
+        this->setTextureFile("../assets/flandre.bmp");
         this->scale(5);
         this->flipSprite(flip);
     }
@@ -74,21 +72,21 @@ public:
         textureOffset = 0;
         // set
         if (animation == IDLE) {
-            this->texture->textureY = 41;
+            this->texture.textureY = 41;
             frameSpeed = 5;
             maxOffset = 8; // there's 8 sprites
             return;
         }
 
         if (animation == RUN_FORWARD) {
-            this->texture->textureY = 136;
+            this->texture.textureY = 136;
             frameSpeed = 5;
             maxOffset = 4; // there's 4 sprites
             return;
         }
 
         if (animation == RUN_BACKWARD) {
-            this->texture->textureY = 225;
+            this->texture.textureY = 225;
             frameSpeed = 5;
             maxOffset = 4; // there's 4 sprites
             return;
@@ -99,7 +97,7 @@ public:
     void onDrawCall() override {
         processMove();
         // offset to render the sprite
-        this->texture->textureX = this->originalTextureX + (128 * textureOffset);
+        this->texture.textureX = this->originalTextureX + (128 * textureOffset);
 
         // sinusoidal (troi noi theo hinh sin)
         this->teleport(strictX, static_cast<int>(strictY + (sin(SpritesRenderingPipeline::renderPasses() / 20.0) * 5)));
@@ -127,9 +125,7 @@ private:
     }
 
 public:
-    ~FlandreScarlet() override {
-        delete this->texture;
-    }
+    ~FlandreScarlet() override {}
 };
 
 /**
@@ -140,8 +136,8 @@ private:
     int spriteScrollSpeed = 2;
 public:
     explicit BackgroundScroll(const SDL_RendererFlip flip, int x, int y, const int spriteScrollSpeed = 2, const int width = 512, const int height = 256, const int initialRotation = 0):
-    Sprite(nullptr, width, height, initialRotation) {
-        this->setupTexture(new SpriteTexture{ 0, 0, 512, 256 }, "../assets/starlight.bmp");
+    Sprite({ 0, 0, 512, 256 }, width, height, initialRotation) {
+        this->setTextureFile("../assets/starlight.bmp");
         this->x = x;
         this->y = y;
         this->spriteScrollSpeed = spriteScrollSpeed;
@@ -152,12 +148,10 @@ public:
     void onDrawCall() override {
         this->x -= spriteScrollSpeed;
         // if the starmap scrolls pass its ending (edge), snap it back to its "offscreen-right" location
-        if (x <= -texture->width * scalar) {
-            x = static_cast<int>(texture->width * scalar);
+        if (x <= -texture.width * scalar) {
+            x = static_cast<int>(texture.width * scalar);
         }
     }
 
-    ~BackgroundScroll() override {
-        delete this->texture;
-    }
+    ~BackgroundScroll() override {}
 };

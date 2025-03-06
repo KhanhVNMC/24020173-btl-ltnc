@@ -1,0 +1,8 @@
+[master d72e007] project hierachy change 2 - old rencom = sprite
+ 12 files changed, 192 insertions(+), 141 deletions(-)
+ create mode 100644 new
+ delete mode 100644 renderer/disk_cache.h
+ create mode 100644 renderer/sdl_components.h
+ create mode 100644 renderer/sprites/fontsprite.cpp
+ rename renderer/{entities/bigblackbox.cpp => sprites/gameworld.cpp} (80%)
+ rename renderer/{sdl_inc.h => tetris_renderer.h} (87%)

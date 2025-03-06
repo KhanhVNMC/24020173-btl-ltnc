@@ -9,11 +9,15 @@
 long RENDER_PASSES = 0;
 std::map<long, Sprite*> ACTIVE_SPRITES;
 
-void Sprite::setupTexture(SpriteTexture* texture, const std::string& textureSpriteFile) {
+void Sprite::setTextureFile(const std::string& textureSpriteFile) {
     this->textureSheetPath = textureSpriteFile;
+}
+
+void Sprite::setupTexture(SpriteTexture texture, const std::string& textureSpriteFile) {
+    this->setTextureFile(textureSpriteFile);
     this->texture = texture;
-    this->originalTextureX = texture->textureX;
-    this->originalTextureY = texture->textureY;
+    this->originalTextureX = texture.textureX;
+    this->originalTextureY = texture.textureY;
 }
 
 void Sprite::flipSprite(int newState) {
@@ -25,16 +29,20 @@ SpriteLoc Sprite::getLocation() const {
 }
 
 void Sprite::spawn() {
+    if (!heapAllocated) {
+        throw logic_error("YOU CANNOT SPAWN STACK-ALLOCATED OBJECTS!!");
+    }
     SpritesRenderingPipeline::getSprites().insert({this->spriteId, this});
 }
 
 void Sprite::discard() const {
+    if (!heapAllocated) return;
     SpritesRenderingPipeline::getSprites().erase(this->spriteId);
     delete this;
 }
 
-SpriteTexture* Sprite::getTexture() const {
-    return texture;
+SpriteTexture* Sprite::getTexture() {
+    return &texture;
 }
 
 void Sprite::teleport(const int x, const int y) {
@@ -59,7 +67,7 @@ constexpr double PI = 3.14159265358979323846;
 void Sprite::render(SDL_Renderer* renderer) {
     this->onDrawCall();
 
-    const SDL_Rect source = { this->texture->textureX, this->texture->textureY, this->texture->width, this->texture->height };
+    const SDL_Rect source = { this->texture.textureX, this->texture.textureY, this->texture.width, this->texture.height };
     const SDL_Rect dest = { this->x, this->y, static_cast<int>(this->width * scalar), static_cast<int>(this->height * scalar) };
 
     const auto _textureSDL = disk_cache::bmp_load_and_cache(renderer, textureSheetPath);
