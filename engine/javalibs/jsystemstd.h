@@ -26,12 +26,12 @@ namespace System {
      * @warning I copied this from Java's offical doc
      */
     inline static LONG nanoTime() {
-        auto now = std::chrono::high_resolution_clock::now();
+        const auto now = std::chrono::high_resolution_clock::now();
         return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
     }
 
     /**
-    * Returns the current time in milliseconds.  Note that
+    * Returns the current time in milliseconds. Note that
     * while the unit of time of the return value is a millisecond,
     * the granularity of the value depends on the underlying
     * operating system and may be larger.  For example, many

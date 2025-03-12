@@ -13,14 +13,14 @@ void Sprite::setTextureFile(const std::string& textureSpriteFile) {
     this->textureSheetPath = textureSpriteFile;
 }
 
-void Sprite::setupTexture(SpriteTexture texture, const std::string& textureSpriteFile) {
+void Sprite::setupTexture(const SpriteTexture texture, const std::string& textureSpriteFile) {
     this->setTextureFile(textureSpriteFile);
     this->texture = texture;
     this->originalTextureX = texture.textureX;
     this->originalTextureY = texture.textureY;
 }
 
-void Sprite::flipSprite(int newState) {
+void Sprite::flipSprite(const int newState) {
     this->sdlFlipState = newState;
 }
 

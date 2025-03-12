@@ -65,6 +65,9 @@ public:
         IDLE,
         RUN_FORWARD,
         RUN_BACKWARD,
+        ATTACK_01,
+        ATTACK_02,
+        ATTACK_CRIT
     } Animation;
 
     void setAnimation(const int animation) {
@@ -91,6 +94,19 @@ public:
             maxOffset = 4; // there's 4 sprites
             return;
         }
+
+        if (animation == ATTACK_01) {
+            this->texture.textureY = 312;
+            this->texture.height = 128;
+            this->texture.width = 115;
+
+            this->height = 60;
+
+            frameSpeed = 5;
+            maxOffset = 4; // there's 4 sprites
+        }
+
+
     }
 
     int textureOffset;
@@ -125,7 +141,7 @@ private:
     }
 
 public:
-    ~FlandreScarlet() override {}
+    ~FlandreScarlet() override = default;
 };
 
 /**
@@ -152,5 +168,14 @@ public:
         }
     }
 
-    ~BackgroundScroll() override {}
+    ~BackgroundScroll() override = default;
+};
+
+class SpikyBallMonster : public Sprite {
+    explicit SpikyBallMonster(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 50, const int height = 50, const int initialRotation = 0)
+    : Sprite({ 0, 41, 110, 93 }, width, height, initialRotation) {
+        this->setTextureFile("../assets/spiky.bmp");
+        this->scale(5);
+        this->flipSprite(flip);
+    }
 };

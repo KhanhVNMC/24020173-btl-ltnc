@@ -1186,7 +1186,7 @@ inline void TetrisEngine::moveCellOnGameGravity() {
     }
 }
 
-inline void TetrisEngine::updatePlayfieldState(Tetromino *locked) {
+inline void TetrisEngine::updatePlayfieldState(Tetromino* locked) {
     // flags for the event
     bool isSpin = false;
     bool isMiniSpin = false;
