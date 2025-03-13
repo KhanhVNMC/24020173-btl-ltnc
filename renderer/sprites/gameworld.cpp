@@ -3,8 +3,10 @@
 //
 
 #include "../spritesystem/sprite.h"
+#include <functional>
 #include <cmath>
 
+using namespace std;
 class FlandreScarlet final : public Sprite {
 public:
     explicit FlandreScarlet(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 50, const int height = 50, const int initialRotation = 0)
@@ -47,10 +49,11 @@ public:
      * @param targetY
      * @param speed_ pixel per frame
      */
-    void moveSmooth(const int targetX, const int targetY, const int speed_ = 5) {
+    void moveSmooth(const int targetX, const int targetY, const function<void()> onComplete = nullptr, const int speed_ = 5) {
         targetMoveX = targetX;
         targetMoveY = targetY;
         this->speed = speed_;
+        this->onMovedComplete = onComplete;
 
         if (targetMoveX > strictX) {
             setAnimation(RUN_FORWARD);
@@ -72,6 +75,7 @@ public:
 
     void setAnimation(const int animation) {
         // reset state
+        this->height = 50;
         textureOffset = 0;
         // set
         if (animation == IDLE) {
@@ -105,18 +109,17 @@ public:
             frameSpeed = 5;
             maxOffset = 4; // there's 4 sprites
         }
-
-
     }
 
     int textureOffset;
+    function<void()> onMovedComplete;
     void onDrawCall() override {
         processMove();
         // offset to render the sprite
         this->texture.textureX = this->originalTextureX + (128 * textureOffset);
 
         // sinusoidal (troi noi theo hinh sin)
-        this->teleport(strictX, static_cast<int>(strictY + (sin(SpritesRenderingPipeline::renderPasses() / 20.0) * 5)));
+        this->teleport(strictX, static_cast<int>(strictY + (std::sin(SpritesRenderingPipeline::renderPasses() / 20.0) * 5)));
 
         //advance animation frame if it's time
         if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
@@ -137,6 +140,10 @@ private:
             strictY += targetMoveY > strictY ? speed : -speed;
         } else {
             targetMoveY = -1;
+        }
+        if (targetMoveX == -1 && targetMoveY == -1 && onMovedComplete) {
+            onMovedComplete();
+            onMovedComplete = nullptr;
         }
     }
 

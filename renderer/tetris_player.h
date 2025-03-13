@@ -61,6 +61,10 @@ public:
         this->flandre->setAnimation(RUN_FORWARD);
         this->flandre->spawn();
 
+        this->flandre->moveSmooth(1000, 100, [&]() {
+           this->flandre->setAnimation(3);
+        });
+
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
         // hook into events
         this->tetrisEngine->runOnMinoLocked([&](int mino) {
