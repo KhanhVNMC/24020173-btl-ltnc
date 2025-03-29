@@ -9,7 +9,7 @@
 #ifndef TETRIS_PLAYER_CPP
 #define TETRIS_PLAYER_CPP
 
-static int TETRIS_SCORE[5] = { 0,50, 110, 630, 2300 }; // score for each type of line clears
+static int TETRIS_SCORE[5] = { 0, 50, 110, 630, 2300 }; // score for each type of line clears
 static int LEVEL_THRESHOLD = 10; // advance every X levels
 static double LEVELS_GRAVITY[16] = { // speed of each level
         0, // lvl 0 does not exist
@@ -251,7 +251,7 @@ public:
         renderGarbageQueue(ox, oy);
     }
 
-    SDL_Event _event;
+    SDL_Event _event{};
     void onTetrisTick() {
         while (SDL_PollEvent(&_event)) {
             if (_event.type == SDL_QUIT) {

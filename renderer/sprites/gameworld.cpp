@@ -8,9 +8,19 @@
 
 using namespace std;
 class FlandreScarlet final : public Sprite {
+    static constexpr int IDLE_FRAME_Y = 41;
+    static constexpr int FORWARD_FRAME_Y = 136;
+    static constexpr int BACKWARD_FRAME_Y = 225;
+    static constexpr int ATTACK_1_FRAME_Y = 312;
+
+    static constexpr int ATTACK_SPRITE_H = 128;
+    static constexpr int ATTACK_SPRITE_W = 115;
+
+    static constexpr int DEFAULT_SPRITE_W = 110;
+    static constexpr int DEFAULT_SPRITE_H = 93;
 public:
     explicit FlandreScarlet(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 50, const int height = 50, const int initialRotation = 0)
-    : Sprite({ 0, 41, 110, 93 }, width, height, initialRotation) {
+    : Sprite({ 0, 41, DEFAULT_SPRITE_W, DEFAULT_SPRITE_H }, width, height, initialRotation) {
         this->setTextureFile("../assets/flandre.bmp");
         this->scale(5);
         this->flipSprite(flip);
@@ -47,9 +57,10 @@ public:
      * Ease smoothly from one point to another
      * @param targetX
      * @param targetY
+     * @param onComplete
      * @param speed_ pixel per frame
      */
-    void moveSmooth(const int targetX, const int targetY, const function<void()> onComplete = nullptr, const int speed_ = 5) {
+    void moveSmooth(const int targetX, const int targetY, const function<void()>& onComplete = nullptr, const int speed_ = 5) {
         targetMoveX = targetX;
         targetMoveY = targetY;
         this->speed = speed_;
@@ -74,40 +85,42 @@ public:
     } Animation;
 
     void setAnimation(const int animation) {
-        // reset state
-        this->height = 50;
+        // Reset state
         textureOffset = 0;
-        // set
-        if (animation == IDLE) {
-            this->texture.textureY = 41;
-            frameSpeed = 5;
-            maxOffset = 8; // there's 8 sprites
-            return;
-        }
+        frameSpeed = 5;
 
-        if (animation == RUN_FORWARD) {
-            this->texture.textureY = 136;
-            frameSpeed = 5;
-            maxOffset = 4; // there's 4 sprites
-            return;
-        }
-
-        if (animation == RUN_BACKWARD) {
-            this->texture.textureY = 225;
-            frameSpeed = 5;
-            maxOffset = 4; // there's 4 sprites
-            return;
-        }
-
-        if (animation == ATTACK_01) {
-            this->texture.textureY = 312;
-            this->texture.height = 128;
-            this->texture.width = 115;
-
+        // Set height for attack animations
+        if (animation >= ATTACK_01) {
             this->height = 60;
+        } else {
+            this->height = 50;
+        }
 
-            frameSpeed = 5;
-            maxOffset = 4; // there's 4 sprites
+        switch (animation) {
+            case IDLE:
+                this->texture.textureY = IDLE_FRAME_Y;
+                maxOffset = 8; // 8 sprites
+                break;
+
+            case RUN_FORWARD:
+                this->texture.textureY = FORWARD_FRAME_Y;
+                maxOffset = 4; // 4 sprites
+                break;
+
+            case RUN_BACKWARD:
+                this->texture.textureY = BACKWARD_FRAME_Y;
+                maxOffset = 4; // 4 sprites
+                break;
+
+            case ATTACK_01:
+                this->texture.textureY = ATTACK_1_FRAME_Y;
+                this->texture.height = ATTACK_SPRITE_H;
+                this->texture.width = ATTACK_SPRITE_W;
+                maxOffset = 4; // 4 sprites
+                break;
+
+            default:
+                break;
         }
     }
 

@@ -10,7 +10,6 @@
 
 using namespace std;
 
-
 #define TETROMINOES "../assets/tetrominoes.bmp"
 #define FONT_SHEET "../assets/font.bmp"
 
