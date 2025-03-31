@@ -24,7 +24,7 @@ class Sprite {
 public:
     virtual ~Sprite() = default;
 protected:
-    int x = 0, y = 0;
+    int y = 0;
     int width = 0, height = 0;
     SpriteTexture texture{0, 0, 0, 0};
 
@@ -37,6 +37,7 @@ protected:
     std::string textureSheetPath = "../assets/SPRITES.bmp";
 
     int sdlFlipState = SDL_FLIP_NONE;
+    int x = 0;
 public:
     Sprite(SpriteTexture texture, const int width, const int height, const int initialRotation = 0) : spriteId(SPRITES_OBJECT_POOL++) {
         this->width = width;

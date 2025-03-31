@@ -117,6 +117,7 @@ public:
                 this->texture.height = ATTACK_SPRITE_H;
                 this->texture.width = ATTACK_SPRITE_W;
                 maxOffset = 4; // 4 sprites
+                flipSprite(SDL_FLIP_NONE);
                 break;
 
             default:
