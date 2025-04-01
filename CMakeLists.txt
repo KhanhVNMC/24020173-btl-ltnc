@@ -21,6 +21,6 @@ add_executable(tetisengine
         renderer/spritesystem/sprite.cpp
         renderer/spritesystem/sprite.h
         renderer/sprites/gameworld.cpp
-        renderer/tetris_player.h renderer/tetris_player.cpp renderer/sprites/fontsprite.cpp renderer/spritesystem/particles.h renderer/spritesystem/particles.h)
+        renderer/tetris_player.h renderer/tetris_player.cpp renderer/sprites/fontsprite.cpp renderer/spritesystem/particles.h renderer/spritesystem/particles.h renderer/sprites/player/playerentity.cpp renderer/sprites/player/playerentity.h renderer/sprites/entity_prop.h)
 
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY} winmm opengl32)
