@@ -16,12 +16,11 @@ static double randomFloat(double min, double max) {
 
 class Particle : public Sprite {
 private:
-    double px, py; // Floating-point position
-    double vx, vy; // Velocity
-    int lifetime;  // Frames until particle disappears
-    double gravity; // Downward acceleration
-
-    int tint;
+    double px, py; // floating-point position
+    double vx, vy; // velocity
+    int lifetime;  //frames until particle disappears
+    double gravity; // downward acceleration
+    int tint = 0xFFFFFF; // tint
 
 public:
     /**
@@ -32,7 +31,7 @@ public:
      * @param initialY the first pos Y
      * @param initialVx initial Y velocity (moves down with gravity)
      * @param initialVy initial X velocity (moves down with gravity)
-     * @param lifetime frames that this shit would survive for
+     * @param lifetime frames that this shit would survive for (-1 if no despawn (MANUAL DESPAWN NEEDED))
      * @param gravity downwards momentum
      */
     Particle(SpriteTexture texture, int width, int height, double initialX, double initialY,
@@ -49,6 +48,10 @@ public:
         tint |= (r << 16) | (g << 8) | b;
     }
 
+    void setTint(const int tintParam) {
+        this->tint = tintParam;
+    }
+
     void onBeforeTextureDraw(SDL_Texture *texture) override {
         SDL_SetTextureColorMod(texture, (tint >> 16) & 0xFF, (tint >> 8) & 0xFF, tint & 0xFF);
     }
@@ -62,9 +65,11 @@ public:
         // teleport
         this->teleport(static_cast<int>(px), static_cast<int>(py));
         // time
-        lifetime--;
-        if (lifetime <= 0) {
-            this->discard(); // remove from garbage and clean so no mem leaks kek
+        if (lifetime != -1) {
+            if (lifetime <= 0) {
+                this->discard(); // remove from garbage and clean so no mem leaks kek
+            }
+            lifetime--;
         }
     }
 };

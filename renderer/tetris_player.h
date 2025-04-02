@@ -36,26 +36,74 @@ static int Y_LANES[4] = {
         10, 190, 380, 550
 };
 
+static int Y_LANES_ENEMIES[4] = {
+        30, 220, 400, 580
+};
+
+static string CLEAR_MESSAGES[5] = {
+        "", "single", "double", "triple", "tetris"
+};
+
+static int TETRIS_COLORS[6] = {
+        0xFF0000, // red
+        0xFFB71C, // orange
+        0xFFEA00, // yellow
+        0x00FF51, // green
+        0x00FFFF, // aqua
+        0xEE00FF, // purple
+};
+
+static int MINO_COLORS[7] = {
+        0xEE00FF, // T Mino
+        0xFF0000, // Z Mino
+        0x00FF51, // S mino
+        0xFFB71C, // L mino
+        0x008cff,// J mino
+        0x00FFFF, // I moino
+        0xFFEA00, // O mono
+
+};
+
+#define X_LANE_PLAYER 780
+#define X_LANE_ENEMIES 1400
+
 class TetrisPlayer {
+    static void spawnPhysicsBoundText(string str, int x, int y, double randVelX, double randVelY, int lifetime, double gravity, double scalar, int strgap, int width, const int* colors = nullptr, const int applyThisColorToAll = -1) {
+        for (int i = 0; i < str.length(); i++) {
+            auto [source, dest] = puts_component_char(x + (strgap * i), y, scalar, str[i], width);
+            const auto part = new Particle(
+                    // texture
+                    {source.x, source.y, source.w, source.h},
+                    // destination
+                    dest.w, dest.h, dest.x, dest.y,
+                    randVelX, randVelY, lifetime, gravity
+            );
+            part->setTextureFile("../assets/font.bmp");
+            if (applyThisColorToAll != -1) part->setTint(applyThisColorToAll);
+            else if (colors != nullptr) part->setTint(colors[i]);
+            part->spawn();
+        }
+    }
+
     static void spawnDamageIndicator(const int x, const int y, const int damage) {
         const string damageStr = std::to_string(damage);
         const double scalar = 3;
         const int strgap = 40, width = 18;
         const double randDmgVelX = randomFloat(-8, 8), randDmgVelY = -randomFloat(3, 6);
 
-        for (int i = 0; i < damageStr.length(); i++) {
-            auto [source, dest] = puts_component_char(x + (strgap * i), y, scalar, damageStr[i], width);
-            const auto part = new Particle(
-                    // texture
-                    {source.x, source.y, source.w, source.h},
-                    // destination
-                    dest.w, dest.h, dest.x, dest.y,
-                    randDmgVelX, randDmgVelY, 60, 0.5
-            );
-            part->setTextureFile("../assets/font.bmp");
-            part->setTint(0, 255, 255);
-            part->spawn();
-        }
+        spawnPhysicsBoundText(damageStr, x, y, randDmgVelX, randDmgVelY, 60, 0.5, scalar, strgap, width);
+    }
+
+    static void spawnBoardTitle(const int x, const int y, string title, const int* colors = nullptr) {
+        spawnPhysicsBoundText(title, x, y, -0.1, 0, 60, 0.03, 2.5, 30, 15, colors);
+    }
+
+    static void spawnBoardSubtitle(const int x, const int y, string title, const int color) {
+        spawnPhysicsBoundText(title, x, y, -0.1, 0, 60, 0.03, 2, 20, 15, nullptr, color);
+    }
+
+    static void spawnBoardMiniSubtitle(const int x, const int y, string title, const int color) {
+        spawnPhysicsBoundText(title, x, y, -0.1, 0, 60, 0.03, 1.5, 20, 15, nullptr, color);
     }
 
     // internal engine
@@ -83,7 +131,7 @@ public:
         this->tetrisEngine = engine;
 
         this->flandre = new FlandreScarlet();
-        this->flandre->teleportStrict(780, Y_LANES[currentLane]);
+        this->flandre->teleportStrict(X_LANE_PLAYER, Y_LANES_ENEMIES[currentLane]);
         this->flandre->setAnimation(RUN_FORWARD);
         this->flandre->spawn();
 
@@ -94,7 +142,6 @@ public:
                 firstPiecePlacedTime = System::currentTimeMillis();
             }
             this->piecesPlaced++;
-            this->flandre->damagedAnimation();
         });
         this->tetrisEngine->onPlayfieldEvent([&](const PlayfieldEvent& event) { playFieldEvent(event); });
 
@@ -182,6 +229,21 @@ public:
         baseDamage += max(0, currentBackToBack);
         // combo bonus (primitive)
         baseDamage += static_cast<int>((tetrisEngine->getComboCount()) * 0.5);
+
+        // render text
+        if (event.isMiniSpin() || event.isSpin()) {
+            string message;
+            char minoLetter = tolower(event.getLastMino()->name()[0]);
+            message += minoLetter;
+            message += "-spin";
+            if (event.isMiniSpin()) {
+                spawnBoardMiniSubtitle(150, 270, "mini", MINO_COLORS[event.getLastMino()->ordinal]);
+            }
+            spawnBoardSubtitle(100, 290, message, MINO_COLORS[event.getLastMino()->ordinal]);
+        }
+        if (cleared > 0) {
+            spawnBoardTitle(50, 320, CLEAR_MESSAGES[cleared], cleared == 4 ? TETRIS_COLORS : nullptr);
+        }
 
         // fire event
         if (baseDamage > 0) onDamageSend(baseDamage);

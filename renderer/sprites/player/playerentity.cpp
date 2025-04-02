@@ -37,6 +37,13 @@ void FlandreScarlet::onDrawCall() {
     if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
         textureOffset = (textureOffset + 1) % maxOffset;
     }
+
+    // if just attacked, reset the frame speed to 5 and change to desired type
+    if (textureOffset >= maxOffset - 1 && animationAfterAttackAnimation != nullptr) {
+        this->animationAfterAttackAnimation();
+        this->frameSpeed = 5;
+        this->animationAfterAttackAnimation = nullptr;
+    }
 }
 
 void FlandreScarlet::onBeforeTextureDraw(SDL_Texture *texture) {
@@ -58,8 +65,16 @@ void FlandreScarlet::setAnimation(const int animation) {
     // Set height for attack animations
     if (animation >= ATTACK_01) {
         this->height = 60;
+        this->rotate(-45);
+        this->scale(4.75); // make it slightly bigger
     } else {
         this->height = 45;
+        this->texture.height = DEFAULT_SPRITE_H;
+        this->texture.width = DEFAULT_SPRITE_W;
+        // reset the flipping state
+        flipSprite(this->initialFlip); // reset
+        this->scale(4); // no scale (back to original)
+        this->rotate(0);
     }
 
     switch (animation) {
@@ -91,8 +106,10 @@ void FlandreScarlet::setAnimation(const int animation) {
     }
 }
 
-void FlandreScarlet::attackAnimation() {
+void FlandreScarlet::attackAnimation(function<void()> toRunLater) {
     setAnimation(ATTACK_01);
+    this->animationAfterAttackAnimation = toRunLater;
+    frameSpeed = 15; // slows it down
 }
 
 void FlandreScarlet::damagedAnimation() {
@@ -101,20 +118,24 @@ void FlandreScarlet::damagedAnimation() {
 
 void FlandreScarlet::processMove() {
     if (targetMoveX == -1 && targetMoveY == -1) return;
-    // move towards the target x position
-    if (targetMoveX != -1 && targetMoveX != strictX) {
-        strictX += targetMoveX > strictX ? speed : -speed;
-    } else {
+    float dx = targetMoveX - strictX;
+    float dy = targetMoveY - strictY;
+    float distance = sqrt(dx * dx + dy * dy); // toa do euclid
+
+    if (distance <= speed) {
+        strictX = targetMoveX;
+        strictY = targetMoveY;
         targetMoveX = -1;
-    }
-    // move towards the target Y position
-    if (targetMoveY != -1 && targetMoveY != strictY) {
-        strictY += targetMoveY > strictY ? speed : -speed;
-    } else {
         targetMoveY = -1;
+        if (onMovedComplete) {
+            onMovedComplete();
+            onMovedComplete = nullptr;
+        }
+        return;
     }
-    if (targetMoveX == -1 && targetMoveY == -1 && onMovedComplete) {
-        onMovedComplete();
-        onMovedComplete = nullptr;
-    }
+
+    float moveX = (dx / distance) * speed;
+    float moveY = (dy / distance) * speed;
+    strictX += moveX;
+    strictY += moveY;
 }

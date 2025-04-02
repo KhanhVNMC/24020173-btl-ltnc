@@ -30,17 +30,6 @@ int main(int argc, char* argv[]) {
     TetrisConfig* config = TetrisConfig::builder();
     config->setLineClearsDelay(0.35);
 
-    SpriteTexture particleTex = {92, 0, 18, 24};
-    ParticleSystem* ps = new ParticleSystem(
-            particleTex, 22, 24, // Texture, width, height
-            10, 100,            // Emit every 10 frames, 5 particles per emit
-            -20.0, 20.0,        // vx range
-            -100.0, -5.0,      // vy range (upward)
-            100, 0.5          // lifetime, gravity
-    );
-    ps->teleport(400, 500); // Set emitter position
-    //ps->spawn(); // Add to rendering pipeline
-
     Sprite* background = new BackgroundScroll(SDL_FLIP_NONE, 0, 0, 2);
     background->spawn();
     Sprite* background2 = new BackgroundScroll(SDL_FLIP_NONE, 2048, 0, 2);

@@ -64,7 +64,7 @@ public:
      * Remove this sprite from the global renderer process, YOU SHOULD
      * NOT USE ANY REFERENCES/POINTERS TO THIS THIS CLASS AFTER discard()
      */
-    void discard() const;
+    void discard();
 
     /**
      * @return the texture obj (pointer)

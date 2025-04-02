@@ -35,7 +35,8 @@ void Sprite::spawn() {
     SpritesRenderingPipeline::getSprites().insert({this->spriteId, this});
 }
 
-void Sprite::discard() const {
+void Sprite::discard() {
+    this->x = -1000, y = -1000;
     if (!heapAllocated) return;
     SpritesRenderingPipeline::getSprites().erase(this->spriteId);
     delete this;

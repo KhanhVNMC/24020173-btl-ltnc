@@ -15,7 +15,7 @@ public:
     explicit NormalEntity(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 60, const int height = 50, const int initialRotation = 0)
             : Sprite({ 0, 41, DEFAULT_SPRITE_W, DEFAULT_SPRITE_H }, width, height, initialRotation) {
         this->setTextureFile("../assets/entity_01.bmp");
-        this->scale(5);
+        this->scale(4);
         this->flipSprite(flip);
     }
 
