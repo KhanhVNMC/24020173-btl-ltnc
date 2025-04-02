@@ -20,6 +20,25 @@ public:
     }
 
     /**
+     * The damage threshold the entity will deal
+     */
+    int damageBounds[2] = {0, 0};
+
+    /**
+     * The amount of time the entity will wait before crapping your pants again
+     */
+    double attackDelayFrames = 10; // default is 10s
+
+    void setDamageThresholds(int lowerBound, int upperBound) {
+        this->damageBounds[0] = lowerBound;
+        this->damageBounds[1] = upperBound;
+    }
+
+    void setAttackDelaySeconds(double seconds) {
+        this->attackDelayFrames = seconds * EngineTimer::TARGETTED_TICK_RATE;
+    }
+
+    /**
      * The ACTUAL X AND Y POSITIONS, THE PROVIDED SPRITE::X AND ::Y IS FOR
      * ANIMATION PURPOSES!!! (INDEPENDENT)
      */

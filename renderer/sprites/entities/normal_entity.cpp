@@ -1,7 +1,4 @@
 //
-// Created by SONPHUONG on 4/2/2025.
-//
-//
 // Created by GiaKhanhVN on 4/1/2025.
 //
 
