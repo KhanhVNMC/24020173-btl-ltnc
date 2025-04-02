@@ -17,6 +17,21 @@ void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const func
     }
 }
 
+void FlandreScarlet::onDrawCall() {
+    processMove();
+    // offset to render the sprite
+    this->texture.textureX = this->originalTextureX + (128 * textureOffset);
+
+    // sinusoidal (troi noi theo hinh sin)
+    this->teleport(strictX, static_cast<int>(strictY + (std::sin(SpritesRenderingPipeline::renderPasses() / 20.0) * 5)));
+
+    //advance animation frame if it's time
+    if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
+        textureOffset = (textureOffset + 1) % maxOffset;
+    }
+}
+
+
 void FlandreScarlet::setAnimation(const int animation) {
     // Reset state
     textureOffset = 0;

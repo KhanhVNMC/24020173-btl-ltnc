@@ -62,19 +62,7 @@ public:
 
     int textureOffset;
     function<void()> onMovedComplete;
-    void onDrawCall() override {
-        processMove();
-        // offset to render the sprite
-        this->texture.textureX = this->originalTextureX + (128 * textureOffset);
-
-        // sinusoidal (troi noi theo hinh sin)
-        this->teleport(strictX, static_cast<int>(strictY + (std::sin(SpritesRenderingPipeline::renderPasses() / 20.0) * 5)));
-
-        //advance animation frame if it's time
-        if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
-            textureOffset = (textureOffset + 1) % maxOffset;
-        }
-    }
+    void onDrawCall() override;
 private:
     void processMove();
 
