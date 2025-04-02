@@ -57,6 +57,9 @@ public:
 
     void attackAnimation();
 
+    int glowRedUntil;
+    void damagedAnimation();
+
     int frameSpeed{};
     int maxOffset{};
     void setAnimation(const int animation);
@@ -64,6 +67,7 @@ public:
     int textureOffset{};
     function<void()> onMovedComplete;
     void onDrawCall() override;
+    void onBeforeTextureDraw(SDL_Texture* texture) override;
 private:
     void processMove();
 

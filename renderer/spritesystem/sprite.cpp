@@ -71,12 +71,15 @@ void Sprite::render(SDL_Renderer* renderer) {
     const SDL_Rect dest = { this->x, this->y, static_cast<int>(this->width * scalar), static_cast<int>(this->height * scalar) };
 
     const auto _textureSDL = disk_cache::bmp_load_and_cache(renderer, textureSheetPath);
+    onBeforeTextureDraw(_textureSDL);
 
     if (this->rotationState == 0 && this->sdlFlipState == SDL_FLIP_NONE) {
         SDL_RenderCopy(renderer, _textureSDL, &source, &dest);
         return;
     }
     SDL_RenderCopyEx(renderer, _textureSDL, &source, &dest, this->rotationState, nullptr,static_cast<const SDL_RendererFlip>(this->sdlFlipState));
+    // reset color
+    SDL_SetTextureColorMod(_textureSDL, 0xFF, 0xFF, 0xFF);
 }
 
 

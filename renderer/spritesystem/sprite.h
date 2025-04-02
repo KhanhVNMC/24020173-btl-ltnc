@@ -82,12 +82,13 @@ public:
 
     // event callers
     virtual void onDrawCall() = 0;
+    virtual void onBeforeTextureDraw(SDL_Texture* texture) {};
     void render(SDL_Renderer* renderer);
 
 private:
     bool heapAllocated;
 public:
-    static void* operator new(size_t size) {
+    static void* operator new(const size_t size) {
         void* ptr = ::operator new(size);
         // do not allow this sprite to enter the rendering pipeline if it was NOT on the heap
         ((Sprite*)ptr)->heapAllocated = true;

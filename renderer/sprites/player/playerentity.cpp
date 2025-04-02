@@ -30,12 +30,23 @@ void FlandreScarlet::onDrawCall() {
     // offset to render the sprite
     this->texture.textureX = this->originalTextureX + (128 * textureOffset);
 
-    // sinusoidal (troi noi theo hinh sin)
+    // sinusoidal
     this->teleport(strictX, static_cast<int>(strictY + (std::sin(SpritesRenderingPipeline::renderPasses() / 20.0) * 5)));
 
     //advance animation frame if it's time
     if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
         textureOffset = (textureOffset + 1) % maxOffset;
+    }
+}
+
+void FlandreScarlet::onBeforeTextureDraw(SDL_Texture *texture) {
+    // if the player just took damage, glow them for 10 frames and flash between red & nothing
+    if (const long renderPasses = SpritesRenderingPipeline::renderPasses(); glowRedUntil > renderPasses) {
+        if (renderPasses % 6 == 0) {
+            SDL_SetTextureColorMod(texture, 0xFF, 0xFF, 0xFF);
+            return;
+        }
+        SDL_SetTextureColorMod(texture, 0xFF, 0, 0);
     }
 }
 
@@ -82,6 +93,10 @@ void FlandreScarlet::setAnimation(const int animation) {
 
 void FlandreScarlet::attackAnimation() {
     setAnimation(ATTACK_01);
+}
+
+void FlandreScarlet::damagedAnimation() {
+    glowRedUntil = SpritesRenderingPipeline::renderPasses() + 20; // 10 frames
 }
 
 void FlandreScarlet::processMove() {

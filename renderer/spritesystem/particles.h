@@ -9,12 +9,19 @@
 #include <cstdlib>
 #include <ctime>
 
+// random float generator
+static double randomFloat(double min, double max) {
+    return min + static_cast<double>(rand()) / RAND_MAX * (max - min);
+}
+
 class Particle : public Sprite {
 private:
     double px, py; // Floating-point position
     double vx, vy; // Velocity
     int lifetime;  // Frames until particle disappears
     double gravity; // Downward acceleration
+
+    int tint;
 
 public:
     /**
@@ -36,6 +43,14 @@ public:
               lifetime(lifetime), gravity(gravity) {
         x = static_cast<int>(px);
         y = static_cast<int>(py);
+    }
+
+    void setTint(const int r, const int g, const int b) {
+        tint |= (r << 16) | (g << 8) | b;
+    }
+
+    void onBeforeTextureDraw(SDL_Texture *texture) override {
+        SDL_SetTextureColorMod(texture, (tint >> 16) & 0xFF, (tint >> 8) & 0xFF, tint & 0xFF);
     }
 
     void onDrawCall() override {
@@ -65,11 +80,6 @@ private:
     double initialVyMin, initialVyMax; // vertical velocity range (negative = up, positive = down [y major])
     int lifetime; // life of each particle
     double gravity; // Gravity value
-
-    // random float generator
-    static double randomFloat(double min, double max) {
-        return min + static_cast<double>(rand()) / RAND_MAX * (max - min);
-    }
 
 public:
     bool once; // emit once and die

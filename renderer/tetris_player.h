@@ -33,26 +33,27 @@ static double LEVELS_GRAVITY[16] = { // speed of each level
 };
 
 static int Y_LANES[4] = {
-        10,190,380, 550
+        10, 190, 380, 550
 };
 
 class TetrisPlayer {
-    void spawnDamageIndicator1(int x, int y, int damage) {
-        string damageStr = std::to_string(damage);
+    static void spawnDamageIndicator(const int x, const int y, const int damage) {
+        const string damageStr = std::to_string(damage);
         const double scalar = 3;
-        const int strgap = 40;
-        const int width = 18;
+        const int strgap = 40, width = 18;
+        const double randDmgVelX = randomFloat(-8, 8), randDmgVelY = -randomFloat(3, 6);
 
         for (int i = 0; i < damageStr.length(); i++) {
-            auto component = puts_component_char(x + (strgap * i), y, scalar, damageStr[i], width);
-            auto part = new Particle(
+            auto [source, dest] = puts_component_char(x + (strgap * i), y, scalar, damageStr[i], width);
+            const auto part = new Particle(
                     // texture
-                    {component.source.x, component.source.y, component.source.w, component.source.h},
+                    {source.x, source.y, source.w, source.h},
                     // destination
-                    component.dest.w, component.dest.h, component.dest.x, component.dest.y,
-                    1, 1, 100
+                    dest.w, dest.h, dest.x, dest.y,
+                    randDmgVelX, randDmgVelY, 60, 0.5
             );
             part->setTextureFile("../assets/font.bmp");
+            part->setTint(0, 255, 255);
             part->spawn();
         }
     }
@@ -93,7 +94,7 @@ public:
                 firstPiecePlacedTime = System::currentTimeMillis();
             }
             this->piecesPlaced++;
-            spawnDamageIndicator1(100, 100, 200);
+            this->flandre->damagedAnimation();
         });
         this->tetrisEngine->onPlayfieldEvent([&](const PlayfieldEvent& event) { playFieldEvent(event); });
 
@@ -108,7 +109,7 @@ public:
     void process_input(SDL_Event& event, TetrisEngine* engine);
 
     bool isMovingToAnotherLane = false;
-    void moveToLane(int targetLane) {
+    void moveToLane(const int targetLane) {
         if (this->isMovingToAnotherLane) return; // prevent overlapping
         this->isMovingToAnotherLane = true;
         this->currentLane = targetLane % 4; // prevent overshooting
@@ -128,7 +129,7 @@ public:
         totalDamage += damage;
     }
 
-    void updateLevelAndGravity(int newLevel) {
+    void updateLevelAndGravity(const int newLevel) {
         currentTetrisLevel = min(15, newLevel);
         // increase engine gravity
         this->tetrisEngine->getCurrentConfig()->setGravity(LEVELS_GRAVITY[min(15, currentTetrisLevel)]);
