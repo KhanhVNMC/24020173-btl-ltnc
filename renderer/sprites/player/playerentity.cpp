@@ -11,6 +11,13 @@ void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const func
     this->speed = speed_;
     this->onMovedComplete = onComplete;
 
+    if (targetMoveX == strictX && targetMoveY != strictY) {
+        setAnimation(targetMoveY < strictY ? RUN_FORWARD : RUN_BACKWARD);
+        if (targetMoveY < strictY) {
+            rotate(340);
+        }
+        return;
+    };
     if (targetMoveX > strictX) {
         setAnimation(RUN_FORWARD);
     } else {
@@ -41,7 +48,7 @@ void FlandreScarlet::setAnimation(const int animation) {
     if (animation >= ATTACK_01) {
         this->height = 60;
     } else {
-        this->height = 50;
+        this->height = 45;
     }
 
     switch (animation) {

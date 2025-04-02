@@ -7,11 +7,9 @@
 #include "sprites/gameworld.cpp"
 #include "sprites/entities/Redgga.h"
 #include "sprites/player/playerentity.h"
-
+#include "sprites/entity_prop.h"
 #ifndef TETRIS_PLAYER_CPP
 #define TETRIS_PLAYER_CPP
-
-static int Y_LANES[3] = {};
 
 static int TETRIS_SCORE[5] = { 0, 50, 110, 630, 2300 }; // score for each type of line clears
 static int LEVEL_THRESHOLD = 10; // advance every X levels
@@ -34,7 +32,31 @@ static double LEVELS_GRAVITY[16] = { // speed of each level
         2.36,
 };
 
+static int Y_LANES[4] = {
+        10,190,380, 550
+};
+
 class TetrisPlayer {
+    void spawnDamageIndicator1(int x, int y, int damage) {
+        string damageStr = std::to_string(damage);
+        const double scalar = 3;
+        const int strgap = 40;
+        const int width = 18;
+
+        for (int i = 0; i < damageStr.length(); i++) {
+            auto component = puts_component_char(x + (strgap * i), y, scalar, damageStr[i], width);
+            auto part = new Particle(
+                    // texture
+                    {component.source.x, component.source.y, component.source.w, component.source.h},
+                    // destination
+                    component.dest.w, component.dest.h, component.dest.x, component.dest.y,
+                    1, 1, 100
+            );
+            part->setTextureFile("../assets/font.bmp");
+            part->spawn();
+        }
+    }
+
     // internal engine
     TetrisEngine* tetrisEngine;
     deque<int> garbageQueue;
@@ -50,18 +72,17 @@ class TetrisPlayer {
     // animation & player entity
     FlandreScarlet* flandre;
     SDL_Renderer* renderer;
-    typedef enum {
-        IDLE,
-        RUN_FORWARD,
-        RUN_BACKWARD,
-    } Animation;
+
+    // attack thingy
+    int currentLane = 0;
+    NormalEntity* entityOnLanes[4] = {nullptr, nullptr, nullptr, nullptr}; // 4 lanes, 4 available monsters (initialized as 0)
 public:
     TetrisPlayer(SDL_Renderer* renderer_, TetrisEngine* engine) {
         this->renderer = renderer_;
         this->tetrisEngine = engine;
 
         this->flandre = new FlandreScarlet();
-        this->flandre->teleportStrict(780, 250);
+        this->flandre->teleportStrict(780, Y_LANES[currentLane]);
         this->flandre->setAnimation(RUN_FORWARD);
         this->flandre->spawn();
 
@@ -72,6 +93,7 @@ public:
                 firstPiecePlacedTime = System::currentTimeMillis();
             }
             this->piecesPlaced++;
+            spawnDamageIndicator1(100, 100, 200);
         });
         this->tetrisEngine->onPlayfieldEvent([&](const PlayfieldEvent& event) { playFieldEvent(event); });
 
@@ -84,6 +106,20 @@ public:
 
     [[maybe_unused]] void sprintfcdbg(TetrisEngine* tetris, int spriteCount);
     void process_input(SDL_Event& event, TetrisEngine* engine);
+
+    bool isMovingToAnotherLane = false;
+    void moveToLane(int targetLane) {
+        if (this->isMovingToAnotherLane) return; // prevent overlapping
+        this->isMovingToAnotherLane = true;
+        this->currentLane = targetLane % 4; // prevent overshooting
+
+        // move to specified location
+        this->flandre->moveSmooth(780, Y_LANES[currentLane], [&]() {
+            this->flandre->setAnimation(RUN_FORWARD);
+            this->isMovingToAnotherLane = false;
+            this->flandre->rotate(0);
+        }, 10); // super-fast lane-switching
+    }
 
     void onDamageSend(const int damage) {
         if (firstDamageInflictedTime == -1) {

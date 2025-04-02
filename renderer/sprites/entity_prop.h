@@ -34,7 +34,7 @@ static constexpr int ATTACK_1_FRAME_Y = 312;
 static constexpr int ATTACK_SPRITE_H = 128;
 static constexpr int ATTACK_SPRITE_W = 115;
 
-static constexpr int DEFAULT_SPRITE_W = 110;
-static constexpr int DEFAULT_SPRITE_H = 93;
+static constexpr int DEFAULT_SPRITE_W = 105;
+static constexpr int DEFAULT_SPRITE_H = 84;
 
 #endif //TETISENGINE_ENTITY_PROP_H

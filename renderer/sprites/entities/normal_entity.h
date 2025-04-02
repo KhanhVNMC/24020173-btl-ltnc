@@ -35,7 +35,7 @@ public:
     }
 
     void setAttackDelaySeconds(double seconds) {
-        this->attackDelayFrames = seconds * EngineTimer::TARGETTED_TICK_RATE;
+        this->attackDelayFrames = seconds * 16.66;
     }
 
     /**

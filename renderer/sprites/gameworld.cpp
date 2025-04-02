@@ -1,8 +1,10 @@
 //
 // Created by GiaKhanhVN on 2/26/2025.
 //
-#include "../spritesystem/sprite.h"
 #include <functional>
+#include "../spritesystem/sprite.h"
+#include "../sdl_components.h"
+#include "../spritesystem/particles.h"
 
 /**
  * The star-night background (overlay on top of each other for parallax effect)

@@ -29,7 +29,7 @@ public:
      * @param gravity downwards momentum
      */
     Particle(SpriteTexture texture, int width, int height, double initialX, double initialY,
-             double initialVx, double initialVy, int lifetime, double gravity)
+             double initialVx, double initialVy, int lifetime, double gravity = 0.5)
             : Sprite(texture, width, height),
               px(initialX), py(initialY),
               vx(initialVx), vy(initialVy),
