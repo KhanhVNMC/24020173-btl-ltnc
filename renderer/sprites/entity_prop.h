@@ -5,14 +5,26 @@
 #ifndef TETISENGINE_ENTITY_PROP_H
 #define TETISENGINE_ENTITY_PROP_H
 
-int maxOffset;
-int frameSpeed;
 typedef enum {
     IDLE,
     RUN_FORWARD,
     RUN_BACKWARD,
     ATTACK_01,
-} Animation;
+} PlayerAnimation;
+
+typedef enum {
+    ENTITY_IDLE,
+    ENTITY_APPROACH,
+    ENTITY_DAMAGED
+} NormalAnimation;
+
+typedef enum {
+    BOSS_IDLE,
+    BOSS_APPROACH,
+    BOSS_ATTACK,
+    BOSS_SKILL,
+    BOSS_DAMAGED
+} BossAnimation;
 
 static constexpr int IDLE_FRAME_Y = 41;
 static constexpr int FORWARD_FRAME_Y = 136;

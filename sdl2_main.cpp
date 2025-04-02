@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     SpriteTexture particleTex = {92, 0, 18, 24};
     ParticleSystem* ps = new ParticleSystem(
             particleTex, 22, 24, // Texture, width, height
-            10, 10000,            // Emit every 10 frames, 5 particles per emit
+            10, 100,            // Emit every 10 frames, 5 particles per emit
             -20.0, 20.0,        // vx range
             -100.0, -5.0,      // vy range (upward)
             100, 0.5          // lifetime, gravity

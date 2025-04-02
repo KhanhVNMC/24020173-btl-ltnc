@@ -6,7 +6,7 @@
 #define SDL_INC_H
 #include <utility>
 
-#include "../engine/tetris_engine.cpp"
+#include "../engine/tetris_engine.h"
 #include "sdl_components.h"
 
 // because the internal Enums' ordinal and the sprite.bmp uses different indexes, we map INTERNAL -> BMP

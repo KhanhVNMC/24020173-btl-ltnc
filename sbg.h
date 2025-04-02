@@ -4,7 +4,7 @@
 
 #ifndef TETISENGINE_SBG_H
 #define TETISENGINE_SBG_H
-#include "engine/tetris_engine.cpp"
+#include "engine/tetris_engine.h"
 // SevenBagGenerator implementation.
 class SevenBagGenerator : public TetrominoGenerator {
 public:

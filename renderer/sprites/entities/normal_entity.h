@@ -1,20 +1,20 @@
 //
-// Created by GiaKhanhVN on 4/1/2025.
+// Created by SONPHUONG on 4/2/2025.
 //
 
-#ifndef TETISENGINE_PLAYERENTITY_H
-#define TETISENGINE_PLAYERENTITY_H
-
+#ifndef NORMAL_ENTITY_H
+#define NORMAL_ENTITY_H
 #include "../../spritesystem/sprite.h"
 #include "../entity_prop.h"
 #include <functional>
 
 using namespace std;
-class FlandreScarlet final : public Sprite {
+
+class NormalEntity : public Sprite {
 public:
-    explicit FlandreScarlet(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 50, const int height = 50, const int initialRotation = 0)
+    explicit NormalEntity(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 60, const int height = 50, const int initialRotation = 0)
             : Sprite({ 0, 41, DEFAULT_SPRITE_W, DEFAULT_SPRITE_H }, width, height, initialRotation) {
-        this->setTextureFile("../assets/flandre.bmp");
+        this->setTextureFile("../assets/entity_01.bmp");
         this->scale(5);
         this->flipSprite(flip);
     }
@@ -68,7 +68,7 @@ private:
     void processMove();
 
 public:
-    ~FlandreScarlet() override = default;
+    ~NormalEntity() override = default;
 };
 
-#endif //TETISENGINE_PLAYERENTITY_H
+#endif //NORMAL_ENTITY_H

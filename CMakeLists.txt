@@ -11,7 +11,7 @@ find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
 
 add_executable(tetisengine
-        engine/tetris_engine.cpp
+        engine/tetris_engine.H
         engine/tetris_config.h
         engine/javalibs/jsystemstd.h
         sbg.h
@@ -21,6 +21,10 @@ add_executable(tetisengine
         renderer/spritesystem/sprite.cpp
         renderer/spritesystem/sprite.h
         renderer/sprites/gameworld.cpp
-        renderer/tetris_player.h renderer/tetris_player.cpp renderer/sprites/fontsprite.cpp renderer/spritesystem/particles.h renderer/spritesystem/particles.h renderer/sprites/player/playerentity.cpp renderer/sprites/player/playerentity.h renderer/sprites/entity_prop.h)
+        renderer/tetris_player.h renderer/tetris_player.cpp renderer/sprites/fontsprite.cpp renderer/spritesystem/particles.h renderer/spritesystem/particles.h renderer/sprites/player/playerentity.cpp renderer/sprites/player/playerentity.h renderer/sprites/entity_prop.h
+        renderer/sprites/entities/Redgga.cpp
+        renderer/sprites/entities/Redgga.h
+        renderer/sprites/entities/normal_entity.h
+        renderer/sprites/entities/normal_entity.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY} winmm opengl32)

@@ -5,9 +5,13 @@
 #include "spritesystem/sprite.h"
 #include "tetris_renderer.h"
 #include "sprites/gameworld.cpp"
+#include "sprites/entities/Redgga.h"
+#include "sprites/player/playerentity.h"
 
 #ifndef TETRIS_PLAYER_CPP
 #define TETRIS_PLAYER_CPP
+
+static int Y_LANES[3] = {};
 
 static int TETRIS_SCORE[5] = { 0, 50, 110, 630, 2300 }; // score for each type of line clears
 static int LEVEL_THRESHOLD = 10; // advance every X levels
@@ -60,8 +64,6 @@ public:
         this->flandre->teleportStrict(780, 250);
         this->flandre->setAnimation(RUN_FORWARD);
         this->flandre->spawn();
-
-        this->flandre->setAnimation(IDLE);
 
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
         // hook into events

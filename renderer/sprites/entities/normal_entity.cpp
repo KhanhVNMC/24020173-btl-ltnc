@@ -1,30 +1,28 @@
 //
+// Created by SONPHUONG on 4/2/2025.
+//
+//
 // Created by GiaKhanhVN on 4/1/2025.
 //
 
 #include <cmath>
-#include "playerentity.h"
+#include "normal_entity.h"
 
-void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const function<void()> &onComplete, const int speed_) {
+void NormalEntity::moveSmooth(const int targetX, const int targetY, const function<void()> &onComplete, const int speed_) {
     targetMoveX = targetX;
     targetMoveY = targetY;
     this->speed = speed_;
     this->onMovedComplete = onComplete;
 
-    if (targetMoveX > strictX) {
-        setAnimation(RUN_FORWARD);
-    } else {
-        setAnimation(RUN_BACKWARD);
-    }
+    setAnimation(ENTITY_IDLE);
 }
 
-void FlandreScarlet::onDrawCall() {
+void NormalEntity::onDrawCall() {
     processMove();
     // offset to render the sprite
     this->texture.textureX = this->originalTextureX + (128 * textureOffset);
 
-    // sinusoidal (troi noi theo hinh sin)
-    this->teleport(strictX, static_cast<int>(strictY + (std::sin(SpritesRenderingPipeline::renderPasses() / 20.0) * 5)));
+    this->teleport(strictX, strictY);
 
     //advance animation frame if it's time
     if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
@@ -32,40 +30,25 @@ void FlandreScarlet::onDrawCall() {
     }
 }
 
-void FlandreScarlet::setAnimation(const int animation) {
+void NormalEntity::setAnimation(const int animation) {
     // Reset state
     textureOffset = 0;
     frameSpeed = 5;
 
-    // Set height for attack animations
-    if (animation >= ATTACK_01) {
-        this->height = 60;
-    } else {
-        this->height = 50;
-    }
-
     switch (animation) {
-        case IDLE:
+        case ENTITY_IDLE:
             this->texture.textureY = IDLE_FRAME_Y;
-            maxOffset = 8; // 8 sprites
+            maxOffset = 4; // 8 sprites
             break;
 
-        case RUN_FORWARD:
+        case ENTITY_DAMAGED:
             this->texture.textureY = FORWARD_FRAME_Y;
-            maxOffset = 4; // 4 sprites
+            maxOffset = 2; // 4 sprites
             break;
 
-        case RUN_BACKWARD:
+        case ENTITY_APPROACH:
             this->texture.textureY = BACKWARD_FRAME_Y;
-            maxOffset = 4; // 4 sprites
-            break;
-
-        case ATTACK_01:
-            this->texture.textureY = ATTACK_1_FRAME_Y;
-            this->texture.height = ATTACK_SPRITE_H;
-            this->texture.width = ATTACK_SPRITE_W;
-            maxOffset = 4; // 4 sprites
-            flipSprite(SDL_FLIP_NONE);
+            maxOffset = 3; // 4 sprites
             break;
 
         default:
@@ -73,11 +56,11 @@ void FlandreScarlet::setAnimation(const int animation) {
     }
 }
 
-void FlandreScarlet::attackAnimation() {
+void NormalEntity::attackAnimation() {
     setAnimation(ATTACK_01);
 }
 
-void FlandreScarlet::processMove() {
+void NormalEntity::processMove() {
     if (targetMoveX == -1 && targetMoveY == -1) return;
     // move towards the target x position
     if (targetMoveX != -1 && targetMoveX != strictX) {
