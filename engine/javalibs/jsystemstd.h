@@ -10,7 +10,15 @@
 #include <chrono>
 #include <cstdint>
 #ifdef _WIN32
-#include <windows.h>
+typedef unsigned long DWORD;
+typedef int BOOL;
+#define WINAPI __stdcall
+
+// no fucking windows.h, it fucked up my code
+extern "C" __declspec(dllimport) void WINAPI Sleep(DWORD dwMilliseconds);
+extern "C" __declspec(dllimport) void WINAPI timeBeginPeriod(DWORD period);
+extern "C" __declspec(dllimport) void WINAPI timeEndPeriod(DWORD period);
+extern "C" __declspec(dllimport) BOOL WINAPI AllocConsole(void);
 #endif
 
 /* Java's long, signed 64-bit integer */

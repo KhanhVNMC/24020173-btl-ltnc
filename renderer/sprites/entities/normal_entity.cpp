@@ -6,6 +6,7 @@
 #include "normal_entity.h"
 #include "../../sdl_components.h"
 #include "../../spritesystem/particles.h"
+#include "../../tetris_player.h"
 
 void NormalEntity::moveSmooth(const int targetX, const int targetY, const function<void()> &onComplete, const int speed_) {
     targetMoveX = targetX;
@@ -25,6 +26,11 @@ void NormalEntity::onBeforeTextureDraw(SDL_Texture *texture) {
         }
         SDL_SetTextureColorMod(texture, 0xFF, 0, 0);
     }
+}
+
+
+void NormalEntity::attackPlayer(void* p) {
+    ((TetrisPlayer*) p)->addStats(true, 100);
 }
 
 KillRewards NormalEntity::damageEntity(int damage) {
@@ -84,6 +90,7 @@ void NormalEntity::onDrawCall() {
     if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
         textureOffset = (textureOffset + 1) % maxOffset;
     }
+
 }
 
 void NormalEntity::onDrawCallExtended(SDL_Renderer *renderer) {

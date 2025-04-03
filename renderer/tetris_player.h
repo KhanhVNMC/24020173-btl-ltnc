@@ -1,15 +1,13 @@
 //
 // Created by GiaKhanhVN on 3/3/2025.
 //
-#include "../sbg.h"
-#include "spritesystem/sprite.h"
 #include "tetris_renderer.h"
 #include "sprites/gameworld.cpp"
 #include "sprites/entities/Redgga.h"
 #include "sprites/player/playerentity.h"
 #include "sprites/entity_prop.h"
-#ifndef TETRIS_PLAYER_CPP
-#define TETRIS_PLAYER_CPP
+#ifndef TETRIS_PLAYER_H
+#define TETRIS_PLAYER_H
 
 static int TETRIS_SCORE[5] = { 0, 50, 110, 630, 2300 }; // score for each type of line clears
 static int LEVEL_THRESHOLD = 10; // advance every X levels
@@ -168,6 +166,8 @@ public:
         enemyOnLanes[0]->setAnimation(ENTITY_IDLE);
         enemyOnLanes[0]->spawn();
 
+        enemyOnLanes[0]->attackPlayer(this);
+
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
         // hook into events
         this->tetrisEngine->runOnMinoLocked([&](int mino) {
@@ -222,6 +222,10 @@ public:
         }
     }
 
+    void test() {
+        cout << "hello" << endl;
+    }
+
     void releaseDamageOnCurrentLane() {
         if (isAttacking || isMovingToAnotherLane) return; // currently moving, do NOT attack
         const int finalDamage = accumulatedCharge;
@@ -234,6 +238,7 @@ public:
 
         auto monster = enemyOnLanes[currentLane];
         auto monsterLocation = monster->getLocation();
+        const int currentLaneRef = currentLane;
 
         // compliment the user (25+ = incredible!, 10+ awesome, the rest? = nice)
         spawnMiscIndicator(310, 10, finalDamage > 25 ? "fantastic!" : (finalDamage > 10 ? "awesome!" : "nice!"), MINO_COLORS[2]);
@@ -241,14 +246,24 @@ public:
         // move to the monster and deal damage
         this->isAttacking = true; // this will stop the release from happening consecutively
 
-        this->flandre->scheduleAnimation(RUN_BACKWARD, [&, finalDamage, monster, monsterLocation]() {
-            this->flandre->moveSmooth(monsterLocation.x - 100, monsterLocation.y - 60, [&, finalDamage, monster, monsterLocation]() {
+        // move the body backwards (like charging)
+        this->flandre->scheduleAnimation(RUN_BACKWARD, [&, finalDamage, monster, monsterLocation, currentLaneRef]() {
+            // fly to the enemy
+            this->flandre->moveSmooth(monsterLocation.x - 100, monsterLocation.y - 60, [&, finalDamage, monster, monsterLocation, currentLaneRef]() {
+                // deal the damage
                 this->spawnDamageIndicator(monsterLocation.x + 40, monsterLocation.y, finalDamage, true);
                 auto rewards = monster->damageEntity(finalDamage);
+                bool killed = rewards.type != -1;
 
-                if (rewards.type != -1) addStats(rewards.type == 1, rewards.amount);
+                // if the enemy is dead
+                if (killed) {
+                    addStats(rewards.type == 1, rewards.amount);
+                    this->enemyOnLanes[currentLaneRef] = nullptr; // mark the enemy as none
+                }
 
+                // damage animation
                 this->flandre->scheduleAnimation(ATTACK_01, [&, finalDamage]() {
+                    // go back to where she was
                     this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
                         this->flandre->setAnimation(RUN_FORWARD);
                         this->isAttacking = false;

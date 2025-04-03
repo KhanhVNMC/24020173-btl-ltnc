@@ -62,7 +62,7 @@ public:
 
     void die(bool isArmor);
 
-    //void attackPlayer();
+    void attackPlayer(void* p);
 
     /**
      * The ACTUAL X AND Y POSITIONS, THE PROVIDED SPRITE::X AND ::Y IS FOR

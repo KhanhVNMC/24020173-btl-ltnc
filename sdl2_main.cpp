@@ -2,7 +2,6 @@
 #include "renderer/tetris_renderer.h"
 #include "renderer/tetris_player.h"
 #include "renderer/spritesystem/particles.h"
-#include <windows.h>
 #include <iostream>
 
 void AttachConsoleToSDL() {
