@@ -85,13 +85,13 @@ class TetrisPlayer {
         }
     }
 
-    static void spawnDamageIndicator(const int x, const int y, const int damage) {
+    static void spawnDamageIndicator(const int x, const int y, const int damage, bool offensive) {
         const string damageStr = std::to_string(damage);
         const double scalar = 3;
         const int strgap = 40, width = 18;
-        const double randDmgVelX = randomFloat(-8, 8), randDmgVelY = -randomFloat(3, 6);
+        const double randDmgVelX = randomFloat(-2, 4), randDmgVelY = -randomFloat(-1, 2);
 
-        spawnPhysicsBoundText(damageStr, x, y, randDmgVelX, randDmgVelY, 60, 0.5, scalar, strgap, width);
+        spawnPhysicsBoundText(damageStr, x, y, randDmgVelX, randDmgVelY, 80, 0.05, scalar, strgap, width, nullptr, offensive ? MINO_COLORS[6] : MINO_COLORS[1]);
     }
 
     static void spawnBoardTitle(const int x, const int y, string title, const int* colors = nullptr) {
@@ -104,6 +104,10 @@ class TetrisPlayer {
 
     static void spawnBoardMiniSubtitle(const int x, const int y, string title, const int color) {
         spawnPhysicsBoundText(title, x, y, -0.1, 0, 60, 0.03, 1.5, 20, 15, nullptr, color);
+    }
+
+    static void spawnMiscIndicator(const int x, const int y, string indicator, const int color) {
+        spawnPhysicsBoundText(indicator, x, y, 0.5, 0, 60, 0.03, 2, 20, 15, nullptr, color);
     }
 
     static void renderThunderbolt(SDL_Renderer* renderer, const int x, const int y, const int offset) {
@@ -142,18 +146,27 @@ class TetrisPlayer {
 
     // attack thingy
     int currentLane = 0;
-    int accumulatedCharge = 0;
+    int accumulatedCharge = 39;
     int currentArmorPoints = 0;
-    NormalEntity* entityOnLanes[4] = {nullptr, nullptr, nullptr, nullptr}; // 4 lanes, 4 available monsters (initialized as 0)
+
+    bool isMovingToAnotherLane = false;
+    bool isAttacking = false;
+
+    NormalEntity* enemyOnLanes[4] = {nullptr, nullptr, nullptr, nullptr}; // 4 lanes, 4 available monsters (initialized as 0)
 public:
     TetrisPlayer(SDL_Renderer* renderer_, TetrisEngine* engine) {
         this->renderer = renderer_;
         this->tetrisEngine = engine;
 
         this->flandre = new FlandreScarlet();
-        this->flandre->teleportStrict(X_LANE_PLAYER, Y_LANES_ENEMIES[currentLane]);
+        this->flandre->teleportStrict(X_LANE_PLAYER, Y_LANES[currentLane]);
         this->flandre->setAnimation(RUN_FORWARD);
         this->flandre->spawn();
+
+        enemyOnLanes[0] = new Redgga();
+        enemyOnLanes[0]->teleportStrict(X_LANE_ENEMIES, Y_LANES_ENEMIES[currentLane]);
+        enemyOnLanes[0]->setAnimation(ENTITY_IDLE);
+        enemyOnLanes[0]->spawn();
 
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
         // hook into events
@@ -162,9 +175,8 @@ public:
                 firstPiecePlacedTime = System::currentTimeMillis();
             }
             this->piecesPlaced++;
-            this->accumulatedCharge++;
-            this->currentArmorPoints++;
         });
+        this->tetrisEngine->onComboBreaks([&](const int combo) { onComboBreaks(combo); });
         this->tetrisEngine->onPlayfieldEvent([&](const PlayfieldEvent& event) { playFieldEvent(event); });
 
         // init gravity to lvl 1
@@ -177,7 +189,6 @@ public:
     [[maybe_unused]] void sprintfcdbg(TetrisEngine* tetris, int spriteCount);
     void process_input(SDL_Event& event, TetrisEngine* engine);
 
-    bool isMovingToAnotherLane = false;
     void moveToLane(const int targetLane) {
         if (this->isMovingToAnotherLane) return; // prevent overlapping
         this->isMovingToAnotherLane = true;
@@ -196,6 +207,51 @@ public:
             firstDamageInflictedTime = System::currentTimeMillis();
         }
         totalDamage += damage;
+        if (accumulatedCharge < 40) {
+            accumulatedCharge += damage;
+            // display the damage accumulated
+            spawnMiscIndicator(310, 10, "+" + std::to_string(damage), MINO_COLORS[5]);
+        } else {
+            releaseDamageOnCurrentLane();
+        }
+    }
+
+    void releaseDamageOnCurrentLane() {
+        if (isAttacking || isMovingToAnotherLane) return; // currently moving, do NOT attack
+        const int finalDamage = accumulatedCharge;
+        accumulatedCharge = 0; // reset charges
+
+        if (enemyOnLanes[currentLane] == nullptr) {
+            spawnMiscIndicator(310, 10, "miss!", MINO_COLORS[1]);
+            return;
+        }
+
+        auto monster = enemyOnLanes[currentLane];
+        auto monsterLocation = monster->getLocation();
+
+        // compliment the user (25+ = incredible!, 10+ awesome, the rest? = nice)
+        spawnMiscIndicator(310, 10, finalDamage > 25 ? "incredible!" : (finalDamage > 10 ? "awesome!" : "nice!"), MINO_COLORS[2]);
+
+        // move to the monster and deal damage
+        this->isAttacking = true; // this will stop the release from happening consecutively
+        this->flandre->moveSmooth(monsterLocation.x - 100, monsterLocation.y - 60, [&, finalDamage]() {
+            auto monster = enemyOnLanes[currentLane];
+            auto monsterLocation = monster->getLocation();
+
+            this->spawnDamageIndicator(monsterLocation.x + 40, monsterLocation.y, finalDamage, true);
+            //monster->damage(finalDamage);
+
+            this->flandre->attackAnimation([&, finalDamage]() {
+                this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
+                    this->flandre->setAnimation(RUN_FORWARD);
+                    this->isAttacking = false;
+                }, 10);
+            });
+        }, 15);
+    }
+
+    void onComboBreaks(const int combo) {
+        if (accumulatedCharge > 0) releaseDamageOnCurrentLane();
     }
 
     void updateLevelAndGravity(const int newLevel) {
