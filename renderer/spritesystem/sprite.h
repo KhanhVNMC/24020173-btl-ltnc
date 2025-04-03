@@ -34,7 +34,9 @@ protected:
 
     int originalTextureX = 0, originalTextureY = 0;
 
+public:
     const long spriteId;
+protected:
     std::string textureSheetPath = "../assets/SPRITES.bmp";
 
     int sdlFlipState = SDL_FLIP_NONE;
@@ -115,9 +117,10 @@ namespace SpritesRenderingPipeline {
             snd->render(renderer);
         }
         // clean up the garbage (prevent crashes)
-        for (Sprite* piece: deletionQueue) {
+        for (Sprite* sprite: deletionQueue) {
+            SpritesRenderingPipeline::getSprites().erase(sprite->spriteId);
             // actually deleting the shit
-            delete piece;
+            delete sprite;
         }
         deletionQueue.clear();
         RENDER_PASSES++;

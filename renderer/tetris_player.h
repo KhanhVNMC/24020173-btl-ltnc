@@ -146,7 +146,7 @@ class TetrisPlayer {
 
     // attack thingy
     int currentLane = 0;
-    int accumulatedCharge = 0;
+    int accumulatedCharge = 40;
     int currentArmorPoints = 0;
 
     bool isMovingToAnotherLane = false;
@@ -202,15 +202,20 @@ public:
         }, 10); // super-fast lane-switching
     }
 
+    void addStats(bool isCharge, int amount) {
+        if (isCharge) accumulatedCharge += amount;
+        else currentArmorPoints += amount;
+        // display the damage accumulated
+        spawnMiscIndicator(isCharge ? 310 : 270, isCharge ? 10 : 25, "+" + std::to_string(amount), isCharge ? MINO_COLORS[5] : 0xc9c9c9);
+    }
+
     void onDamageSend(const int damage) {
         if (firstDamageInflictedTime == -1) {
             firstDamageInflictedTime = System::currentTimeMillis();
         }
         totalDamage += damage;
         if (accumulatedCharge < 40) {
-            accumulatedCharge += damage;
-            // display the damage accumulated
-            spawnMiscIndicator(310, 10, "+" + std::to_string(damage), MINO_COLORS[5]);
+            addStats(true, damage);
         } else {
             // overflow, then send the entire shit away
             releaseDamageOnCurrentLane();
@@ -222,7 +227,7 @@ public:
         const int finalDamage = accumulatedCharge;
         accumulatedCharge = 0; // reset charges
 
-        if (enemyOnLanes[currentLane] == nullptr) {
+        if (enemyOnLanes[currentLane] == nullptr || enemyOnLanes[currentLane]->isAttacking || enemyOnLanes[currentLane]->isDead) {
             spawnMiscIndicator(310, 10, "miss!", MINO_COLORS[1]);
             return;
         }
@@ -241,11 +246,7 @@ public:
                 this->spawnDamageIndicator(monsterLocation.x + 40, monsterLocation.y, finalDamage, true);
                 auto rewards = monster->damageEntity(finalDamage);
 
-                if (rewards.type == 0) {
-                    currentArmorPoints += rewards.amount;
-                } else if (rewards.type == 1) {
-                    accumulatedCharge += rewards.amount;
-                }
+                if (rewards.type != -1) addStats(rewards.type == 1, rewards.amount);
 
                 this->flandre->scheduleAnimation(ATTACK_01, [&, finalDamage]() {
                     this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
