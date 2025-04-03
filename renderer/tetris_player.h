@@ -106,6 +106,24 @@ class TetrisPlayer {
         spawnPhysicsBoundText(title, x, y, -0.1, 0, 60, 0.03, 1.5, 20, 15, nullptr, color);
     }
 
+    static void renderThunderbolt(SDL_Renderer* renderer, const int x, const int y, const int offset) {
+        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+        const struct_render_component component = {
+                58 + (23 * offset), 0, 22, 30,
+                x, y, static_cast<int>(22 * 1.25), static_cast<int>(30 * 1.25)
+        };
+        render_component(renderer, cached, component, 1);
+    }
+
+    static void renderArmor(SDL_Renderer* renderer, const int x, const int y, const int offset) {
+        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+        const struct_render_component component = {
+                230 + (19 * offset), 0, 18, 18,
+                x, y, static_cast<int>(18 * 1.25), static_cast<int>(18 * 1.25)
+        };
+        render_component(renderer, cached, component, 1);
+    }
+
     // internal engine
     TetrisEngine* tetrisEngine;
     deque<int> garbageQueue;
@@ -124,6 +142,8 @@ class TetrisPlayer {
 
     // attack thingy
     int currentLane = 0;
+    int accumulatedCharge = 0;
+    int currentArmorPoints = 0;
     NormalEntity* entityOnLanes[4] = {nullptr, nullptr, nullptr, nullptr}; // 4 lanes, 4 available monsters (initialized as 0)
 public:
     TetrisPlayer(SDL_Renderer* renderer_, TetrisEngine* engine) {
@@ -142,6 +162,8 @@ public:
                 firstPiecePlacedTime = System::currentTimeMillis();
             }
             this->piecesPlaced++;
+            this->accumulatedCharge++;
+            this->currentArmorPoints++;
         });
         this->tetrisEngine->onPlayfieldEvent([&](const PlayfieldEvent& event) { playFieldEvent(event); });
 
@@ -237,12 +259,12 @@ public:
             message += minoLetter;
             message += "-spin";
             if (event.isMiniSpin()) {
-                spawnBoardMiniSubtitle(150, 270, "mini", MINO_COLORS[event.getLastMino()->ordinal]);
+                spawnBoardMiniSubtitle(150, 300, "mini", MINO_COLORS[event.getLastMino()->ordinal]);
             }
-            spawnBoardSubtitle(100, 290, message, MINO_COLORS[event.getLastMino()->ordinal]);
+            spawnBoardSubtitle(100, 320, message, MINO_COLORS[event.getLastMino()->ordinal]);
         }
         if (cleared > 0) {
-            spawnBoardTitle(50, 320, CLEAR_MESSAGES[cleared], cleared == 4 ? TETRIS_COLORS : nullptr);
+            spawnBoardTitle(50, 350, CLEAR_MESSAGES[cleared], cleared == 4 ? TETRIS_COLORS : nullptr);
         }
 
         // fire event
@@ -317,6 +339,41 @@ public:
         const auto levelString = str_printf("%02d/15", currentTetrisLevel); // limit to 12 chars
         render_component_string(renderer, GRID_X_OFFSET + 500, GRID_Y_OFFSET + 380 + 2 * Y_OFFSET_STATISTICS, "speed lvl", 1.55, 1, 15, 14);
         render_component_string(renderer, GRID_X_OFFSET + 500, GRID_Y_OFFSET + 405 + 2 * Y_OFFSET_STATISTICS, levelString, 2, 1, 17, 12);
+
+        // render accumulated charges (5 stages: 0 - empty, 1 - 1/4, 2 - 1/2, 3 - 3/4, 4 - full)
+        const int maxChargeSlots = 10;
+        int accumulated = accumulatedCharge;
+        const int thunderBarX = 10;
+        const int thunderBarY = 10;
+        for (int i = 0; i < maxChargeSlots; i++) {
+            int offset = 4;
+            if (accumulated >= 4) {
+                offset = 0;
+                accumulated -= 4;
+            } else if (accumulated > 0) {
+                offset = 4 - accumulated;
+                accumulated = 0;
+            }
+            renderThunderbolt(renderer, thunderBarX + (30 * i), thunderBarY, offset);
+        }
+
+        // render current armor (3 stages: 0 - empty, 1 - 1/2, 2 - full)
+        const int maxArmorSlots = 10;
+        int accumulatedArmor = currentArmorPoints;
+        const int armorBarX = 10;
+        const int armorBarY = thunderBarY + 45;
+        for (int i = 0; i < maxArmorSlots; i++) {
+            int offset = 2;
+            if (accumulatedArmor >= 2) {
+                offset = 0;
+                accumulatedArmor -= 2;
+            } else if (accumulatedArmor > 0) {
+                offset = 2 - accumulatedArmor;
+                accumulatedArmor = 0;
+            }
+            renderArmor(renderer, armorBarX + (25 * i), armorBarY, offset);
+        }
+
     }
 
     void renderGarbageQueue(const int ox, const int oy) {
@@ -361,7 +418,7 @@ public:
 
         SDL_RenderClear(renderer);
         SpritesRenderingPipeline::renderEverything(renderer);
-        renderTetrisInterface(100, 50);
+        renderTetrisInterface(100, 90);
 
         sprintfcdbg(this->tetrisEngine, static_cast<int>(SpritesRenderingPipeline::getSprites().size()));
         SDL_RenderPresent(renderer); // Show updated frame

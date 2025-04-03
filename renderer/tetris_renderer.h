@@ -189,7 +189,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
                 const int color = TEXTURE_MAPPER[piece->ordinal];
                 // we offset the NEXT by the playfield width + 2 minoes gap
                 // for each tetromino, we move down by 3 minoes
-                render_component_tetromino(renderer,puts_mino_at(ox + NEXT_RENDER_OFFSET, oy + Y_OFFSET, x, y + (index * 3),color), 1);
+                render_component_tetromino(renderer,puts_mino_at(ox + NEXT_RENDER_OFFSET, oy + Y_OFFSET, x, y + (index * 3), color), 1);
             }
         }
         index++;
@@ -202,9 +202,9 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
             int rawBuffer = buffer[x][18 + y]; // hide the buffer zone (18 lines above actual playfield)
             // we do not render minoes at 0es (or we must?)
             if (rawBuffer == 0) {
-                // render empty mino (garbage mino with 10% opacity /shrug/)
+                // render empty mino (nothing mino with 10% opacity /shrug/)
                 if (y >= 2) { // only render the grid if the thing is lower than the buffer zone
-                    render_component_tetromino(renderer, puts_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, 8), 0.1);
+                    render_component_tetromino(renderer, puts_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, 10), 0.6);
                 }
                 continue;
             }
@@ -220,7 +220,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
             int finalColor = TEXTURE_MAPPER[ghostPiece ? engine->getFallingMinoType()->ordinal : colorMinoes];
 
             // render the mino (if ghost piece, render at 35% opacity)
-            render_component_tetromino(renderer, puts_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, finalColor), ghostPiece ? 0.35 : 1);
+            render_component_tetromino(renderer, puts_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, finalColor), ghostPiece ? 0.3 : 1);
         }
     }
 }
