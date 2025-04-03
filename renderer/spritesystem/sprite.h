@@ -8,6 +8,7 @@
 #include <string>
 #include <map>
 #include <iostream>
+#include <vector>
 
 typedef struct {
     int x, y, rot;
@@ -82,6 +83,7 @@ public:
 
     // event callers
     virtual void onDrawCall() = 0;
+    virtual void onDrawCallExtended(SDL_Renderer* renderer) {};
     virtual void onBeforeTextureDraw(SDL_Texture* texture) {};
     void render(SDL_Renderer* renderer);
 
@@ -101,6 +103,7 @@ public:
 
 extern long RENDER_PASSES;
 extern std::map<long, Sprite*> ACTIVE_SPRITES;
+extern std::vector<Sprite*> deletionQueue;
 
 namespace SpritesRenderingPipeline {
     static std::map<long, Sprite*>& getSprites() {
@@ -111,6 +114,12 @@ namespace SpritesRenderingPipeline {
         for (auto&[fst, snd]: ACTIVE_SPRITES) {
             snd->render(renderer);
         }
+        // clean up the garbage (prevent crashes)
+        for (Sprite* piece: deletionQueue) {
+            // actually deleting the shit
+            delete piece;
+        }
+        deletionQueue.clear();
         RENDER_PASSES++;
     }
 

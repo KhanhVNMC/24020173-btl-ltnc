@@ -6,9 +6,15 @@
 #define NORMAL_ENTITY_H
 #include "../../spritesystem/sprite.h"
 #include "../entity_prop.h"
+#include <cmath>
 #include <functional>
 
 using namespace std;
+
+typedef struct {
+    int type; // 0 = armor, 1 = energy, (-1 = none)
+    int amount;
+} KillRewards;
 
 class NormalEntity : public Sprite {
 public:
@@ -18,6 +24,9 @@ public:
         this->scale(4);
         this->flipSprite(flip);
     }
+
+    bool isDead = false;
+    bool isAttacking = false;
 
     /**
      * The damage threshold the entity will deal
@@ -29,6 +38,9 @@ public:
      */
     double attackDelayFrames = 10; // default is 10s
 
+    int currentHealth = 0, maxHealthPoints = 0;
+    int glowRedUntil = 0;
+
     void setDamageThresholds(int lowerBound, int upperBound) {
         this->damageBounds[0] = lowerBound;
         this->damageBounds[1] = upperBound;
@@ -37,6 +49,20 @@ public:
     void setAttackDelaySeconds(double seconds) {
         this->attackDelayFrames = seconds * 16.66;
     }
+
+    void setMaxHealth(int health) {
+        this->currentHealth = this->maxHealthPoints = health;
+    }
+
+    void setHealth(int health) {
+        this->currentHealth = min(maxHealthPoints, max(0, health));
+    }
+
+    KillRewards damageEntity(int damage);
+
+    void die(bool isArmor);
+
+    //void attackPlayer();
 
     /**
      * The ACTUAL X AND Y POSITIONS, THE PROVIDED SPRITE::X AND ::Y IS FOR
@@ -83,6 +109,8 @@ public:
     int textureOffset{};
     function<void()> onMovedComplete;
     void onDrawCall() override;
+    void onDrawCallExtended(SDL_Renderer* renderer) override;
+    void onBeforeTextureDraw(SDL_Texture* texture) override;
 private:
     void processMove();
 

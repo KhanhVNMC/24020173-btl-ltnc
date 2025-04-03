@@ -146,7 +146,7 @@ class TetrisPlayer {
 
     // attack thingy
     int currentLane = 0;
-    int accumulatedCharge = 39;
+    int accumulatedCharge = 0;
     int currentArmorPoints = 0;
 
     bool isMovingToAnotherLane = false;
@@ -212,6 +212,7 @@ public:
             // display the damage accumulated
             spawnMiscIndicator(310, 10, "+" + std::to_string(damage), MINO_COLORS[5]);
         } else {
+            // overflow, then send the entire shit away
             releaseDamageOnCurrentLane();
         }
     }
@@ -230,24 +231,30 @@ public:
         auto monsterLocation = monster->getLocation();
 
         // compliment the user (25+ = incredible!, 10+ awesome, the rest? = nice)
-        spawnMiscIndicator(310, 10, finalDamage > 25 ? "incredible!" : (finalDamage > 10 ? "awesome!" : "nice!"), MINO_COLORS[2]);
+        spawnMiscIndicator(310, 10, finalDamage > 25 ? "fantastic!" : (finalDamage > 10 ? "awesome!" : "nice!"), MINO_COLORS[2]);
 
         // move to the monster and deal damage
         this->isAttacking = true; // this will stop the release from happening consecutively
-        this->flandre->moveSmooth(monsterLocation.x - 100, monsterLocation.y - 60, [&, finalDamage]() {
-            auto monster = enemyOnLanes[currentLane];
-            auto monsterLocation = monster->getLocation();
 
-            this->spawnDamageIndicator(monsterLocation.x + 40, monsterLocation.y, finalDamage, true);
-            //monster->damage(finalDamage);
+        this->flandre->scheduleAnimation(RUN_BACKWARD, [&, finalDamage, monster, monsterLocation]() {
+            this->flandre->moveSmooth(monsterLocation.x - 100, monsterLocation.y - 60, [&, finalDamage, monster, monsterLocation]() {
+                this->spawnDamageIndicator(monsterLocation.x + 40, monsterLocation.y, finalDamage, true);
+                auto rewards = monster->damageEntity(finalDamage);
 
-            this->flandre->attackAnimation([&, finalDamage]() {
-                this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
-                    this->flandre->setAnimation(RUN_FORWARD);
-                    this->isAttacking = false;
-                }, 10);
-            });
-        }, 15);
+                if (rewards.type == 0) {
+                    currentArmorPoints += rewards.amount;
+                } else if (rewards.type == 1) {
+                    accumulatedCharge += rewards.amount;
+                }
+
+                this->flandre->scheduleAnimation(ATTACK_01, [&, finalDamage]() {
+                    this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
+                        this->flandre->setAnimation(RUN_FORWARD);
+                        this->isAttacking = false;
+                    }, 10);
+                }, 15);
+            }, 15);
+        }, 10);
     }
 
     void onComboBreaks(const int combo) {
@@ -306,7 +313,7 @@ public:
         // b2b bonus
         baseDamage += max(0, currentBackToBack);
         // combo bonus (primitive)
-        baseDamage += static_cast<int>((tetrisEngine->getComboCount()) * 0.5);
+        baseDamage += static_cast<int>(tetrisEngine->getComboCount() * 0.75);
 
         // render text
         if (event.isMiniSpin() || event.isSpin()) {

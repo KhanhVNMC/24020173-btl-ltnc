@@ -106,10 +106,10 @@ void FlandreScarlet::setAnimation(const int animation) {
     }
 }
 
-void FlandreScarlet::attackAnimation(function<void()> toRunLater) {
-    setAnimation(ATTACK_01);
+void FlandreScarlet::scheduleAnimation(int animation, function<void()> toRunLater, int fs) {
+    setAnimation(animation);
     this->animationAfterAttackAnimation = toRunLater;
-    frameSpeed = 15; // slows it down
+    frameSpeed = fs; // slows it down/speed it up idc
 }
 
 void FlandreScarlet::damagedAnimation() {
@@ -120,7 +120,7 @@ void FlandreScarlet::processMove() {
     if (targetMoveX == -1 && targetMoveY == -1) return;
     float dx = targetMoveX - strictX;
     float dy = targetMoveY - strictY;
-    float distance = sqrt(dx * dx + dy * dy); // toa do euclid
+    float distance = sqrt(dx * dx + dy * dy); // euclid
 
     if (distance <= speed) {
         strictX = targetMoveX;

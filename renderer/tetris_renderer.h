@@ -22,24 +22,6 @@ static unordered_map<int, int> TEXTURE_MAPPER = {
 };
 
 /**
- * Render the given "struct_render_component", this will render a static sprite
- * for dynamically maneuverable sprites, use {@link Sprite} (Heap allocated)
- *
- * @param renderer the target SDL renderer
- * @param texture the texture (get from CACHE, BMP)
- * @param component the struct_render_component
- * @param opacity opacity from 0.0 - 1.0 (0: transparent; 1: opaque)
- */
-inline void render_component(SDL_Renderer* renderer, SDL_Texture* texture, const struct_render_component& component, const float opacity, const int angle = 0) {
-    SDL_SetTextureAlphaMod(texture, static_cast<Uint8>(opacity * 255));
-    if (angle > 0) {
-        SDL_RenderCopyEx(renderer, texture, &component.source, &component.dest, angle, nullptr, SDL_FLIP_NONE);
-        return;
-    }
-    SDL_RenderCopy(renderer, texture, &component.source, &component.dest);
-}
-
-/**
  * Render a single mino in the renderer (GPU)
  * @param renderer the SDL thingy
  * @param mino the component to render

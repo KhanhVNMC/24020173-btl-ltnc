@@ -57,7 +57,7 @@ public:
     void moveSmooth(const int targetX, const int targetY, const function<void()>& onComplete = nullptr, const int speed_ = 5);
 
     function<void()> animationAfterAttackAnimation = nullptr;
-    void attackAnimation(function<void()> toRunLater);
+    void scheduleAnimation(int animation, function<void()> toRunLater, int frameSpeed);
 
     int glowRedUntil = 0;
     void damagedAnimation();

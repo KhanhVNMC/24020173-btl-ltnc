@@ -8,6 +8,7 @@
 
 long RENDER_PASSES = 0;
 std::map<long, Sprite*> ACTIVE_SPRITES;
+vector<Sprite*> deletionQueue;
 
 void Sprite::setTextureFile(const std::string& textureSpriteFile) {
     this->textureSheetPath = textureSpriteFile;
@@ -39,7 +40,7 @@ void Sprite::discard() {
     this->x = -1000, y = -1000;
     if (!heapAllocated) return;
     SpritesRenderingPipeline::getSprites().erase(this->spriteId);
-    delete this;
+    deletionQueue.push_back(this);
 }
 
 SpriteTexture* Sprite::getTexture() {
@@ -67,6 +68,7 @@ constexpr double PI = 3.14159265358979323846;
 
 void Sprite::render(SDL_Renderer* renderer) {
     this->onDrawCall();
+    this->onDrawCallExtended(renderer);
 
     const SDL_Rect source = { this->texture.textureX, this->texture.textureY, this->texture.width, this->texture.height };
     const SDL_Rect dest = { this->x, this->y, static_cast<int>(this->width * scalar), static_cast<int>(this->height * scalar) };
