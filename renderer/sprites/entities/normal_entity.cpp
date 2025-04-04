@@ -28,9 +28,34 @@ void NormalEntity::onBeforeTextureDraw(SDL_Texture *texture) {
     }
 }
 
-
 void NormalEntity::attackPlayer(void* p) {
-    ((TetrisPlayer*) p)->addStats(true, 100);
+    TetrisPlayer* target = ((TetrisPlayer*) p);
+    auto curLoc = target->getLocation();
+    auto toReturn = this->getLocation();
+    auto lastLane = target->currentLane;
+
+    isAttacking = true;
+
+    // warn the player that the entity is attacking
+    scheduleAnimation(ENTITY_APPROACH, [&, target, curLoc, toReturn, lastLane]() {
+        // move there and attack
+        moveSmooth(curLoc.x + 20, curLoc.y, [&, target, curLoc, toReturn, lastLane]() {
+            // call the parent's damage method
+            target->inflictDamage(static_cast<int>(randomFloat(this->damageBounds[0], this->damageBounds[1])), lastLane);
+
+            // attack "animation"
+                // return to the spawn point
+            moveSmooth(toReturn.x, toReturn.y, [&]() {
+                isAttacking = false;
+            }, 10);
+        }, 15);
+    }, 40);
+}
+
+void NormalEntity::scheduleAnimation(int animation, function<void()> toRunLater, int fs) {
+    setAnimation(animation, 0);
+    this->animationAfterAttackAnimation = toRunLater;
+    frameSpeed = fs; // slows it down/speed it up idc
 }
 
 KillRewards NormalEntity::damageEntity(int damage) {
@@ -49,6 +74,13 @@ KillRewards NormalEntity::damageEntity(int damage) {
     ps->once = true;
     ps->teleport(strictX + 120, strictY + 120); // Set emitter position
     ps->spawn();
+
+    // play hurt animation
+    flipSprite(SDL_FLIP_NONE);
+    scheduleAnimation(ENTITY_DAMAGED, [&]() {
+        setAnimation(ENTITY_IDLE);
+        flipSprite(SDL_FLIP_HORIZONTAL);
+    }, 40);
 
     if (currentHealth <= 0) {
         // the entity has been killed
@@ -91,6 +123,12 @@ void NormalEntity::onDrawCall() {
         textureOffset = (textureOffset + 1) % maxOffset;
     }
 
+    // if at the end of the animation sequence, reset the frame speed to 5 and change to desired type
+    if (textureOffset >= maxOffset - 1 && animationAfterAttackAnimation != nullptr) {
+        this->animationAfterAttackAnimation();
+        this->frameSpeed = 5;
+        this->animationAfterAttackAnimation = nullptr;
+    }
 }
 
 void NormalEntity::onDrawCallExtended(SDL_Renderer *renderer) {
@@ -114,25 +152,25 @@ void NormalEntity::onDrawCallExtended(SDL_Renderer *renderer) {
     SDL_SetRenderDrawColor(renderer, 0,0,0,255); // black
 }
 
-void NormalEntity::setAnimation(const int animation) {
+void NormalEntity::setAnimation(const int animation, const int startFrame) {
     // Reset state
-    textureOffset = 0;
+    textureOffset = startFrame;
     frameSpeed = 5;
 
     switch (animation) {
         case ENTITY_IDLE:
             this->texture.textureY = IDLE_FRAME_Y;
-            maxOffset = 4; // 8 sprites
+            maxOffset = 5; // 8 sprites
             break;
 
         case ENTITY_DAMAGED:
             this->texture.textureY = FORWARD_FRAME_Y;
-            maxOffset = 2; // 4 sprites
+            maxOffset = 3; // 4 sprites
             break;
 
         case ENTITY_APPROACH:
             this->texture.textureY = BACKWARD_FRAME_Y;
-            maxOffset = 3; // 4 sprites
+            maxOffset = 2; // 4 sprites
             break;
 
         default:

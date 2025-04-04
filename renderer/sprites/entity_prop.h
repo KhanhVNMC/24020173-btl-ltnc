@@ -9,6 +9,7 @@ typedef enum {
     IDLE,
     RUN_FORWARD,
     RUN_BACKWARD,
+    HURT,
     ATTACK_01,
 } PlayerAnimation;
 

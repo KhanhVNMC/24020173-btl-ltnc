@@ -8,7 +8,7 @@ public:
         this->setTextureFile("../assets/enemy_01.bmp"); // red nigga
         this->setDamageThresholds(3, 5); // 3-5 dmg
         this->setAttackDelaySeconds(15); // 15s between attacks
-        this->setMaxHealth(12);
+        this->setMaxHealth(30);
     }
 };
 

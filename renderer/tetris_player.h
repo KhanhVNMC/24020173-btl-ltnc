@@ -143,15 +143,16 @@ class TetrisPlayer {
     SDL_Renderer* renderer;
 
     // attack thingy
+public:
     int currentLane = 0;
-    int accumulatedCharge = 40;
-    int currentArmorPoints = 0;
+    int accumulatedCharge = 0;
+    int currentArmorPoints = 10;
 
     bool isMovingToAnotherLane = false;
     bool isAttacking = false;
 
     NormalEntity* enemyOnLanes[4] = {nullptr, nullptr, nullptr, nullptr}; // 4 lanes, 4 available monsters (initialized as 0)
-public:
+
     TetrisPlayer(SDL_Renderer* renderer_, TetrisEngine* engine) {
         this->renderer = renderer_;
         this->tetrisEngine = engine;
@@ -166,8 +167,6 @@ public:
         enemyOnLanes[0]->setAnimation(ENTITY_IDLE);
         enemyOnLanes[0]->spawn();
 
-        enemyOnLanes[0]->attackPlayer(this);
-
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
         // hook into events
         this->tetrisEngine->runOnMinoLocked([&](int mino) {
@@ -175,6 +174,7 @@ public:
                 firstPiecePlacedTime = System::currentTimeMillis();
             }
             this->piecesPlaced++;
+            enemyOnLanes[0]->attackPlayer(this);
         });
         this->tetrisEngine->onComboBreaks([&](const int combo) { onComboBreaks(combo); });
         this->tetrisEngine->onPlayfieldEvent([&](const PlayfieldEvent& event) { playFieldEvent(event); });
@@ -184,6 +184,10 @@ public:
 
         // boot the engine up
         this->tetrisEngine->start();
+    }
+
+    SpriteLoc getLocation() {
+        return this->flandre->getLocation();
     }
 
     [[maybe_unused]] void sprintfcdbg(TetrisEngine* tetris, int spriteCount);
@@ -222,8 +226,27 @@ public:
         }
     }
 
-    void test() {
-        cout << "hello" << endl;
+    int boardRumble = 0;
+    void inflictDamage(int damage, int oldLane) {
+        if (currentLane != oldLane) return;
+
+        if (currentArmorPoints > 0) {
+            if (currentArmorPoints == 1) {
+                damage *= 0.75;
+                --currentArmorPoints;
+                spawnMiscIndicator(270, 55, "-1", 0xc9c9c9);
+            } else {
+                damage *= 0.5;
+                currentArmorPoints -= 2;
+                spawnMiscIndicator(270, 55, "-2", 0xc9c9c9);
+            }
+        }
+
+        garbageQueue.push_back(damage);
+        this->spawnDamageIndicator(getLocation().x + 40, getLocation().y + 20, damage, false);
+
+        this->flandre->damagedAnimation();
+        boardRumble = 10; // rumble for 10 frames
     }
 
     void releaseDamageOnCurrentLane() {
@@ -478,12 +501,16 @@ public:
     }
 
     void renderTetrisInterface(const int ox, const int oy) {
+        int shakeFactor = boardRumble > 0 ? std::sin(SpritesRenderingPipeline::renderPasses()) * 10 : 0;
         // render the board body first
-        render_tetris_board(ox, oy, renderer, this->tetrisEngine);
+        render_tetris_board(ox + shakeFactor, oy, renderer, this->tetrisEngine);
         // and then the statistics
         renderTetrisStatistics(ox, oy);
         // render garbage queue
-        renderGarbageQueue(ox, oy);
+        renderGarbageQueue(ox + shakeFactor, oy);
+        if (boardRumble > 0) {
+            --boardRumble;
+        }
     }
 
     SDL_Event _event{};

@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include "playerentity.h"
+#include "../../spritesystem/particles.h"
 
 void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const function<void()> &onComplete, const int speed_) {
     targetMoveX = targetX;
@@ -26,19 +27,22 @@ void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const func
 }
 
 void FlandreScarlet::onDrawCall() {
+    internalClock++; // advance the sprite-bound clock
+
+    // process move task
     processMove();
     // offset to render the sprite
     this->texture.textureX = this->originalTextureX + (128 * textureOffset);
 
     // sinusoidal
-    this->teleport(strictX, static_cast<int>(strictY + (std::sin(SpritesRenderingPipeline::renderPasses() / 20.0) * 5)));
+    this->teleport(strictX, static_cast<int>(strictY + (std::sin(internalClock / 20.0) * 5)));
 
-    //advance animation frame if it's time
-    if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
+    //advance animation frame if it's time (use internal clock to fix the interval synchronization issues and its cheaper)
+    if (internalClock % frameSpeed == 0) {
         textureOffset = (textureOffset + 1) % maxOffset;
     }
 
-    // if just attacked, reset the frame speed to 5 and change to desired type
+    // if at the end of the animation sequence, reset the frame speed to 5 and change to desired type
     if (textureOffset >= maxOffset - 1 && animationAfterAttackAnimation != nullptr) {
         this->animationAfterAttackAnimation();
         this->frameSpeed = 5;
@@ -54,12 +58,13 @@ void FlandreScarlet::onBeforeTextureDraw(SDL_Texture *texture) {
             return;
         }
         SDL_SetTextureColorMod(texture, 0xFF, 0, 0);
-    }
+    } else SDL_SetTextureColorMod(texture, 0xFF, 0xFF, 0xFF);
 }
 
 void FlandreScarlet::setAnimation(const int animation) {
     // Reset state
     textureOffset = 0;
+    internalClock = 0; // reset the clock & speed offset
     frameSpeed = 5;
 
     // Set height for attack animations
@@ -93,6 +98,12 @@ void FlandreScarlet::setAnimation(const int animation) {
             maxOffset = 4; // 4 sprites
             break;
 
+        case HURT:
+            this->texture.textureY = 458;
+            maxOffset = 2; // 1 sprite
+            flipSprite(SDL_FLIP_NONE);
+            break;
+
         case ATTACK_01:
             this->texture.textureY = ATTACK_1_FRAME_Y;
             this->texture.height = ATTACK_SPRITE_H;
@@ -108,12 +119,28 @@ void FlandreScarlet::setAnimation(const int animation) {
 
 void FlandreScarlet::scheduleAnimation(int animation, function<void()> toRunLater, int fs) {
     setAnimation(animation);
-    this->animationAfterAttackAnimation = toRunLater;
     frameSpeed = fs; // slows it down/speed it up idc
+    this->animationAfterAttackAnimation = toRunLater;
 }
 
 void FlandreScarlet::damagedAnimation() {
     glowRedUntil = SpritesRenderingPipeline::renderPasses() + 20; // 10 frames
+    scheduleAnimation(HURT, [&]() {
+        setAnimation(RUN_FORWARD);
+    }, 30);
+    // blood
+    // blood animation
+    SpriteTexture particleTex = {287, 0, 16, 18};
+    ParticleSystem* ps = new ParticleSystem(
+            particleTex, 12, 12,
+            0, 30,
+            -4.0, 4.0,
+            -15.0, -5.0,
+            60, 0.5
+    );
+    ps->once = true;
+    ps->teleport(strictX + 120, strictY + 120); // Set emitter position
+    ps->spawn();
 }
 
 void FlandreScarlet::processMove() {

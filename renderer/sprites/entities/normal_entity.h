@@ -104,7 +104,10 @@ public:
 
     int frameSpeed{};
     int maxOffset{};
-    void setAnimation(const int animation);
+    void setAnimation(const int animation, const int startFrame = 0);
+
+    function<void()> animationAfterAttackAnimation = nullptr;
+    void scheduleAnimation(int animation, function<void()> toRunLater, int fs);
 
     int textureOffset{};
     function<void()> onMovedComplete;

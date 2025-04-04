@@ -68,7 +68,10 @@ public:
 
     int textureOffset{};
     function<void()> onMovedComplete;
+
+    int internalClock;
     void onDrawCall() override;
+
     void onBeforeTextureDraw(SDL_Texture* texture) override;
 private:
     void processMove();
