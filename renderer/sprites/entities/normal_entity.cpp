@@ -112,6 +112,9 @@ void NormalEntity::die(bool isArmor) {
 }
 
 void NormalEntity::onDrawCall() {
+    internalClock++; // advance the sprite-bound clock
+
+    // process move task
     processMove();
     // offset to render the sprite
     this->texture.textureX = this->originalTextureX + (128 * textureOffset);
@@ -119,7 +122,7 @@ void NormalEntity::onDrawCall() {
     this->teleport(strictX, strictY);
 
     //advance animation frame if it's time
-    if (SpritesRenderingPipeline::renderPasses() % frameSpeed == 0) {
+    if (internalClock % frameSpeed == 0) {
         textureOffset = (textureOffset + 1) % maxOffset;
     }
 
@@ -155,6 +158,7 @@ void NormalEntity::onDrawCallExtended(SDL_Renderer *renderer) {
 void NormalEntity::setAnimation(const int animation, const int startFrame) {
     // Reset state
     textureOffset = startFrame;
+    internalClock = 0; // reset the clock & speed offset
     frameSpeed = 5;
 
     switch (animation) {
