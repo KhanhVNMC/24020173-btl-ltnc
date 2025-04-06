@@ -154,8 +154,10 @@ void FlandreScarlet::processMove() {
     if (distance <= speed) {
         strictX = targetMoveX;
         strictY = targetMoveY;
+
         targetMoveX = -1;
         targetMoveY = -1;
+
         if (onMovedComplete) {
             auto onMovedFunctionCopy = onMovedComplete;
             onMovedComplete = nullptr;

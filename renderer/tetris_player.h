@@ -6,6 +6,11 @@
 #include "sprites/entities/Redgga.h"
 #include "sprites/player/playerentity.h"
 #include "sprites/entity_prop.h"
+#include "sprites/entities/Grigga.h"
+#include "sprites/entities/Blugga.h"
+#include "sprites/entities/Nigga.h"
+#include "sprites/entities/Tia.h"
+
 #ifndef TETRIS_PLAYER_H
 #define TETRIS_PLAYER_H
 
@@ -66,7 +71,7 @@ static int MINO_COLORS[7] = {
 #define X_LANE_ENEMIES 1400
 
 class TetrisPlayer {
-    static void spawnPhysicsBoundText(string str, int x, int y, double randVelX, double randVelY, int lifetime, double gravity, double scalar, int strgap, int width, const int* colors = nullptr, const int applyThisColorToAll = -1) {
+    static void spawnPhysicsBoundText(string str, int x, int y, double randVelX, double randVelY, int lifetime, double gravity, double scalar, int strgap, int width, const int* colors = nullptr, const int applyThisColorToAll = -1, bool priority = false) {
         for (int i = 0; i < str.length(); i++) {
             auto [source, dest] = puts_component_char(x + (strgap * i), y, scalar, str[i], width);
             const auto part = new Particle(
@@ -79,7 +84,7 @@ class TetrisPlayer {
             part->setTextureFile("../assets/font.bmp");
             if (applyThisColorToAll != -1) part->setTint(applyThisColorToAll);
             else if (colors != nullptr) part->setTint(colors[i]);
-            part->spawn();
+            part->spawn(priority);
         }
     }
 
@@ -106,6 +111,10 @@ class TetrisPlayer {
 
     static void spawnMiscIndicator(const int x, const int y, string indicator, const int color) {
         spawnPhysicsBoundText(indicator, x, y, 0.5, 0, 60, 0.03, 2, 20, 15, nullptr, color);
+    }
+
+    static void spawnPriorityIndicator(const int x, const int y, string indicator, const int color) {
+        spawnPhysicsBoundText(indicator, x, y, 0, 0.0, 90, -0.03, 3, 20, 15, nullptr, color, true);
     }
 
     static void renderThunderbolt(SDL_Renderer* renderer, const int x, const int y, const int offset) {
@@ -162,7 +171,7 @@ public:
         this->flandre->setAnimation(RUN_FORWARD);
         this->flandre->spawn();
 
-        spawnEnemyOnLane(0, new Redgga(this));
+        spawnEnemyOnLane(0, new TiaFairy(this));
 
 
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
@@ -243,7 +252,12 @@ public:
 
     int boardRumble = 0;
     void inflictDamage(int damage, int oldLane) {
-        if (currentLane != oldLane) return;
+        if (this->isAttacking || this->isMovingToAnotherLane) return;
+
+        if (currentLane != oldLane) {
+            spawnMiscIndicator(flandre->strictX, Y_LANES[oldLane], "miss!", MINO_COLORS[3]);
+            return;
+        }
 
         if (currentArmorPoints > 0) {
             if (currentArmorPoints == 1) {
@@ -257,6 +271,7 @@ public:
             }
         }
 
+        damage = max(1, damage);
         garbageQueue.push_back(damage);
         this->spawnDamageIndicator(getLocation().x + 40, getLocation().y + 20, damage, false);
 
@@ -266,15 +281,14 @@ public:
 
     void releaseDamageOnCurrentLane() {
         if (isAttacking || isMovingToAnotherLane) return; // currently moving, do NOT attack
+        if (enemyOnLanes[currentLane] != nullptr && enemyOnLanes[currentLane]->isAttacking) {
+            return; // if the enemy is attacking, we cannot release damage
+        }
+
         const int finalDamage = accumulatedCharge;
         accumulatedCharge = 0; // reset charges
 
-        if (enemyOnLanes[currentLane] == nullptr || enemyOnLanes[currentLane]->isAttacking || enemyOnLanes[currentLane]->isDead || enemyOnLanes[currentLane]->isSpawning) {
-            cout << "missed" << endl;
-            cout << (enemyOnLanes[currentLane] == nullptr) << endl;
-            if (enemyOnLanes[currentLane] != nullptr)
-            cout << (enemyOnLanes[currentLane]->isAttacking) << endl;
-
+        if (enemyOnLanes[currentLane] == nullptr || enemyOnLanes[currentLane]->isDead || enemyOnLanes[currentLane]->isSpawning) {
             spawnMiscIndicator(310, 10, "miss!", MINO_COLORS[1]);
             return;
         }
@@ -326,12 +340,15 @@ public:
         // manage the garbage thingy (rise garbage)
         // if empty, no garbage, we no care
         if (linesCleared <= 0 && !garbageQueue.empty()) {
-            // lock the game while we raise the garbage
-            tetrisEngine->gameInterrupt(false);
             // queue the garbage up
             int currentHoleIndex = rand() % 10; // the garbage hole
             int amount = garbageQueue.front(); // amount of garbo to raise
             garbageQueue.pop_front();
+
+            if (amount <= 0) return;
+            // lock the game while we raise the garbage
+            tetrisEngine->gameInterrupt(false);
+            // raise
             for (int i = 0; i < amount; i++) {
                 tetrisEngine->scheduleDelayedTask(i * 5, [&, i, amount, currentHoleIndex]() {
                    tetrisEngine->raiseGarbage(1, currentHoleIndex);
@@ -412,6 +429,25 @@ public:
         if (cleared > 0) {
             spawnBoardTitle(50, 350, CLEAR_MESSAGES[cleared], cleared == 4 ? TETRIS_COLORS : nullptr);
         }
+
+        // counter-attack
+        int counteredDamage = 0;
+        while (!garbageQueue.empty() && baseDamage > 0) {
+            int amount = garbageQueue.front(); // amount of garbo to raise
+            garbageQueue.pop_front();
+
+            if (baseDamage >= amount) {
+                baseDamage -= amount;
+                counteredDamage += amount;
+            } else {
+                garbageQueue.push_front(amount - baseDamage);
+                counteredDamage += baseDamage;
+                baseDamage = 0;
+            }
+        }
+
+        // if the player countered damage, show it (left side)
+        if (counteredDamage > 0) spawnPriorityIndicator(230, 640, to_string(counteredDamage), MINO_COLORS[5]);
 
         // fire event
         if (baseDamage > 0) onDamageSend(baseDamage);
@@ -532,6 +568,7 @@ public:
         // garbage is red
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // red
         for (auto &garbo : garbageQueue) {
+            if (garbo <= 0) continue;
             int toRisePixels = 30 * garbo; // each 30 pixels represent a line in the matrix (playfield)
 
             // each new "heap" of garbage is rendered above the old one 2 pixels
@@ -567,10 +604,11 @@ public:
         }
 
         SDL_RenderClear(renderer);
-        SpritesRenderingPipeline::renderEverything(renderer);
+        SpritesRenderingPipeline::renderNormal(renderer);
         renderTetrisInterface(100, 90);
+        SpritesRenderingPipeline::renderPriority(renderer);
 
-        sprintfcdbg(this->tetrisEngine, static_cast<int>(SpritesRenderingPipeline::getSprites().size()));
+        //sprintfcdbg(this->tetrisEngine, static_cast<int>(SpritesRenderingPipeline::getSprites().size() + SpritesRenderingPipeline::getPrioritySprites().size()));
         SDL_RenderPresent(renderer); // Show updated frame
     }
 };

@@ -10,6 +10,9 @@ long RENDER_PASSES = 0;
 std::map<long, Sprite*> ACTIVE_SPRITES;
 vector<Sprite*> deletionQueue;
 
+std::map<long, Sprite*> PRIORITY_ACTIVE_SPRITES;
+vector<Sprite*> priorityDeletionQueue;
+
 void Sprite::setTextureFile(const std::string& textureSpriteFile) {
     this->textureSheetPath = textureSpriteFile;
 }
@@ -29,17 +32,20 @@ SpriteLoc Sprite::getLocation() const {
     return { x, y, rotationState };
 }
 
-void Sprite::spawn() {
+void Sprite::spawn(bool priority) {
     if (!heapAllocated) {
         throw logic_error("YOU CANNOT SPAWN STACK-ALLOCATED OBJECTS!!");
     }
-    SpritesRenderingPipeline::getSprites().insert({this->spriteId, this});
+    this->isPriority = priority;
+    if (!isPriority) SpritesRenderingPipeline::getSprites().insert({this->spriteId, this});
+    else SpritesRenderingPipeline::getPrioritySprites().insert({this->spriteId, this});
 }
 
 void Sprite::discard() {
     this->x = -1000, y = -1000;
     if (!heapAllocated) return;
-    deletionQueue.push_back(this);
+    if (!isPriority) deletionQueue.push_back(this);
+    else priorityDeletionQueue.push_back(this);
 }
 
 SpriteTexture* Sprite::getTexture() {

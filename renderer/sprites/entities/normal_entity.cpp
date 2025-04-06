@@ -14,9 +14,6 @@ void NormalEntity::moveSmooth(const int targetX, const int targetY, const functi
     this->speed = speed_;
     this->onMovedComplete = onComplete;
 
-    cout << "moving to " << targetX << " " << targetY << endl;
-    cout << "scheduled " << (onMovedComplete != nullptr) << endl << endl;
-
     setAnimation(ENTITY_IDLE);
 }
 
@@ -32,7 +29,12 @@ void NormalEntity::onBeforeTextureDraw(SDL_Texture *texture) {
 }
 
 void NormalEntity::attackPlayer(const void* p) {
+    // prerequisite
+    if (this->isAttacking) return;
+
     TetrisPlayer* target = ((TetrisPlayer*) p);
+    if (target->isAttacking) return;
+
     auto curLoc = target->getLocation();
     auto toReturn = this->getLocation();
     auto lastLane = target->currentLane;
@@ -44,14 +46,12 @@ void NormalEntity::attackPlayer(const void* p) {
         // move there and attack
         moveSmooth(curLoc.x, curLoc.y, [&, target, toReturn, lastLane]() {
             // call the parent's damage method
-            target->inflictDamage(static_cast<int>(randomFloat(this->damageBounds[0], this->damageBounds[1])), lastLane);
-            cout << "lock released 1" << endl;
+            target->inflictDamage(static_cast<int>(randomFloat(this->damageBounds[0], this->damageBounds[1] + 1)), lastLane);
 
             // attack "animation"
             // return to the spawn point
             moveSmooth(toReturn.x, toReturn.y, [&]() {
                 this->isAttacking = false;
-                cout << "lock released" << endl;
             }, 10);
         }, 15);
     }, 40);
@@ -134,7 +134,7 @@ void NormalEntity::onDrawCall() {
     // if at the end of the animation sequence, reset the frame speed to 5 and change to desired type
     if (textureOffset >= maxOffset - 1 && animationAfterAttackAnimation != nullptr) {
         this->animationAfterAttackAnimation();
-        this->frameSpeed = 5;
+        this->frameSpeed = defaultFrameSpeed;
         this->animationAfterAttackAnimation = nullptr;
     }
 
@@ -153,7 +153,7 @@ void NormalEntity::onDrawCallExtended(SDL_Renderer *renderer) {
     // render health icon
     auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
     const struct_render_component component = {
-            0, 0, 18, 18,
+            1 + (difficulty * 19), 0, 18, 18,
             strictX, strictY, static_cast<int>(18 * 1.25), static_cast<int>(18 * 1.25)
     };
     render_component(renderer, cached, component, 1);
@@ -163,10 +163,18 @@ void NormalEntity::onDrawCallExtended(SDL_Renderer *renderer) {
     SDL_Rect underlay = { strictX + 40, strictY, 200, 20 };
     SDL_RenderFillRect(renderer, &underlay);
 
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // red
+    // render the overlay (the actual HP)
+    SDL_Color color;
+    switch (this->difficulty) {
+        case EASY:   color = {0, 255, 0, 255}; break;   // lime
+        case MEDIUM: color = {255, 255, 0, 255}; break; // yellow
+        case HARD:   color = {255, 0, 0, 255}; break;   // red
+    }
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     SDL_Rect health = { strictX + 40, strictY, static_cast<int>(ceil(200.0 * ((double)currentHealth / maxHealthPoints))), 20 };
     SDL_RenderFillRect(renderer, &health);
 
+    // reset
     SDL_SetRenderDrawColor(renderer, 0,0,0,255); // black
 }
 
@@ -174,7 +182,7 @@ void NormalEntity::setAnimation(const int animation, const int startFrame) {
     // Reset state
     textureOffset = startFrame;
     internalClock = 0; // reset the clock & speed offset
-    frameSpeed = 5;
+    frameSpeed = defaultFrameSpeed;
 
     switch (animation) {
         case ENTITY_IDLE:
@@ -210,8 +218,6 @@ void NormalEntity::processMove() {
     if (distance <= speed) {
         strictX = targetMoveX;
         strictY = targetMoveY;
-
-        cout << "moved to: " << targetMoveX << " " << targetMoveY << endl;
 
         targetMoveX = -1;
         targetMoveY = -1;

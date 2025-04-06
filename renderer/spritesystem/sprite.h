@@ -25,7 +25,7 @@ class Sprite {
 public:
     virtual ~Sprite() = default;
 protected:
-    int y = 0;
+    int x = 0, y = 0;
     int width = 0, height = 0;
     SpriteTexture texture{0, 0, 0, 0};
 
@@ -38,9 +38,8 @@ public:
     const long spriteId;
 protected:
     std::string textureSheetPath = "../assets/SPRITES.bmp";
-
+    bool isPriority = false;
     int sdlFlipState = SDL_FLIP_NONE;
-    int x = 0;
 public:
     Sprite(SpriteTexture texture, const int width, const int height, const int initialRotation = 0) : spriteId(SPRITES_OBJECT_POOL++) {
         this->width = width;
@@ -61,7 +60,7 @@ public:
     /**
      * Insert this sprite to the global renderer proc
      */
-    void spawn();
+    void spawn(bool priority = false);
 
     /**
      * Remove this sprite from the global renderer process, YOU SHOULD
@@ -108,12 +107,19 @@ extern long RENDER_PASSES;
 extern std::map<long, Sprite*> ACTIVE_SPRITES;
 extern std::vector<Sprite*> deletionQueue;
 
+extern std::map<long, Sprite*> PRIORITY_ACTIVE_SPRITES;
+extern std::vector<Sprite*> priorityDeletionQueue;
+
 namespace SpritesRenderingPipeline {
     static std::map<long, Sprite*>& getSprites() {
         return ACTIVE_SPRITES;
     }
 
-    static void renderEverything(SDL_Renderer* renderer) {
+    static std::map<long, Sprite*>& getPrioritySprites() {
+        return PRIORITY_ACTIVE_SPRITES;
+    }
+
+    static void renderNormal(SDL_Renderer* renderer) {
         for (auto&[fst, snd]: ACTIVE_SPRITES) {
             snd->render(renderer);
         }
@@ -125,6 +131,19 @@ namespace SpritesRenderingPipeline {
         }
         deletionQueue.clear();
         RENDER_PASSES++;
+    }
+
+    static void renderPriority(SDL_Renderer* renderer) {
+        for (auto&[fst, snd]: PRIORITY_ACTIVE_SPRITES) {
+            snd->render(renderer);
+        }
+        // clean up the garbage (prevent crashes)
+        for (Sprite* sprite: priorityDeletionQueue) {
+            SpritesRenderingPipeline::getPrioritySprites().erase(sprite->spriteId);
+            // actually deleting the shit
+            delete sprite;
+        }
+        priorityDeletionQueue.clear();
     }
 
     static long renderPasses() {

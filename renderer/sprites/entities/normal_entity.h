@@ -16,6 +16,12 @@ typedef struct {
     int amount;
 } KillRewards;
 
+typedef enum {
+    HARD,
+    MEDIUM,
+    EASY
+} EnemyDifficulty;
+
 class NormalEntity : public Sprite {
 public:
     const void* pTetrisPlayer;
@@ -27,6 +33,9 @@ public:
         this->flipSprite(flip);
         this->pTetrisPlayer = tetrisPlayer;
     }
+
+    int defaultFrameSpeed = 5;
+    EnemyDifficulty difficulty = EASY;
 
     bool isDead = false;
     bool isAttacking = false;
@@ -71,6 +80,10 @@ public:
 
     void setHealth(int health) {
         this->currentHealth = min(maxHealthPoints, max(0, health));
+    }
+
+    void setDifficulty(EnemyDifficulty enemyDifficulty) {
+        this->difficulty = enemyDifficulty;
     }
 
     KillRewards damageEntity(int damage);
@@ -119,7 +132,7 @@ public:
 
     int frameSpeed{};
     int maxOffset{};
-    void setAnimation(const int animation, const int startFrame = 0);
+    virtual void setAnimation(const int animation, const int startFrame = 0);
 
     function<void()> animationAfterAttackAnimation = nullptr;
     void scheduleAnimation(int animation, function<void()> toRunLater, int fs);

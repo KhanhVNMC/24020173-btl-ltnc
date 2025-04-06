@@ -78,5 +78,9 @@ void TetrisPlayer::process_input(SDL_Event &event, TetrisEngine *engine) {
         if (event.key.keysym.sym == SDLK_DOWN) {
             engine->softDropToggle(false);
         }
+    } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+        int x = event.button.x;
+        int y = event.button.y;
+        std::cout << "Mouse " << x << "," << y << "" << std::endl;
     }
 }
