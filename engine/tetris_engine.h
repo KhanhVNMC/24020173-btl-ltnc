@@ -1135,6 +1135,7 @@ inline void TetrisEngine::onUserHold() {
     // if a hold piece exists, place it into the playfield and push a new block from the generator into the queue.
     // otherwise, move the currently held piece into the playfield, effectively swapping it.
     if (this->holdPiece != nullptr) {
+        this->markFallingPieceAsNull();
         this->putPieceInPlayfield(this->holdPiece);
     } else {
         this->pushNextPieceToPlayfield();
