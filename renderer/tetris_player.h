@@ -169,20 +169,24 @@ public:
 
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
         // hook into events
-        this->tetrisEngine->runOnMinoLocked([&](int mino) {
+        this->tetrisEngine->runOnMinoLocked([&](int cleared) {
             if (firstPiecePlacedTime == -1) {
                 firstPiecePlacedTime = System::currentTimeMillis();
             }
             this->piecesPlaced++;
-            enemyOnLanes[0]->attackPlayer(this);
+            this->onMinoLocked(cleared);
         });
-        this->tetrisEngine->onComboBreaks([&](const int combo) { onComboBreaks(combo); });
+        //this->tetrisEngine->onComboBreaks([&](const int combo) { onComboBreaks(combo); });
         this->tetrisEngine->onPlayfieldEvent([&](const PlayfieldEvent& event) { playFieldEvent(event); });
 
         // init gravity to lvl 1
         updateLevelAndGravity(1);
 
         // boot the engine up
+        this->tetrisEngine->scheduleDelayedTask(60, [&]() {
+            this->tetrisEngine->gameInterrupt(true);
+        });
+        this->tetrisEngine->gameInterrupt(false);
         this->tetrisEngine->start();
     }
 
@@ -199,7 +203,7 @@ public:
         this->currentLane = targetLane % 4; // prevent overshooting
 
         // move to specified location
-        this->flandre->moveSmooth(780, Y_LANES[currentLane], [&]() {
+        this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
             this->flandre->setAnimation(RUN_FORWARD);
             this->isMovingToAnotherLane = false;
             this->flandre->rotate(0);
@@ -296,8 +300,31 @@ public:
         }, 10);
     }
 
-    void onComboBreaks(const int combo) {
-        if (accumulatedCharge > 0) releaseDamageOnCurrentLane();
+    void onMinoLocked(const int linesCleared) {
+        // release damage if no lines cleared but charge is present
+        if (linesCleared <= 0 && accumulatedCharge > 0) {
+            releaseDamageOnCurrentLane();
+        }
+
+        // manage the garbage thingy (rise garbage)
+        // if empty, no garbage, we no care
+        if (linesCleared <= 0 && !garbageQueue.empty()) {
+            // lock the game while we raise the garbage
+            tetrisEngine->gameInterrupt(false);
+            // queue the garbage up
+            int currentHoleIndex = rand() % 10; // the garbage hole
+            int amount = garbageQueue.front(); // amount of garbo to raise
+            garbageQueue.pop_front();
+            for (int i = 0; i < amount; i++) {
+                tetrisEngine->scheduleDelayedTask(i * 5, [&, i, amount, currentHoleIndex]() {
+                   tetrisEngine->raiseGarbage(1, currentHoleIndex);
+                   if (i >= amount - 1) {
+                       // resume
+                       tetrisEngine->gameInterrupt(true);
+                   }
+                });
+            }
+        }
     }
 
     void updateLevelAndGravity(const int newLevel) {

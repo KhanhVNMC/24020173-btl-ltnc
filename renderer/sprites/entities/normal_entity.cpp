@@ -80,7 +80,7 @@ KillRewards NormalEntity::damageEntity(int damage) {
     scheduleAnimation(ENTITY_DAMAGED, [&]() {
         setAnimation(ENTITY_IDLE);
         flipSprite(SDL_FLIP_HORIZONTAL);
-    }, 40);
+    }, 15);
 
     if (currentHealth <= 0) {
         // the entity has been killed

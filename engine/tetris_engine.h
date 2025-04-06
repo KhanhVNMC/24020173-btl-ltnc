@@ -1330,7 +1330,7 @@ inline void TetrisEngine::updatePlayfieldState(Tetromino* locked) {
     // This block of code is the one that ACTUALLY updates the playfield
     // by shifting all rows down for each cleared line
     if (!clearedLines.empty()) {
-        this->clearDelayActive = true; // activate clear delay, halting piece spawning temporarily
+        this->clearDelayActive = true; // activate clear delay, halting piece spawning temporarily (this should be changed to interrupt, but fuck it)
         if (lineClearsDelay > 0) {
             // schedule playfield update to clear lines after delay (if > 0)
             scheduleDelayedTask(lineClearsDelay, [this, clearedLines] {
