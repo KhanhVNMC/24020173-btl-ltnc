@@ -188,6 +188,8 @@ public:
 
     // indicates whether the engine is currently started or not
     bool started = false;
+    // whether to start dropping pieces or not
+    bool startedPlaying = false;
     // indicates if the engine has been stopped
     bool stopped = false;
 
@@ -652,7 +654,7 @@ private:
 
     /**
      * Should only be called when it is CRUCIAL to free
-     * the memory occupied by <code>this->prepareToDelete</code>
+     * the memory occupied by <code>this->deletionQueue</code>
      */
     void freeMemoryOfFallingPiece();
 
@@ -662,6 +664,20 @@ public:
     */
     void start() {
         this->gameLoopStart();
+    }
+
+    /**
+     * Enables or disables the spawning of the next game piece.
+     *
+     * This method controls whether the game should continue spawning new pieces
+     * Setting the parameter to true allows the game to proceed normally
+     * Setting it to false pauses the game by preventing new pieces from spawning
+     * (will not despawn the current piece)
+     *
+     * @param isEnabled true to enable game progression, false to pause it
+     */
+    void gameInterrupt(bool isEnabled) {
+        this->startedPlaying = isEnabled;
     }
 
 public:
@@ -1393,7 +1409,7 @@ inline void TetrisEngine::gameLoopStart() {
 
         // if the falling piece is null, spawns a new one
         // only if the clear delay period is not active
-        if (this->fallingPiece == nullptr && !clearDelayActive) {
+        if (this->fallingPiece == nullptr && !clearDelayActive && startedPlaying) {
             if (!nextQueue.empty()) {
                 MinoTypeEnum *nextMino = nextQueue.front();
                 nextQueue.pop();
