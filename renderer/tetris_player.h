@@ -57,7 +57,7 @@ static int MINO_COLORS[7] = {
         0x00FF51, // S mino
         0xFFB71C, // L mino
         0x008cff,// J mino
-        0x00FFFF, // I moino
+        0x00FFFF, // I mino
         0xFFEA00, // O mono
 
 };
@@ -145,7 +145,7 @@ class TetrisPlayer {
     // attack thingy
 public:
     int currentLane = 0;
-    int accumulatedCharge = 0;
+    int accumulatedCharge = 30;
     int currentArmorPoints = 10;
 
     bool isMovingToAnotherLane = false;
@@ -162,10 +162,8 @@ public:
         this->flandre->setAnimation(RUN_FORWARD);
         this->flandre->spawn();
 
-        enemyOnLanes[0] = new Redgga();
-        enemyOnLanes[0]->teleportStrict(X_LANE_ENEMIES, Y_LANES_ENEMIES[currentLane]);
-        enemyOnLanes[0]->setAnimation(ENTITY_IDLE);
-        enemyOnLanes[0]->spawn();
+        spawnEnemyOnLane(0, new Redgga(this));
+
 
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
         // hook into events
@@ -197,8 +195,21 @@ public:
     [[maybe_unused]] void sprintfcdbg(TetrisEngine* tetris, int spriteCount);
     void process_input(SDL_Event& event, TetrisEngine* engine);
 
+    void spawnEnemyOnLane(int lane, NormalEntity* entity) {
+        enemyOnLanes[lane] = entity;
+        // spawn hidden
+        entity->teleportStrict(X_LANE_ENEMIES + 200, Y_LANES_ENEMIES[lane]);
+        // move slowly to its designated position
+        entity->moveSmooth(X_LANE_ENEMIES, Y_LANES_ENEMIES[lane], [&, entity]() {
+            // once arrive, this mob is ready to be fucked
+            entity->isSpawning = false;
+        });
+        entity->setAnimation(ENTITY_IDLE);
+        entity->spawn();
+    }
+
     void moveToLane(const int targetLane) {
-        if (this->isMovingToAnotherLane) return; // prevent overlapping
+        if (this->isMovingToAnotherLane || this->isAttacking) return; // prevent overlapping
         this->isMovingToAnotherLane = true;
         this->currentLane = targetLane % 4; // prevent overshooting
 
@@ -258,7 +269,12 @@ public:
         const int finalDamage = accumulatedCharge;
         accumulatedCharge = 0; // reset charges
 
-        if (enemyOnLanes[currentLane] == nullptr || enemyOnLanes[currentLane]->isAttacking || enemyOnLanes[currentLane]->isDead) {
+        if (enemyOnLanes[currentLane] == nullptr || enemyOnLanes[currentLane]->isAttacking || enemyOnLanes[currentLane]->isDead || enemyOnLanes[currentLane]->isSpawning) {
+            cout << "missed" << endl;
+            cout << (enemyOnLanes[currentLane] == nullptr) << endl;
+            if (enemyOnLanes[currentLane] != nullptr)
+            cout << (enemyOnLanes[currentLane]->isAttacking) << endl;
+
             spawnMiscIndicator(310, 10, "miss!", MINO_COLORS[1]);
             return;
         }
@@ -285,6 +301,7 @@ public:
                 // if the enemy is dead
                 if (killed) {
                     addStats(rewards.type == 1, rewards.amount);
+                    // free the memory of the thing
                     this->enemyOnLanes[currentLaneRef] = nullptr; // mark the enemy as none
                 }
 

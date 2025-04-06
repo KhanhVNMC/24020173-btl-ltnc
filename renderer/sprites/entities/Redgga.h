@@ -4,10 +4,10 @@
 
 class Redgga final : public NormalEntity {
 public:
-    Redgga() : NormalEntity() {
+    Redgga(const void* tetrisPlayer) : NormalEntity(tetrisPlayer) {
         this->setTextureFile("../assets/enemy_01.bmp"); // red nigga
-        this->setDamageThresholds(3, 5); // 3-5 dmg
-        this->setAttackDelaySeconds(15); // 15s between attacks
+        this->setDamageThresholds(2, 3); // 3-5 dmg
+        this->setAttackSpeed(5); // 15s between attacks
         this->setMaxHealth(30);
     }
 };

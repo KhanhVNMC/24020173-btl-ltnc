@@ -125,8 +125,6 @@ public:
     ~ParticleSystem() {
         // what the fuck
         // PSA: Removed the garbage collector entry because shit lag as fuck
-
-
     }
 };
 

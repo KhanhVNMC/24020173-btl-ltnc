@@ -8,11 +8,14 @@
 #include "../../spritesystem/particles.h"
 #include "../../tetris_player.h"
 
-void NormalEntity::moveSmooth(const int targetX, const int targetY, const function<void()> &onComplete, const int speed_) {
+void NormalEntity::moveSmooth(const int targetX, const int targetY, const function<void()> onComplete, const int speed_) {
     targetMoveX = targetX;
     targetMoveY = targetY;
     this->speed = speed_;
     this->onMovedComplete = onComplete;
+
+    cout << "moving to " << targetX << " " << targetY << endl;
+    cout << "scheduled " << (onMovedComplete != nullptr) << endl << endl;
 
     setAnimation(ENTITY_IDLE);
 }
@@ -28,25 +31,27 @@ void NormalEntity::onBeforeTextureDraw(SDL_Texture *texture) {
     }
 }
 
-void NormalEntity::attackPlayer(void* p) {
+void NormalEntity::attackPlayer(const void* p) {
     TetrisPlayer* target = ((TetrisPlayer*) p);
     auto curLoc = target->getLocation();
     auto toReturn = this->getLocation();
     auto lastLane = target->currentLane;
 
-    isAttacking = true;
+    this->isAttacking = true;
 
     // warn the player that the entity is attacking
     scheduleAnimation(ENTITY_APPROACH, [&, target, curLoc, toReturn, lastLane]() {
         // move there and attack
-        moveSmooth(curLoc.x + 20, curLoc.y, [&, target, curLoc, toReturn, lastLane]() {
+        moveSmooth(curLoc.x, curLoc.y, [&, target, toReturn, lastLane]() {
             // call the parent's damage method
             target->inflictDamage(static_cast<int>(randomFloat(this->damageBounds[0], this->damageBounds[1])), lastLane);
+            cout << "lock released 1" << endl;
 
             // attack "animation"
-                // return to the spawn point
+            // return to the spawn point
             moveSmooth(toReturn.x, toReturn.y, [&]() {
-                isAttacking = false;
+                this->isAttacking = false;
+                cout << "lock released" << endl;
             }, 10);
         }, 15);
     }, 40);
@@ -107,7 +112,7 @@ void NormalEntity::die(bool isArmor) {
     ps->once = true;
     ps->teleport(strictX + 120, strictY + 120); // Set emitter position
     ps->spawn();
-    // kill the entity
+    // kill the entity (and clear up garbage too)
     this->discard();
 }
 
@@ -131,6 +136,16 @@ void NormalEntity::onDrawCall() {
         this->animationAfterAttackAnimation();
         this->frameSpeed = 5;
         this->animationAfterAttackAnimation = nullptr;
+    }
+
+    // only count in seconds
+    if (internalClock % 60 == 0) { // every second (16.6MS)
+        attackDelayCounter++;
+        // check if it's time to perform the attack
+        if (attackDelayCounter >= (minAttackInterval + rand() % (maxAttackInterval - minAttackInterval))) {
+            attackPlayer(pTetrisPlayer);
+            attackDelayCounter = 0; // reset the counter
+        }
     }
 }
 
@@ -195,11 +210,16 @@ void NormalEntity::processMove() {
     if (distance <= speed) {
         strictX = targetMoveX;
         strictY = targetMoveY;
+
+        cout << "moved to: " << targetMoveX << " " << targetMoveY << endl;
+
         targetMoveX = -1;
         targetMoveY = -1;
-        if (onMovedComplete) {
-            onMovedComplete();
+
+        if (onMovedComplete != nullptr) {
+            auto onMovedFunctionCopy = onMovedComplete;
             onMovedComplete = nullptr;
+            onMovedFunctionCopy();
         }
         return;
     }

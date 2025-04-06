@@ -98,6 +98,7 @@ public:
         ((Sprite*)ptr)->heapAllocated = true;
         return ptr;
     }
+
     static void operator delete(void* ptr) {
         ::operator delete(ptr);
     }

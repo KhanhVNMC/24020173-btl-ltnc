@@ -58,12 +58,17 @@ void TetrisPlayer::process_input(SDL_Event &event, TetrisEngine *engine) {
                 break;
             case SDLK_y:
                 break;
-            case SDLK_e:
-                for (int i = 0; i < 3; i++) {
-                    tetrisEngine->scheduleDelayedTask(5 * i, [&] {
-                        tetrisEngine->raiseGarbage(1, 2);
-                    });
-                }
+            case SDLK_1:
+                moveToLane(0);
+                break;
+            case SDLK_2:
+                moveToLane(1);
+                break;
+            case SDLK_3:
+                moveToLane(2);
+                break;
+            case SDLK_4:
+                moveToLane(3);
                 break;
             default:
                 break;

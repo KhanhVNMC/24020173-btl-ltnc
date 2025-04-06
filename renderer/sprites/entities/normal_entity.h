@@ -18,15 +18,19 @@ typedef struct {
 
 class NormalEntity : public Sprite {
 public:
-    explicit NormalEntity(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 60, const int height = 50, const int initialRotation = 0)
+    const void* pTetrisPlayer;
+
+    explicit NormalEntity(const void* tetrisPlayer, const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 60, const int height = 50, const int initialRotation = 0)
             : Sprite({ 0, 41, DEFAULT_SPRITE_W, DEFAULT_SPRITE_H }, width, height, initialRotation) {
         this->setTextureFile("../assets/entity_01.bmp");
         this->scale(4);
         this->flipSprite(flip);
+        this->pTetrisPlayer = tetrisPlayer;
     }
 
     bool isDead = false;
     bool isAttacking = false;
+    bool isSpawning = true;
 
     /**
      * The damage threshold the entity will deal
@@ -34,11 +38,20 @@ public:
     int damageBounds[2] = {0, 0};
 
     /**
-     * The amount of time the entity will wait before crapping your pants again
+     * The amount of time the entity will wait before make you shit your pants again
      */
-    double attackDelayFrames = 10; // default is 10s
+    double attackSpeed = 10; // speed at which the entity attacks
+    int attackDelayCounter = 0; // counter to track time until the next attack
+    int minAttackInterval, maxAttackInterval; // attack interval range (min, max)
 
+    /**
+     * The amount of health the entity has
+     */
     int currentHealth = 0, maxHealthPoints = 0;
+
+    /**
+     * For the red flashing effect
+     */
     int glowRedUntil = 0;
 
     void setDamageThresholds(int lowerBound, int upperBound) {
@@ -46,8 +59,10 @@ public:
         this->damageBounds[1] = upperBound;
     }
 
-    void setAttackDelaySeconds(double seconds) {
-        this->attackDelayFrames = seconds * 16.66;
+    void setAttackSpeed(double speed) {
+        this->attackSpeed = speed;
+        this->minAttackInterval = static_cast<int>(attackSpeed * 0.7); // 70%
+        this->maxAttackInterval = static_cast<int>(attackSpeed * 1.3); // 130%
     }
 
     void setMaxHealth(int health) {
@@ -62,7 +77,7 @@ public:
 
     void die(bool isArmor);
 
-    void attackPlayer(void* p);
+    void attackPlayer(const void* p);
 
     /**
      * The ACTUAL X AND Y POSITIONS, THE PROVIDED SPRITE::X AND ::Y IS FOR
@@ -98,7 +113,7 @@ public:
      * @param onComplete
      * @param speed_ pixel per frame
      */
-    void moveSmooth(const int targetX, const int targetY, const function<void()>& onComplete = nullptr, const int speed_ = 5);
+    void moveSmooth(const int targetX, const int targetY, const function<void()> onComplete = nullptr, const int speed_ = 5);
 
     void attackAnimation();
 
@@ -112,7 +127,7 @@ public:
     int textureOffset{};
     function<void()> onMovedComplete;
 
-    int internalClock;
+    int internalClock = 0;
     void onDrawCall() override;
     void onDrawCallExtended(SDL_Renderer* renderer) override;
     void onBeforeTextureDraw(SDL_Texture* texture) override;

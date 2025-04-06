@@ -6,7 +6,7 @@
 #include "playerentity.h"
 #include "../../spritesystem/particles.h"
 
-void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const function<void()> &onComplete, const int speed_) {
+void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const function<void()> onComplete, const int speed_) {
     targetMoveX = targetX;
     targetMoveY = targetY;
     this->speed = speed_;
@@ -16,6 +16,8 @@ void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const func
         setAnimation(targetMoveY < strictY ? RUN_FORWARD : RUN_BACKWARD);
         if (targetMoveY < strictY) {
             rotate(340);
+        } else {
+            rotate(20);
         }
         return;
     };
@@ -155,8 +157,9 @@ void FlandreScarlet::processMove() {
         targetMoveX = -1;
         targetMoveY = -1;
         if (onMovedComplete) {
-            onMovedComplete();
+            auto onMovedFunctionCopy = onMovedComplete;
             onMovedComplete = nullptr;
+            onMovedFunctionCopy();
         }
         return;
     }

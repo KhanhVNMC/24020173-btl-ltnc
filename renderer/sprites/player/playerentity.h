@@ -54,7 +54,7 @@ public:
      * @param onComplete
      * @param speed_ pixel per frame
      */
-    void moveSmooth(const int targetX, const int targetY, const function<void()>& onComplete = nullptr, const int speed_ = 5);
+    void moveSmooth(const int targetX, const int targetY, const function<void()> onComplete = nullptr, const int speed_ = 5);
 
     function<void()> animationAfterAttackAnimation = nullptr;
     void scheduleAnimation(int animation, function<void()> toRunLater, int frameSpeed);
@@ -69,7 +69,7 @@ public:
     int textureOffset{};
     function<void()> onMovedComplete;
 
-    int internalClock;
+    int internalClock = 0;
     void onDrawCall() override;
 
     void onBeforeTextureDraw(SDL_Texture* texture) override;
