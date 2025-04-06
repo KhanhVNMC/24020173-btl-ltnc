@@ -9,7 +9,7 @@ public:
         this->setDamageThresholds(1, 4); // 1-4 dmg
         this->setAttackSpeed(5); // 30s between attacks
         this->setDifficulty(MEDIUM); // this is a medium mob
-        this->setMaxHealth(99); // 12HP (3 tetris(s) to clear)
+        this->setMaxHealth(999); // 12HP (3 tetris(s) to clear)
         this->defaultFrameSpeed = 10;
     }
 };
