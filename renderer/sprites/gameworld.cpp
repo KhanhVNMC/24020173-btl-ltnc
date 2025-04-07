@@ -17,7 +17,7 @@ public:
     bool scroll = false;
     explicit BackgroundScroll(const SDL_RendererFlip flip, int x, int y, const int spriteScrollSpeed = 2, const int width = 512, const int height = 256, const int initialRotation = 0):
     Sprite({ 0, 0, 512, 256 }, width, height, initialRotation) {
-        this->setTextureFile("../assets/starlight.bmp");
+        this->setTextureFile(PARALLAX_SHEET);
         this->x = x; this->y = y;
         this->spriteScrollSpeed = spriteScrollSpeed;
         this->scale(4);

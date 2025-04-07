@@ -9,8 +9,8 @@
 
 class DisturberFairy : public DebuffFairy {
 public:
-    DisturberFairy(const void* tetrisPlayer) : DebuffFairy(tetrisPlayer) {
-        this->setTextureFile("../assets/f_disturber.bmp"); // blue nigga
+    DisturberFairy(TetrisPlayer* tetrisPlayer) : DebuffFairy(tetrisPlayer) {
+        this->setTextureFile(FAIRY_DISTURBER_SHEET); // blue nigga
         this->setDamageThresholds(15, 30); // 13-25s debuff
 
         this->setAttackSpeed(30); // 30s between attacks

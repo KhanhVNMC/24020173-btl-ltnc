@@ -10,6 +10,8 @@
 #include <iostream>
 #include <vector>
 #include <functional>
+#include "../../engine/javalibs/jsystemstd.h"
+#include <atomic>
 
 typedef struct {
     int x, y, rot;
@@ -26,12 +28,12 @@ typedef struct {
 } Dimension;
 
 // count how many sprites have been spawned so far
-static long SPRITES_OBJECT_POOL = 0;
+extern long SPRITES_OBJECT_POOL;
 
 class Sprite {
 public:
     virtual ~Sprite() = default;
-    const long spriteId;
+    long spriteId;
 protected:
     // misc stuff
     int x = 0, y = 0;
@@ -47,7 +49,7 @@ protected:
     int originalTextureX = 0, originalTextureY = 0;
 
     // the texture reference sheet
-    std::string textureSheetPath = "../assets/SPRITES.bmp";
+    std::string textureSheetPath = MAIN_SPRITE_SHEET;
 
     // if this thing is prioritized or not
     bool isPriority = false;
@@ -58,7 +60,11 @@ protected:
     std::function<void()> onSpriteHovered = nullptr;
     bool hovering = false; // track if we're already hovering
 public:
-    Sprite(SpriteTexture texture, const int width, const int height, const int initialRotation = 0) : spriteId(SPRITES_OBJECT_POOL++) {
+    Sprite(SpriteTexture texture, const int width, const int height, const int initialRotation = 0) {
+        heapAllocated = currentlyHeapAllocating;
+        currentlyHeapAllocating = false;
+
+        this->spriteId = SPRITES_OBJECT_POOL++;
         this->width = width;
         this->height = height;
         this->rotationState = initialRotation;
@@ -67,7 +73,7 @@ public:
     }
 
     void setTextureFile(const std::string& textureSpriteFile);
-    void setupTexture(SpriteTexture texture, const std::string& textureSpriteFile = "../assets/SPRITES.bmp");
+    void setupTexture(SpriteTexture texture, const std::string& textureSpriteFile = MAIN_SPRITE_SHEET);
 
     /**
      * @return the sprite Location object (x,y,rot)
@@ -154,20 +160,13 @@ public:
     void checkIfClicked(int mouseX, int mouseY, int mouseBtn);
     void checkIfHovered(int mouseX, int mouseY);
 
+    /**
+     * Unsafe shit
+     */
+    static void* operator new(const size_t size);
 private:
-    // if this sprite is allocated on the heap
-    bool heapAllocated;
-public:
-    static void* operator new(const size_t size) {
-        void* ptr = ::operator new(size);
-        // do not allow this sprite to enter the rendering pipeline if it was NOT on the heap
-        ((Sprite*)ptr)->heapAllocated = true;
-        return ptr;
-    }
-
-    static void operator delete(void* ptr) {
-        ::operator delete(ptr);
-    }
+    static thread_local bool currentlyHeapAllocating;
+    bool heapAllocated = false;
 };
 
 extern long RENDER_PASSES;

@@ -9,6 +9,7 @@ int ExecutionContext::hook(function<void()> function) {
     lock_guard<mutex> lock(mtx);
     int execId = scheduledTasks++;
     ALL_EXECUTION_SCHEDULED[execId] = function;
+    cout << "[THREAD: EXEC CONTEXT] Task " << execId << " is now managing the execution context" << endl;
     return execId;
 }
 
@@ -18,6 +19,7 @@ void ExecutionContext::unhook(int execId, function<void()> onUnhook) {
     if (onUnhook != nullptr) {
         ON_UNHOOK_SUCCESS_CALLBACK.insert({ execId, onUnhook });
     }
+    cout << "[THREAD: EXEC CONTEXT] Task " << execId << " has requested to detach from the execution context" << endl;
 }
 
 void ExecutionContext::execute() {
@@ -33,7 +35,7 @@ void ExecutionContext::execute() {
         int execId = localUnhookQueue.front();
         localUnhookQueue.pop();
         ALL_EXECUTION_SCHEDULED.erase(execId);
-        cout << "Unhooked task with execId: " << execId << endl;
+        cout << "[THREAD: EXEC CONTEXT] Task " << execId << " has been detached from the execution context" << endl;
         auto it = ON_UNHOOK_SUCCESS_CALLBACK.find(execId);
         if (it != ON_UNHOOK_SUCCESS_CALLBACK.end()) {
             auto callbackCopy = it->second;

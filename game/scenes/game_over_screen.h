@@ -132,7 +132,7 @@ class GameOverScreen : public GameScene {
         // begin render the scene
         SDL_RenderClear(renderer);
         // render background
-        if (cachedTexture == nullptr) cachedTexture = disk_cache::bmp_load_and_cache(renderer, "../assets/load_scr.bmp");
+        if (cachedTexture == nullptr) cachedTexture = disk_cache::bmp_load_and_cache(renderer, BACKGROUND_SHEET);
         const struct_render_component bkgComponent = {
                 0, 0, 1720, 860,
                 0, 0, 1720, 860

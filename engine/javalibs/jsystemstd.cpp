@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 int bgmAudioVolume = 50;
 int sfxAudioVolume = 100;
@@ -34,26 +35,27 @@ namespace SysAudio {
         return true;
     }
 
+    const std::vector<std::string> audioFiles = {
+            BGM_AUD,
+            UI_CLICK,
+            TOP_OUT_AUD,
+            ROTATE_AUD,
+            HARD_DROP_AUD,
+            TETRO_MOVE_AUD,
+            GAME_OVER_AUD,
+            ENTITY_ATTACK_AUD,
+            ENTITY_ATTACK_MAGIC_AUD,
+            PIECE_HOLD_AUD,
+            PLAYER_ATTACK_AUD,
+            LC_SPIN_AUD,
+            LC_QUAD_AUD,
+            LC_NORM_AUD,
+            LC_PERFC_AUD,
+            WAVE_CLEAR_AUD,
+            COUNTDOWN_AUD
+    };
     void preloadDefinedAudioFiles() {
         static const std::string basePath = "../assets/sfxbgm/";
-
-        const std::vector<std::string> audioFiles = {
-                BGM_AUD,
-                UI_CLICK,
-                TOP_OUT_AUD,
-                ROTATE_AUD,
-                HARD_DROP_AUD,
-                TETRO_MOVE_AUD,
-                GAME_OVER_AUD,
-                ENTITY_ATTACK_AUD,
-                ENTITY_ATTACK_MAGIC_AUD,
-                PIECE_HOLD_AUD,
-                PLAYER_ATTACK_AUD,
-                LC_SPIN_AUD,
-                LC_QUAD_AUD,
-                LC_NORM_AUD,
-                LC_PERFC_AUD
-        };
 
         for (const auto& fileName : audioFiles) {
             std::string fullPath = basePath + fileName;
@@ -61,6 +63,20 @@ namespace SysAudio {
                 Mix_Chunk* chunk = Mix_LoadWAV(fullPath.c_str());
                 if (chunk) {
                     soundCache[fullPath] = chunk;
+                    std::cout << "[DEBUG] Loaded audio file " << fullPath << " to memory!" << std::endl;
+                } else {
+                    std::string message =
+                            "Required audio asset not found or failed to load:\n\"" +
+                            fullPath +
+                            "\"\n\nClick OK to exit the game";
+
+                    SDL_ShowSimpleMessageBox(
+                            SDL_MESSAGEBOX_ERROR,
+                            "Tetris VS: Engine Error",
+                            message.c_str(),
+                            nullptr
+                    );
+                    std::exit(13); // no audio
                 }
             }
         }

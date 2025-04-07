@@ -1,5 +1,6 @@
 #include "hooker.h"
 #include "scenes/main_menu.h"
+#include "scenes/loading_screen.h"
 #include <iostream>
 
 void AttachConsoleToSDL() {
@@ -15,9 +16,7 @@ void AttachConsoleToSDL() {
 int main(int argc, char* argv[]) {
     AttachConsoleToSDL();
 
-    SysAudio::initSoundSystem();
     initFontSystem();
-    SysAudio::preloadDefinedAudioFiles();
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Tetris VS: Demo",
@@ -25,15 +24,29 @@ int main(int argc, char* argv[]) {
                                           WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
     // Main loop
     ExecutionContext* context = new ExecutionContext();
+
+    // register main menu hook
     context->contextReturnMainMenu = [&, context, renderer]() {
         GameScene* menu = new MainMenu(context, renderer);
         menu->startScene();
     };
 
-    context->contextReturnMainMenu();
+    // load shit in
+    auto* loadingScreen = new LoadingScreen(context, renderer);
+    loadingScreen->fakeLoadFor = 90 + (::rand() % 60);
+    loadingScreen->onLoadingScreenInit = [&, renderer]() {
+        SysAudio::initSoundSystem();
+        SysAudio::preloadDefinedAudioFiles();
+        disk_cache::preload_defined_sheets(renderer);
+    };
+
+    // on screen complete
+    loadingScreen->onLoadingScreenComplete = [&](ExecutionContext* context, SDL_Renderer*) {
+        context->contextReturnMainMenu();
+    };
+    loadingScreen->startScene();
 
     thread worker([&]() {
         // each thread has its own fucking RNG

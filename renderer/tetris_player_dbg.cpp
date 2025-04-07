@@ -29,6 +29,7 @@ void TetrisPlayer::sprintfcdbg(TetrisEngine *tetris, int spriteCount) {
 }
 
 void TetrisPlayer::processSceneInput(SDL_Event &event) {
+    if (this->isGameOver) return;
     if (event.type == SDL_KEYDOWN && !event.key.repeat) {  // avoid key repeat events
         // uh wtf
         switch (event.key.keysym.sym) {
@@ -57,7 +58,9 @@ void TetrisPlayer::processSceneInput(SDL_Event &event) {
             case SDLK_DOWN: { tetrisEngine->softDropToggle(true); break; }
             case SDLK_SPACE: { tetrisEngine->hardDrop(); break; }
             case SDLK_c: { tetrisEngine->hold(); break; }
+#ifdef DEBUG_BUILD
             case SDLK_t: { inflictDamage(12, currentLane); break; }
+#endif
 
             /** HANDLE LANE SWITCHING **/
             case SDLK_1:
@@ -98,10 +101,5 @@ void TetrisPlayer::processSceneInput(SDL_Event &event) {
             }
             default: break;
         }
-    }
-    else if (event.type == SDL_MOUSEBUTTONDOWN) {
-        int x = event.button.x;
-        int y = event.button.y;
-        std::cout << "[DEBUG] Mouse " << x << "," << y << std::endl;
     }
 }

@@ -8,8 +8,8 @@
 
 class Grigga final : public NormalEntity {
 public:
-    Grigga(const void* tetrisPlayer) : NormalEntity(tetrisPlayer) {
-        this->setTextureFile("../assets/enemy_03.bmp"); // blue nigga
+    Grigga(TetrisPlayer* tetrisPlayer) : NormalEntity(tetrisPlayer) {
+        this->setTextureFile(GRIGGA_SHEET); // blue nigga
         this->setDamageThresholds(1, 2); // 1-2 dmg
         this->setAttackSpeed(30); // 30s between attacks
         this->setDifficulty(EASY); // this is a easy mob

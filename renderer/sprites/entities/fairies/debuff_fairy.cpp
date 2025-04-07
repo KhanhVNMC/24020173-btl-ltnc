@@ -8,12 +8,10 @@ static double randomFloat(double min, double max) {
     return min + static_cast<double>(rand()) / RAND_MAX * (max - min);
 }
 
-void DebuffFairy::attackPlayer(const void* p) {
+void DebuffFairy::attackPlayer() {
     // prerequisite
     if (this->isAttacking) return;
-
-    TetrisPlayer* target = ((TetrisPlayer*) p);
-    if (target->isAttacking) return;
+    TetrisPlayer* target = this->pTetrisPlayer;
 
     auto curLoc = target->getLocation();
     auto toReturn = this->getLocation();

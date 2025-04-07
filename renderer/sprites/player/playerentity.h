@@ -15,7 +15,7 @@ public:
     SDL_RendererFlip initialFlip;
     explicit FlandreScarlet(const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 50, const int height = 50, const int initialRotation = 0)
             : Sprite({ 0, 41, DEFAULT_SPRITE_W, DEFAULT_SPRITE_H }, width, height, initialRotation) {
-        this->setTextureFile("../assets/flandre.bmp");
+        this->setTextureFile(PLAYER_SHEET);
         this->scale(4);
         this->flipSprite(this->initialFlip = flip);
     }

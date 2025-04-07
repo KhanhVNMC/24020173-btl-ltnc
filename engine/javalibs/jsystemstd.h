@@ -19,8 +19,6 @@ typedef const char* LPCSTR;
 typedef void* HMODULE;
 typedef int BOOL;
 typedef unsigned long DWORD;
-#define SND_ASYNC      0x0001
-#define SND_FILENAME   0x00020000
 
 // no fucking windows.h, it fucked up my code
 extern "C" __declspec(dllimport) void WINAPI Sleep(DWORD dwMilliseconds);
@@ -32,6 +30,7 @@ extern "C" __declspec(dllimport) BOOL WINAPI AllocConsole(void);
 /* Java's long, signed 64-bit integer */
 #define LONG int64_t
 
+/* AUDIO */
 #define BGM_AUD "bgm.mp3"
 #define UI_CLICK "click.mp3"
 #define TOP_OUT_AUD "topout.wav"
@@ -47,6 +46,30 @@ extern "C" __declspec(dllimport) BOOL WINAPI AllocConsole(void);
 #define LC_QUAD_AUD "clearquad.wav"
 #define LC_NORM_AUD "clearline.wav"
 #define LC_PERFC_AUD "allclear.wav"
+#define WAVE_CLEAR_AUD "wave_done.ogg"
+#define COUNTDOWN_AUD "countdown.mp3"
+
+/* SPRITE SHEETS */ //"../assets/SPRITES.bmp"
+#define MAIN_SPRITE_SHEET "SPRITES.bmp"
+#define GAME_LOGO_SHEET "logo.bmp"
+#define FONT_SHEET "font.bmp"
+#define PLAYER_SHEET "flandre.bmp"
+#define BACKGROUND_SHEET "load_scr.bmp"
+#define TETROMINOES "tetrominoes.bmp"
+#define PARALLAX_SHEET "starlight.bmp"
+
+#define REDGGA_SHEET "enemy_01.bmp"
+#define BLUGGA_SHEET "enemy_02.bmp"
+#define GRIGGA_SHEET "enemy_03.bmp"
+#define NIGGA_SHEET "enemy_04.bmp"
+
+#define FAIRY_DISTRACTOR_SHEET "f_distractor.bmp"
+#define FAIRY_BLINDER_SHEET "f_blinder.bmp"
+#define FAIRY_DISTURBER_SHEET "f_disturber.bmp"
+#define FAIRY_WEAKENER_SHEET "f_weakener.bmp"
+
+/* BUILD SYSTEMS */
+#define DEBUG_BUILD
 
 namespace System {
     /**

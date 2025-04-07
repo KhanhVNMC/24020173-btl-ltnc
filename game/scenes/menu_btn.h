@@ -35,7 +35,7 @@ public:
 
     explicit Button(int width, int height, const std::string text = "button", const int textXPad = 0, const int textYPad = 0)
             : Sprite({ 0, 145, 124, 45 }, width, height, 0) {
-        this->setTextureFile("../assets/SPRITES.bmp");
+        this->setTextureFile(MAIN_SPRITE_SHEET);
         this->flipSprite(SDL_FLIP_NONE);
         this->textContent = text;
         this->textXPad = textXPad;

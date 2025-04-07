@@ -20,7 +20,7 @@ void TetrisPlayer::spawnPhysicsBoundText(
                 dest.w, dest.h, dest.x, dest.y,
                 randVelX, randVelY, lifetime, gravity
         );
-        part->setTextureFile("../assets/font.bmp");
+        part->setTextureFile(FONT_SHEET);
         if (applyThisColorToAll != -1) part->setTint(applyThisColorToAll);
         else if (colors != nullptr) part->setTint(colors[i]);
         part->spawn(priority);
@@ -57,7 +57,7 @@ void TetrisPlayer::spawnPriorityIndicator(const int x, const int y, string indic
 }
 
 void TetrisPlayer::renderThunderbolt(SDL_Renderer* renderer, const int x, const int y, const int offset) {
-    auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+    auto cached = disk_cache::bmp_load_and_cache(renderer, MAIN_SPRITE_SHEET);
     const struct_render_component component = {
             58 + (23 * offset), 0, 22, 30,
             x, y, static_cast<int>(22 * 1.25), static_cast<int>(30 * 1.25)
@@ -70,7 +70,7 @@ void TetrisPlayer::spawnMiddleScreenText(const int x, const int y, string title,
 }
 
 void TetrisPlayer::renderArmor(SDL_Renderer* renderer, const int x, const int y, const int offset) {
-    auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+    auto cached = disk_cache::bmp_load_and_cache(renderer, MAIN_SPRITE_SHEET);
     const struct_render_component component = {
             230 + (19 * offset), 0, 18, 18,
             x, y, static_cast<int>(18 * 1.25), static_cast<int>(18 * 1.25)
@@ -79,7 +79,7 @@ void TetrisPlayer::renderArmor(SDL_Renderer* renderer, const int x, const int y,
 }
 
 void TetrisPlayer::renderDebuffIcon(SDL_Renderer* renderer, const int x, const int y, const int offset) {
-    auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+    auto cached = disk_cache::bmp_load_and_cache(renderer, MAIN_SPRITE_SHEET);
     const struct_render_component component = {
             340 + (21 * offset), 0, 20, 22,
             x, y, static_cast<int>(20 * 2.25), static_cast<int>(22 * 2.25)

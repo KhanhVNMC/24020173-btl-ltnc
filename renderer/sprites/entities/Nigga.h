@@ -8,8 +8,8 @@
 
 class Nigga final : public NormalEntity {
 public:
-    Nigga(const void* tetrisPlayer) : NormalEntity(tetrisPlayer) {
-        this->setTextureFile("../assets/enemy_04.bmp"); // very strong mob
+    Nigga(TetrisPlayer* tetrisPlayer) : NormalEntity(tetrisPlayer) {
+        this->setTextureFile(NIGGA_SHEET); // very strong mob
         this->setDamageThresholds(3, 6); // 3-6 dmg
         this->setAttackSpeed(15); // 20s between attacks
         this->setDifficulty(HARD); // this is a hard boss

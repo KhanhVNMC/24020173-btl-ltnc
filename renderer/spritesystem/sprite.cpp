@@ -9,6 +9,7 @@
 long RENDER_PASSES = 0;
 std::map<long, Sprite*> ACTIVE_SPRITES;
 vector<Sprite*> deletionQueue;
+long SPRITES_OBJECT_POOL = 0;
 
 std::map<long, Sprite*> PRIORITY_ACTIVE_SPRITES;
 vector<Sprite*> priorityDeletionQueue;
@@ -42,12 +43,16 @@ void Sprite::onhover(std::function<void()> onHoverFunction) {
 
 void Sprite::spawn(bool priority) {
     if (!heapAllocated) {
-        throw logic_error("YOU CANNOT SPAWN STACK-ALLOCATED OBJECTS!!");
+        throw std::logic_error("YOU CANNOT SPAWN STACK-ALLOCATED OBJECTS!");
     }
     this->isPriority = priority;
-    if (!isPriority) SpritesRenderingPipeline::getSprites().insert({this->spriteId, this});
-    else SpritesRenderingPipeline::getPrioritySprites().insert({this->spriteId, this});
+    if (!isPriority) {
+        SpritesRenderingPipeline::getSprites().insert({this->spriteId, this});
+    } else {
+        SpritesRenderingPipeline::getPrioritySprites().insert({this->spriteId, this});
+    }
 }
+
 
 void Sprite::discard() {
     this->x = -1000, y = -1000;
@@ -105,6 +110,13 @@ void Sprite::checkIfHovered(int mouseX, int mouseY) {
     } else if (!isHovering) {
         hovering = false;
     }
+}
+
+thread_local bool Sprite::currentlyHeapAllocating = false;
+void* Sprite::operator new(const size_t size) {
+    currentlyHeapAllocating = true;
+    void* ptr = ::operator new(size);
+    return ptr;
 }
 
 void Sprite::render(SDL_Renderer* renderer) {

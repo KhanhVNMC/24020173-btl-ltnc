@@ -22,13 +22,14 @@ typedef enum {
     EASY
 } EnemyDifficulty;
 
+class TetrisPlayer;
 class NormalEntity : public Sprite {
 public:
-    const void* pTetrisPlayer;
+    TetrisPlayer* pTetrisPlayer;
 
-    explicit NormalEntity(const void* tetrisPlayer, const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 60, const int height = 50, const int initialRotation = 0)
+    explicit NormalEntity(TetrisPlayer* tetrisPlayer, const SDL_RendererFlip flip = SDL_FLIP_HORIZONTAL, const int width = 60, const int height = 50, const int initialRotation = 0)
             : Sprite({ 0, 41, DEFAULT_SPRITE_W, DEFAULT_SPRITE_H }, width, height, initialRotation) {
-        this->setTextureFile("../assets/entity_01.bmp");
+        this->setTextureFile(REDGGA_SHEET);
         this->scale(4);
         this->flipSprite(flip);
         this->pTetrisPlayer = tetrisPlayer;
@@ -96,14 +97,14 @@ public:
     void die(bool isArmor);
     void remove();
 
-    virtual void attackPlayer(const void* p);
+    virtual void attackPlayer();
 
     /**
      * The ACTUAL X AND Y POSITIONS, THE PROVIDED SPRITE::X AND ::Y IS FOR
      * ANIMATION PURPOSES!!! (INDEPENDENT)
      */
-    int strictX{};
-    int strictY{};
+    int strictX = 0;
+    int strictY = 0;
 
     /**
      * Teleport and shit (instantly)
@@ -136,8 +137,8 @@ public:
 
     void attackAnimation();
 
-    int frameSpeed{};
-    int maxOffset{};
+    int frameSpeed = 0;
+    int maxOffset = 0;
     virtual void setAnimation(const int animation, const int startFrame = 0);
 
     function<void()> animationAfterAttackAnimation = nullptr;

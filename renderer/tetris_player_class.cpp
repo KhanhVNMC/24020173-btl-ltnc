@@ -20,6 +20,7 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
             firstPiecePlacedTime = System::currentTimeMillis();
         }
         this->piecesPlaced++;
+        this->accumulatedCharge = 10;
         this->onMinoLocked(cleared);
     });
     this->tetrisEngine->onComboBreaks([&](const int combo) { });
@@ -63,7 +64,7 @@ void TetrisPlayer::startScene() {
             // game actually start here
             if (i == 0) {
                 // music
-                SysAudio::playSoundAsync(BGM_AUD, SysAudio::getBGMVolume(), false);
+                SysAudio::playSoundAsync(BGM_AUD, SysAudio::getBGMVolume(), true);
 
                 // resume context
                 tetrisEngine->gameInterrupt(false);
@@ -89,6 +90,9 @@ void TetrisPlayer::startScene() {
                         startWave(1);
                     });
                 });
+            } else {
+                // play audio cue
+                SysAudio::playSoundAsync(COUNTDOWN_AUD, SysAudio::getSFXVolume(), false);
             }
         });
     }
@@ -111,7 +115,7 @@ void TetrisPlayer::stopScene() {
          // cleanup afterwards
          int contextId = this->tetrisEngineExecId;
          delete this; // I DID THIS BECAUSE I AM ABSOLUTELY SURE ABOUT THE LIFECYCLE OF THIS OBJECT
-         cout << "[TETRIS PLAYER] Deleted this game session successfully! TE Context ID: " << contextId << endl;
+         cout << "[DEBUG: TETRIS GAME] Deleted this game session successfully! Player context ID: " << contextId << endl;
      });
 
      // clear frame buffer
@@ -234,7 +238,7 @@ void TetrisPlayer::moveToLane(const int targetLane) {
     this->currentLane = targetLane % 4; // prevent overshooting
 
     // move to specified location
-    this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
+    this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [this]() {
         this->flandre->setAnimation(RUN_FORWARD);
         this->isMovingToAnotherLane = false;
         this->flandre->rotate(0);
@@ -358,12 +362,12 @@ void TetrisPlayer::releaseDamageOnCurrentLane() {
                 }
             }
 
+            // audio first
+            SysAudio::playSoundAsync(PLAYER_ATTACK_AUD, SysAudio::getSFXVolume(), false);
             // damage animation
             this->flandre->scheduleAnimation(ATTACK_01, [&, finalDamage]() {
-                // audio
-                SysAudio::playSoundAsync(PLAYER_ATTACK_AUD, SysAudio::getSFXVolume(), false);
                 // go back to where she was
-                this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
+                this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [this]() {
                     this->flandre->setAnimation(RUN_FORWARD);
                     this->isAttacking = false;
                 }, 10);
@@ -649,7 +653,7 @@ void TetrisPlayer::renderTetrisStatistics(const int ox, const int oy) {
     }
 
     // render the toast box
-    auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+    auto cached = disk_cache::bmp_load_and_cache(renderer, MAIN_SPRITE_SHEET);
     const struct_render_component component = {
             126, 145, 256, 51,
             1200, 770, static_cast<int>(256 * 3), static_cast<int>(51 * 3)
@@ -670,7 +674,7 @@ void TetrisPlayer::renderTetrisStatistics(const int ox, const int oy) {
     render_component_string_rvs(renderer, 1300 + (gap * 2) + 6, 820, gamemode == ENDLESS ? "none" : " 20 ", 2, 1, 17, 12);
 
     // render a small logo
-    auto logo = disk_cache::bmp_load_and_cache(renderer, "../assets/logo.bmp");
+    auto logo = disk_cache::bmp_load_and_cache(renderer, GAME_LOGO_SHEET);
     const struct_render_component logoStruct = {
             0, 0, 100, 69,
             1290 + (100 * 3), 795, 100, 69
@@ -726,7 +730,10 @@ void TetrisPlayer::renderTetrisInterface(const int ox, const int oy) {
 }
 
 void TetrisPlayer::onWaveCompletion() {
+    // audio cue
+    SysAudio::playSoundAsync(WAVE_CLEAR_AUD, SysAudio::getSFXVolume(), false);
     spawnPhysicsBoundText("wave " + to_string(lastWave) + " clear!", 1600, 400, -10, 0, 300, 0, 4, 50, 15, nullptr, MINO_COLORS[2]);
+
     // rewards
     this->tetrisEngine->scheduleDelayedTask(30, [&]() {
         int amount = 2 + lastWaveDifficulty + (rand() % 10);
@@ -738,11 +745,20 @@ void TetrisPlayer::onWaveCompletion() {
 
     // next wave in 4s
     this->tetrisEngine->scheduleDelayedTask(180, [&]() {
-        if (lastWave >= 20 && gamemode == CAMPAIGN) { // if this level is 20 and campaign mode, end the game now
-            // the user win
-            this->showGameOverScreen(false);
+        if (this->isGameOver) return;
+
+        // if this level is 20 and campaign mode, end the game now
+        if (lastWave >= 20 && gamemode == CAMPAIGN) {
+            this->isGameOver = true; // stop players from controlling the game
+            this->tetrisEngine->gameInterrupt(true);
+            // fade the game out
+            this->fadeOutTicks = 60;
+            // the user wins, display appropriate screen
+            tetrisEngine->scheduleDelayedTask(80, [&]() { showGameOverScreen(false); });
             return;
         }
+
+        // next wave
         this->startWave(lastWave + 1);
     });
 }
@@ -752,10 +768,10 @@ void TetrisPlayer::showGameOverScreen(const bool lost) {
     SysAudio::playSoundAsync(GAME_OVER_AUD, SysAudio::getSFXVolume(), false);
 
     // this will hand controls over to the game over screen
-    gameOverSceneCallback = [&](ExecutionContext* iContext, SDL_Renderer* iRenderer) {
+    gameOverSceneCallback = [&, lost](ExecutionContext* iContext, SDL_Renderer* iRenderer) {
         auto* gameOver = new GameOverScreen({
             tetrisScore, totalKilledEnemies,
-             totalDamage, lastWave - 1, lost, System::currentTimeMillis() - this->gameStartTime,
+             totalDamage, lastWave - (lost ? 1 : 0), lost, System::currentTimeMillis() - this->gameStartTime,
              gamemode == ENDLESS
         }, context, renderer);
         // this screen takes over

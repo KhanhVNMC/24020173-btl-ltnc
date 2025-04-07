@@ -8,8 +8,8 @@
 
 class BlinderFairy : public DebuffFairy {
 public:
-    BlinderFairy(const void* tetrisPlayer) : DebuffFairy(tetrisPlayer) {
-        this->setTextureFile("../assets/f_blinder.bmp"); // blue nigga
+    BlinderFairy(TetrisPlayer* tetrisPlayer) : DebuffFairy(tetrisPlayer) {
+        this->setTextureFile(FAIRY_BLINDER_SHEET); // blue nigga
         this->setDamageThresholds(10, 20); // 8-15s debuff blind
 
         this->setAttackSpeed(28); // 30s between attacks

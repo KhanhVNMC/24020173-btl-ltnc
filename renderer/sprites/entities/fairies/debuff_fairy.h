@@ -14,13 +14,13 @@ enum Debuff {
 class DebuffFairy : public NormalEntity {
 public:
     vector<Debuff> availableDebuffs;
-    DebuffFairy(const void* tetrisPlayer) : NormalEntity(tetrisPlayer) {
+    DebuffFairy(TetrisPlayer* tetrisPlayer) : NormalEntity(tetrisPlayer) {
         this->isMiniboss = true;
         this->defaultFrameSpeed = 10;
         this->availableDebuffs = { WEAKNESS, FRAGILE };
     }
 
-    void attackPlayer(const void *p);
+    void attackPlayer();
 };
 
 #endif //TIAF_H

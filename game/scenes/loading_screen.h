@@ -25,12 +25,23 @@ class LoadingScreen : public GameScene {
         this->renderer = sdlRenderer;
     }
 
-    int clock;
     function<void()> onLoadingScreenInit = nullptr;
     function<void(ExecutionContext*, SDL_Renderer*)> onLoadingScreenComplete = nullptr;
     int fakeLoadFor = 60; // 60 frames/1s
 
+    int icClock;
+    void renderWavyString(float centerX, float centerY, const std::string& text, int scale, int strgap) {
+        float startX = centerX - (text.length() * strgap) / 2.0f;
+        for (size_t i = 0; i < text.length(); ++i) {
+            float x = startX + i * strgap;
+            float y = centerY + sin(i + ((icClock++) / 20) * 0.25) * 5;
+
+            Button::renderString(renderer, x, y, std::string(1, text[i]), scale, 1, 0);
+        }
+    }
+
     SDL_Texture* cachedTexture = nullptr;
+    int pulseClock = 63; // extrema (lowest)
     void menuLoop() {
         // stop loading screen
         if (fakeLoadFor <= 0) {
@@ -38,20 +49,19 @@ class LoadingScreen : public GameScene {
             return;
         }
         // render background
-        if (cachedTexture == nullptr) cachedTexture = disk_cache::bmp_load_and_cache(renderer, "../assets/load_scr.bmp");
+        if (cachedTexture == nullptr) cachedTexture = disk_cache::bmp_load_and_cache(renderer, BACKGROUND_SHEET);
         const struct_render_component component = {
                 0, 0, 1720, 860,
                 0, 0, 1720, 860
         };
-        render_component(renderer, cachedTexture, component, 0.65 + (cos(clock++ / 35.0) * 0.35));
-        // render the loading text
-        Button::renderString(renderer, 1200, 750 + (sin(clock++ / 25.0) * 20), "loading...", 4, 1, 45);
+        render_component(renderer, cachedTexture, component, 0.65 + (cos(pulseClock++ / 20.0) * 0.35));
+        renderWavyString(1200 + 230, 750, "loading...", 4, 45);
         // decrement IC
         fakeLoadFor--;
     }
 
     void stopScene() override {
-        context->unhook(this->hookId, [&]() {
+        context->unhook(this->hookId, [this]() {
             onLoadingScreenComplete(this->context, this->renderer);
             delete this;
         });

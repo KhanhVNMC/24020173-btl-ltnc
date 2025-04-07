@@ -459,8 +459,6 @@ public:
             case WAVE_HARD: {
                 // 3dps + 1fairy or 2 dps + 2 fairy (prioritize hardest ones)
                 int roll = rand() % 100;
-                cout << "rolled " << roll << endl;
-
                 if (roll < 50) { // 50%
                     // 3 DPS + 1 fairy (only medium or hard fairies)
                     for (int i = 0; i < 3; ++i) {

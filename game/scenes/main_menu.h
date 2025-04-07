@@ -31,7 +31,7 @@ class MainMenu : public GameScene {
     SDL_Texture* cachedTexture = nullptr;
     void menuLoop() {
         // render the logo
-        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/logo.bmp");
+        auto cached = disk_cache::bmp_load_and_cache(renderer, GAME_LOGO_SHEET);
         const struct_render_component component = {
                 0, 0, 100, 69,
                 MENU_X_POS + 150, MENU_Y_POS - 320, static_cast<int>(100 * 3), static_cast<int>(69 * 3)
@@ -57,7 +57,7 @@ class MainMenu : public GameScene {
 
     void openLoadingScreenToTetris(GameMode mode) {
         auto* load = new LoadingScreen(context, renderer);
-        load->fakeLoadFor = 80 + (rand() % 50); // fake load for 90 -> 150frames
+        load->fakeLoadFor = 40 + (rand() % 40); // fake load for 40 -> 80frames
 
         // execute the code with the inner scope pointing to the
         // loading screen's references
@@ -102,7 +102,12 @@ class MainMenu : public GameScene {
         // SETTINGS BUTTON
         Button* settingsButton = (new Button(300, 50, "settings", 7, -5));
         settingsButton->onButtonClick([](int m) {
-
+            SDL_ShowSimpleMessageBox(
+                    SDL_MESSAGEBOX_INFORMATION,
+                    "Tetris VS: Not Implemented",
+                    "Settings: This feature is not yet implemented!",
+                    nullptr
+            );
         });
         settingsButton->teleport(MENU_X_POS + 10, MENU_Y_POS + 150);
         settingsButton->spawn();
@@ -128,7 +133,7 @@ class MainMenu : public GameScene {
         SDL_RenderClear(renderer);
 
         // render background
-        if (cachedTexture == nullptr) cachedTexture = disk_cache::bmp_load_and_cache(renderer, "../assets/load_scr.bmp");
+        if (cachedTexture == nullptr) cachedTexture = disk_cache::bmp_load_and_cache(renderer, BACKGROUND_SHEET);
         const struct_render_component bkgComponent = {
                 0, 0, 1720, 860,
                 0, 0, 1720, 860

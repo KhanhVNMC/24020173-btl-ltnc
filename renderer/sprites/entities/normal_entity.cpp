@@ -28,12 +28,10 @@ void NormalEntity::onBeforeTextureDraw(SDL_Texture *texture) {
     }
 }
 
-void NormalEntity::attackPlayer(const void* p) {
+void NormalEntity::attackPlayer() {
     // prerequisite
     if (this->isAttacking) return;
-
-    TetrisPlayer* target = ((TetrisPlayer*) p);
-    if (target->isAttacking) return;
+    TetrisPlayer* target = this->pTetrisPlayer;
 
     auto curLoc = target->getLocation();
     auto toReturn = this->getLocation();
@@ -42,15 +40,15 @@ void NormalEntity::attackPlayer(const void* p) {
     this->isAttacking = true;
 
     // warn the player that the entity is attacking
-    scheduleAnimation(ENTITY_APPROACH, [&, target, curLoc, toReturn, lastLane]() {
+    scheduleAnimation(ENTITY_APPROACH, [this, target, curLoc, toReturn, lastLane]() {
         // move there and attack
-        moveSmooth(curLoc.x, curLoc.y, [&, target, toReturn, lastLane]() {
+        moveSmooth(curLoc.x, curLoc.y, [this, target, toReturn, lastLane]() {
             // call the parent's damage method
             target->inflictDamage(static_cast<int>(randomFloat(this->damageBounds[0], this->damageBounds[1] + 1)), lastLane);
 
             // attack "animation"
             // return to the spawn point
-            moveSmooth(toReturn.x, toReturn.y, [&]() {
+            moveSmooth(toReturn.x, toReturn.y, [this]() {
                 this->isAttacking = false;
             }, 10);
         }, 15);
@@ -150,7 +148,7 @@ void NormalEntity::onDrawCall() {
         attackDelayCounter++;
         // check if it's time to perform the attack
         if (attackDelayCounter >= (minAttackInterval + rand() % (maxAttackInterval - minAttackInterval))) {
-            attackPlayer(pTetrisPlayer);
+            attackPlayer();
             attackDelayCounter = 0; // reset the counter
         }
     }
@@ -158,7 +156,7 @@ void NormalEntity::onDrawCall() {
 
 void NormalEntity::onDrawCallExtended(SDL_Renderer *renderer) {
     // render health icon
-    auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+    auto cached = disk_cache::bmp_load_and_cache(renderer, MAIN_SPRITE_SHEET);
     struct_render_component component = {
             1 + (difficulty * 19), 0, 18, 18,
             strictX, strictY, static_cast<int>(18 * 1.25), static_cast<int>(18 * 1.25)

@@ -158,7 +158,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
 
     if (!engine->holdAllowed()) {
         // if hold piece is disabled, render a red cross
-        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+        auto cached = disk_cache::bmp_load_and_cache(renderer, MAIN_SPRITE_SHEET);
         const struct_render_component component = {
                 445, 0, 18, 18,
                 ox - 27, oy + 100, static_cast<int>(18 * 9.7), static_cast<int>(18 * 5.6)

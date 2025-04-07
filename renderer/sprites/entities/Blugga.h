@@ -4,8 +4,8 @@
 
 class Blugga final : public NormalEntity {
 public:
-    Blugga(const void* tetrisPlayer) : NormalEntity(tetrisPlayer) {
-        this->setTextureFile("../assets/enemy_02.bmp"); // blue nigga
+    Blugga(TetrisPlayer* tetrisPlayer) : NormalEntity(tetrisPlayer) {
+        this->setTextureFile(BLUGGA_SHEET); // blue nigga
         this->setDamageThresholds(1, 4); // 1-4 dmg
         this->setAttackSpeed(30); // 30s between attacks
         this->setDifficulty(MEDIUM); // this is a medium mob

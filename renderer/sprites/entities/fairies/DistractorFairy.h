@@ -9,8 +9,8 @@
 
 class DistractorFairy : public DebuffFairy {
 public:
-    DistractorFairy(const void* tetrisPlayer) : DebuffFairy(tetrisPlayer) {
-        this->setTextureFile("../assets/f_distractor.bmp"); // blue nigga
+    DistractorFairy(TetrisPlayer* tetrisPlayer) : DebuffFairy(tetrisPlayer) {
+        this->setTextureFile(FAIRY_DISTRACTOR_SHEET); // blue nigga
         this->setDamageThresholds(10, 20); // 13-25s debuff blind
 
         this->setAttackSpeed(30); // 30s between attacks
