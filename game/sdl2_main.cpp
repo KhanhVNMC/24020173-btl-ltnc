@@ -13,8 +13,6 @@ void AttachConsoleToSDL() {
 
 int main(int argc, char* argv[]) {
     AttachConsoleToSDL();
-    std::srand(std::time(0));
-    AttachConsoleToSDL();
     initFontSystem();
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Tetris: Imaginary War",
@@ -35,6 +33,7 @@ int main(int argc, char* argv[]) {
     player->startEngineAndGame();
 
     thread worker([&]() {
+        std::srand(System::currentTimeMillis());
         while (context->isRunning()) {
             context->execute();
         }

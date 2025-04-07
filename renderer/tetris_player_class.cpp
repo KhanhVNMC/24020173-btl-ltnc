@@ -76,7 +76,7 @@ void TetrisPlayer::startEngineAndGame() {
                 // make player "fly"
                 this->flandre->setAnimation(RUN_FORWARD);
                 // startWave  test
-                startWave(10);
+                startWave(20);
             }
         });
     }
@@ -224,6 +224,7 @@ void TetrisPlayer::inflictDebuff(int debuff, int timeInSeconds, int oldLane) {
     setDebuff(static_cast<Debuff>(debuff), true); // inflict the debuff
     sDebuffTime[debuff] = timeInSeconds * 60; // time in frames
 
+    spawnMiscIndicator(flandre->strictX, Y_LANES[oldLane], "debuff!", MINO_COLORS[1]);
     this->flandre->damagedAnimation(false);
     boardRumble = 10; // rumble for 10 frames
 }
