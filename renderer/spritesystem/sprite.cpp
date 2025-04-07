@@ -78,7 +78,7 @@ void Sprite::render(SDL_Renderer* renderer) {
     const SDL_Rect source = { this->texture.textureX, this->texture.textureY, this->texture.width, this->texture.height };
     const SDL_Rect dest = { this->x, this->y, static_cast<int>(this->width * scalar), static_cast<int>(this->height * scalar) };
 
-    const auto _textureSDL = disk_cache::bmp_load_and_cache(renderer, textureSheetPath);
+    const auto _textureSDL = disk_cache::bmp_load_and_cache(renderer, textureSheetPath);\
     onBeforeTextureDraw(_textureSDL);
 
     if (this->rotationState == 0 && this->sdlFlipState == SDL_FLIP_NONE) {

@@ -25,7 +25,7 @@ void NormalEntity::onBeforeTextureDraw(SDL_Texture *texture) {
             return;
         }
         SDL_SetTextureColorMod(texture, 0xFF, 0, 0);
-    }
+    } else SDL_SetTextureColorMod(texture, 0xFF, 0xFF, 0xFF);
 }
 
 void NormalEntity::attackPlayer(const void* p) {
@@ -208,8 +208,7 @@ void NormalEntity::setAnimation(const int animation, const int startFrame) {
             maxOffset = 2; // 4 sprites
             break;
 
-        default:
-            break;
+        default: break;
     }
 }
 

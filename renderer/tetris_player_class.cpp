@@ -75,6 +75,8 @@ void TetrisPlayer::startEngineAndGame() {
                 }
                 // make player "fly"
                 this->flandre->setAnimation(RUN_FORWARD);
+                // startWave  test
+                startWave(10);
             }
         });
     }
@@ -183,9 +185,8 @@ void TetrisPlayer::onDamageSend(const int damage) {
 }
 
 void TetrisPlayer::inflictDamage(int damage, int oldLane) {
-    if (this->isAttacking || this->isMovingToAnotherLane || !this->gameStarted) return;
-
-    if (currentLane != oldLane) {
+    if (!this->gameStarted) return;
+    if (this->isAttacking || this->isMovingToAnotherLane || currentLane != oldLane) {
         spawnMiscIndicator(flandre->strictX, Y_LANES[oldLane], "miss!", MINO_COLORS[3]);
         return;
     }
@@ -214,9 +215,8 @@ void TetrisPlayer::inflictDamage(int damage, int oldLane) {
 }
 
 void TetrisPlayer::inflictDebuff(int debuff, int timeInSeconds, int oldLane) {
-    if (this->isAttacking || this->isMovingToAnotherLane) return;
-
-    if (currentLane != oldLane) {
+    if (!this->gameStarted) return;
+    if (this->isAttacking || this->isMovingToAnotherLane || currentLane != oldLane) {
         spawnMiscIndicator(flandre->strictX, Y_LANES[oldLane], "miss!", MINO_COLORS[3]);
         return;
     }

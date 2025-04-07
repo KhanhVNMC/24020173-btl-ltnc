@@ -1,6 +1,7 @@
 //
 // Created by GiaKhanhVN on 3/3/2025.
 //
+#include <random>
 #include "tetris_renderer.h"
 #include "sprites/gameworld.cpp"
 #include "sprites/entities/Redgga.h"
@@ -12,6 +13,9 @@
 #include "sprites/entities/fairies/debuff_fairy.h"
 #include "sprites/entities/fairies/BlinderFairy.h"
 #include "../game/hooker.h"
+#include "sprites/entities/fairies/WeakenerFairy.h"
+#include "sprites/entities/fairies/DistractorFairy.h"
+#include "sprites/entities/fairies/DisturberFairy.h"
 
 #ifndef TETRIS_PLAYER_H
 #define TETRIS_PLAYER_H
@@ -66,11 +70,33 @@ static int MINO_COLORS[7] = {
         0x008cff,// J mino
         0x00FFFF, // I mino
         0xFFEA00, // O mono
-
 };
 
 #define X_LANE_PLAYER 840
 #define X_LANE_ENEMIES 1400
+
+enum WaveDifficulty {
+    WAVE_EASY,
+    WAVE_MEDIUM,
+    WAVE_HARD
+};
+
+enum FairyType {
+    WEAKENER,
+    DISTRACTOR,
+    BLINDER,
+    DISTURBER
+};
+
+/**
+ * Choose a random element with a specific RNG bias
+ */
+template<typename T> T chooseRandomWithBias(const vector<T>& options) {
+    static random_device rd;
+    static mt19937 rng(rd());
+    uniform_int_distribution<size_t> dist(0, options.size() - 1);
+    return options[dist(rng)];
+}
 
 class TetrisPlayer {
 public:
@@ -295,6 +321,142 @@ public:
     void renderTetrisStatistics(const int ox, const int oy);
     void renderGarbageQueue(const int ox, const int oy);
     void renderTetrisInterface(const int ox, const int oy);
+
+    /**
+     * Create a fairy entity using typeset
+     * @param type
+     * @return the heap-allocated fairy
+     */
+    DebuffFairy* createFairy(FairyType type) {
+        switch (type) {
+            case WEAKENER:  return new WeakenerFairy(this);
+            case DISTRACTOR: return new DistractorFairy(this);
+            case BLINDER:   return new BlinderFairy(this);
+            case DISTURBER: return new DisturberFairy(this);
+            default:        return nullptr;
+        }
+    }
+
+    int waveKilledEnemies = 0;
+    void startWave(int wave) {
+        WaveDifficulty wDifficulty = WAVE_EASY;
+        string waveText = "easy";
+        int waveColor = MINO_COLORS[2]; // green
+
+        if (wave >= 3 && wave <= 5) {
+            wDifficulty = WAVE_MEDIUM;
+            waveText = "medium";
+            waveColor = MINO_COLORS[4]; // orange
+        } else if (wave > 5) {
+            wDifficulty = WAVE_HARD;
+            waveText = "hard";
+            waveColor = MINO_COLORS[0]; // red
+        }
+
+        this->waveKilledEnemies = 0;
+        spawnPhysicsBoundText("wave " + to_string(wave) + ": " + waveText, 1600, 400, -10, 0, 300, 0, 4, 50, 15, nullptr, waveColor);
+        populateLane(wDifficulty);
+    }
+
+    void populateLane(WaveDifficulty difficulty) {
+        vector<NormalEntity*> toSpawn;
+        switch (difficulty) {
+            case WAVE_EASY:
+                // 4 random easy DPS mob
+                for (int i = 0; i < 4; ++i) {
+                    int roll = rand() % 100;
+                    if (roll < 60) {
+                        toSpawn.push_back(new Grigga(this)); // easy
+                    } else {
+                        toSpawn.push_back(new Blugga(this)); // medium
+                    }
+                }
+                break;
+            case WAVE_MEDIUM: {
+                // either 3dps + 1 fairy or 4dps (like easy)
+                int roll = rand() % 100;
+                if (roll < 60) {
+                    // 3 DPS + 1 fairy (prefer medium fairies)
+                    for (int i = 0; i < 3; ++i) {
+                        int dpsRoll = rand() % 100;
+                        if (dpsRoll < 50) {
+                            toSpawn.push_back(new Blugga(this));
+                        } else {
+                            toSpawn.push_back(new Grigga(this));
+                        }
+                    }
+
+                    FairyType fairyChoice = chooseRandomWithBias(vector<FairyType>{
+                        WEAKENER, DISTRACTOR, DISTURBER
+                    });
+                    toSpawn.push_back(createFairy(fairyChoice));
+                } else {
+                    // 4 DPS
+                    for (int i = 0; i < 4; ++i) {
+                        int dpsRoll = rand() % 100;
+                        if (dpsRoll < 10) {
+                            toSpawn.push_back(new Redgga(this)); // Rare hard mob
+                        }
+                        else if (dpsRoll < 60) {
+                            toSpawn.push_back(new Blugga(this));
+                        } else {
+                            toSpawn.push_back(new Grigga(this));
+                        }
+                    }
+                }
+                break;
+            }
+            case WAVE_HARD: {
+                // 3dps + 1fairy or 2 dps + 2 fairy (prioritize hardest ones)
+                int roll = rand() % 100;
+                if (roll < 50) { // 50%
+                    // 3 DPS + 1 fairy (only medium or hard fairies)
+                    for (int i = 0; i < 3; ++i) {
+                        int dpsRoll = rand() % 100;
+                        if (dpsRoll < 30) { // 30%
+                            toSpawn.push_back(new Nigga(this));
+                        } else if (dpsRoll < 80) { // 80%
+                            toSpawn.push_back(new Redgga(this));
+                        } else { // 20%
+                            toSpawn.push_back(new Blugga(this));
+                        }
+                    }
+
+                    FairyType fairyChoice = chooseRandomWithBias(vector<FairyType>{
+                        WEAKENER, DISTRACTOR, BLINDER, DISTURBER
+                    });
+                    toSpawn.push_back(createFairy(fairyChoice));
+                } else {
+                    // 2 DPS + 2 fairies
+                    for (int i = 0; i < 2; ++i) {
+                        int dpsRoll = rand() % 100;
+                        if (dpsRoll < 30) {
+                            toSpawn.push_back(new Nigga(this));
+                        } else {
+                            toSpawn.push_back(new Redgga(this));
+                        }
+                    }
+
+                    vector<FairyType> hardFairyOptions = { WEAKENER, DISTRACTOR, BLINDER };
+                    toSpawn.push_back(createFairy(chooseRandomWithBias(hardFairyOptions)));
+                    toSpawn.push_back(createFairy(chooseRandomWithBias(hardFairyOptions)));
+                }
+                break;
+            }
+
+            default: break;
+        }
+
+        // finalize lane population
+        int lane = 0;
+        for (NormalEntity* entity : toSpawn) {
+            this->tetrisEngine->scheduleDelayedTask(rand() % 100, [&, entity, lane] {
+                this->spawnEnemyOnLane(lane, entity);
+            });
+            ++lane;
+        }
+    }
+
 
     /**
      * THIS CODE IS VERY DANGEROUS!
