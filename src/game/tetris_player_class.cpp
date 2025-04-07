@@ -2,7 +2,7 @@
 // Created by GiaKhanhVN on 4/7/2025.
 //
 #include "tetris_player.h"
-#include "../game/scenes/game_over_screen.h"
+#include "../process/scenes/game_over_screen.h"
 
 TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer, TetrisEngine* engine, GameMode gamemode) {
     // register constants
@@ -100,7 +100,7 @@ void TetrisPlayer::startScene() {
     // right below (this will start in interrupted state)
     this->tetrisEngine->start(false);
     // take over the execution context
-    this->tetrisEngineExecId = context->hook([&]() { this->tetrisEngine->gameLoopBody(); });
+    this->tetrisEngineExecId = context->hook([&]() { this->tetrisEngine->gameLoopBody(); }, "Tetris Engine Internal Loop");
 }
 
 void TetrisPlayer::stopScene() {

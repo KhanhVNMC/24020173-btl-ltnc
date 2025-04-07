@@ -9,10 +9,10 @@
 #include <cmath>
 #include "../gamescene.h"
 #include "../hooker.h"
-#include "../../renderer/sdl_components.h"
-#include "../../renderer/spritesystem/sprite.h"
 #include "menu_btn.h"
 #include "../../engine/javalibs/jsystemstd.h"
+#include "../../game/sdl_components.h"
+#include "../../game/spritesystem/sprite.h"
 
 class LoadingScreen : public GameScene {
     ExecutionContext* context;
@@ -70,7 +70,7 @@ class LoadingScreen : public GameScene {
     void startScene() override {
         // clean current rendering context to begin a new life
         SpritesRenderingPipeline::stopAndCleanCurrentContext();
-        this->hookId = context->hook([&]() { onContextTick(); });
+        this->hookId = context->hook([&]() { onContextTick(); }, "Loading Screen");
         if (onLoadingScreenInit) onLoadingScreenInit();
     }
 

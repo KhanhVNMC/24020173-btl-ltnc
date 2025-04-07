@@ -3,13 +3,12 @@
 //
 
 #include "hooker.h"
-#include "../renderer/spritesystem/sprite.h"
 
-int ExecutionContext::hook(function<void()> function) {
+int ExecutionContext::hook(function<void()> function, string type) {
     lock_guard<mutex> lock(mtx);
     int execId = scheduledTasks++;
     ALL_EXECUTION_SCHEDULED[execId] = function;
-    cout << "[THREAD: EXEC CONTEXT] Task " << execId << " is now managing the execution context" << endl;
+    cout << "[THREAD: EXEC CONTEXT] Task " << execId << " (Purpose: " << type << ") is now managing the execution context" << endl;
     return execId;
 }
 

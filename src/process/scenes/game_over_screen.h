@@ -9,10 +9,9 @@
 #include <cmath>
 #include "../gamescene.h"
 #include "../hooker.h"
-#include "../../renderer/sdl_components.h"
-#include "../../renderer/spritesystem/sprite.h"
 #include "../../engine/javalibs/jsystemstd.h"
 #include "menu_btn.h"
+#include "../../game/spritesystem/sprite.h"
 
 typedef struct {
     long long score;
@@ -101,7 +100,7 @@ class GameOverScreen : public GameScene {
     void startScene() override {
         // clean current rendering context to begin a new life
         SpritesRenderingPipeline::stopAndCleanCurrentContext();
-        this->hookId = context->hook([&]() { onContextTick(); });
+        this->hookId = context->hook([&]() { onContextTick(); }, "Game Over Screen");
 
         // return to menu button
         Button* backButton = (new Button(600, 50, "return to menu", 40, -5));

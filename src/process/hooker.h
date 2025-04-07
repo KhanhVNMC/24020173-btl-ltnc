@@ -37,9 +37,10 @@ public:
     /**
      * Hook a task into this Context
      * @param function the task
+     * @param type (optional) what the task for [default = Unknown]
      * @return the task ID
      */
-    int hook(function<void()> function);
+    int hook(function<void()> function, string type = "Unknown");
 
     /**
      * Unhook a task from this Context

@@ -20,23 +20,29 @@ link_directories(
         ${SDL2_MIXER_PATH}/lib
 )
 
-set(CMAKE_C_FLAGS_RELEASE "-O0" CACHE STRING "Flags used by the C compiler during release builds" FORCE)
-set(CMAKE_CXX_FLAGS_RELEASE "-O0" CACHE STRING "Flags used by the C++ compiler during release builds" FORCE)
+if(WIN32)
+    set(APP_ICON_RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources.rc")
+endif()
+
+set(CMAKE_C_FLAGS_RELEASE "-O1" CACHE STRING "Flags used by the C compiler during release builds" FORCE)
+set(CMAKE_CXX_FLAGS_RELEASE "-O1" CACHE STRING "Flags used by the C++ compiler during release builds" FORCE)
 
 add_executable(tetisengine
-        engine/tetris_engine.H
-        engine/tetris_config.h
-        engine/javalibs/jsystemstd.h
-        sbg.h
-        game/sdl2_main.cpp
-        renderer/sdl_components.h
-        renderer/tetris_renderer.h
-        renderer/spritesystem/sprite.cpp
-        renderer/spritesystem/sprite.h
-        renderer/sprites/gameworld.cpp
-        renderer/tetris_player.h renderer/tetris_player_static.cpp renderer/spritesystem/particles.h renderer/spritesystem/particles.h renderer/sprites/player/playerentity.cpp renderer/sprites/player/playerentity.h renderer/sprites/entity_prop.h
-        renderer/sprites/entities/Redgga.h
-        renderer/sprites/entities/normal_entity.h
-        renderer/sprites/entities/normal_entity.cpp renderer/sprites/entities/Blugga.h renderer/sprites/entities/Grigga.h renderer/sprites/entities/Nigga.h renderer/sprites/entities/fairies/debuff_fairy.h renderer/sprites/entities/fairies/debuff_fairy.cpp renderer/sprites/entities/fairies/BlinderFairy.h renderer/sprites/entities/fairies/WeakenerFairy.h renderer/sprites/entities/fairies/DistractorFairy.h renderer/sprites/entities/fairies/DisturberFairy.h game/hooker.cpp game/hooker.h renderer/tetris_player_dbg.cpp renderer/tetris_player_class.cpp game/gamescene.h game/scene_manager.cpp game/scenes/main_menu.h game/scenes/menu_btn.h game/scenes/game_over_screen.h engine/tetrominoes.cpp game/scenes/loading_screen.h engine/javalibs/jsystemstd.cpp renderer/sdl_component.cpp)
+        src/engine/tetris_engine.H
+        src/engine/tetris_config.h
+        src/engine/javalibs/jsystemstd.h
+        src/process/bag_generator.h
+        src/process/sdl2_main.cpp
+        src/game/sdl_components.h
+        src/game/tetris_renderer.h
+        src/game/spritesystem/sprite.cpp
+        src/game/spritesystem/sprite.h
+        src/game/sprites/gameworld.cpp
+        src/game/tetris_player.h src/game/tetris_player_static.cpp src/game/spritesystem/particles.h src/game/spritesystem/particles.h src/game/sprites/player/playerentity.cpp src/game/sprites/player/playerentity.h src/game/sprites/entity_prop.h
+        src/game/sprites/entities/Redgga.h
+        src/game/sprites/entities/normal_entity.h
+        src/game/sprites/entities/normal_entity.cpp src/game/sprites/entities/Blugga.h src/game/sprites/entities/Grigga.h src/game/sprites/entities/Nigga.h src/game/sprites/entities/fairies/debuff_fairy.h src/game/sprites/entities/fairies/debuff_fairy.cpp src/game/sprites/entities/fairies/BlinderFairy.h src/game/sprites/entities/fairies/WeakenerFairy.h src/game/sprites/entities/fairies/DistractorFairy.h src/game/sprites/entities/fairies/DisturberFairy.h src/process/hooker.cpp src/process/hooker.h src/game/tetris_player_dbg.cpp src/game/tetris_player_class.cpp src/process/gamescene.h src/process/scenes/main_menu.h src/process/scenes/menu_btn.h src/process/scenes/game_over_screen.h src/engine/tetrominoes.cpp src/process/scenes/loading_screen.h src/engine/javalibs/jsystemstd.cpp src/game/sdl_component.cpp
+        ${APP_ICON_RESOURCE}
+    )
 
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY} ${SDL2_MIXER_LIBRARY} winmm opengl32)

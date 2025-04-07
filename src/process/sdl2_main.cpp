@@ -16,24 +16,25 @@ void AttachConsoleToSDL() {
 #define WINDOW_WIDTH 1720
 
 int main(int argc, char* argv[]) {
+    // attach console
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-console") == 0) {
             AttachConsoleToSDL();
             break;
         }
     }
-    initFontSystem();
     
+    // SDL initialize for window first
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow("Tetris VS: Demo",
-                                          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                          WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
-
+    SDL_Window* window = SDL_CreateWindow("Tetris VS: Concept Demo",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    // Main loop
-    ExecutionContext* context = new ExecutionContext();
 
-    // register main menu hook
+    // create the execution context for the entire lifecycle
+    auto* context = new ExecutionContext();
+    initFontSystem(); // the loading screen uses font, too (this is fast)
+    srand(System::currentTimeMillis()); // main thread rng
+
+    // register main menu hook (will be invoked multiple times later)
     context->contextReturnMainMenu = [&, context, renderer]() {
         GameScene* menu = new MainMenu(context, renderer);
         menu->startScene();
@@ -41,7 +42,8 @@ int main(int argc, char* argv[]) {
 
     // load shit in
     auto* loadingScreen = new LoadingScreen(context, renderer);
-    loadingScreen->fakeLoadFor = 90 + (::rand() % 60);
+    loadingScreen->fakeLoadFor = 90 + (rand() % 60); // lmfao, fake loading
+    // starts to load
     loadingScreen->onLoadingScreenInit = [&, renderer]() {
         SysAudio::initSoundSystem();
         SysAudio::preloadDefinedAudioFiles();
@@ -50,14 +52,19 @@ int main(int argc, char* argv[]) {
 
     // on screen complete
     loadingScreen->onLoadingScreenComplete = [&](ExecutionContext* context, SDL_Renderer*) {
+        // show the main menu once loaded everything
         context->contextReturnMainMenu();
     };
+
+    // start the first scene of the game, the loading screen.
     loadingScreen->startScene();
 
+    // start context executor's internal thread
+    cout << "[THREAD: EXEC CONTEXT] Starting ExecutionContext internal Thread..." << endl;
     thread worker([&]() {
-        // each thread has its own fucking RNG
+        // each thread has its own fucking RNG (init one here)
         srand(System::currentTimeMillis());
-        // start context
+        // context executor will run as long as its alive
         while (context->isRunning()) {
             context->execute();
         }
@@ -109,7 +116,6 @@ int main(int argc, char* argv[]) {
     // Clean up heap allocation
     delete context;
 
-    cout << "[MC: Main] Execution complete.\n";
     // Cleanup
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

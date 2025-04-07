@@ -2,13 +2,12 @@
 // Created by GiaKhanhVN on 2/23/2025.
 //
 
-#ifndef TETISENGINE_SBG_H
-#define TETISENGINE_SBG_H
-#include "engine/tetris_engine.h"
-// SevenBagGenerator implementation.
+#ifndef TETISENGINE_BAG_GENERATOR_H
+#define TETISENGINE_BAG_GENERATOR_H
+#include "../engine/tetris_engine.h"
+
 class SevenBagGenerator : public TetrominoGenerator {
 public:
-    // Nested RNG class modeled after TetrioRNG.
     class TetrioRNG {
     private:
         mutable long t;
@@ -108,4 +107,4 @@ public:
     }
 };
 
-#endif //TETISENGINE_SBG_H
+#endif //TETISENGINE_BAG_GENERATOR_H

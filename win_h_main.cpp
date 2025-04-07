@@ -7,7 +7,7 @@
 #include <thread>
 #include <chrono>
 #include <sstream>
-#include "sbg.h"
+#include "src/game/bag_generator.h"
 
 /**
  * ROUGH TRANSLATION OF JFRAME TetrisTest.java

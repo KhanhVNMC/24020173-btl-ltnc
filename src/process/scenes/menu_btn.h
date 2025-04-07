@@ -4,8 +4,9 @@
 
 #ifndef TETISENGINE_MENU_BTN_H
 #define TETISENGINE_MENU_BTN_H
-#include "../../renderer/spritesystem/sprite.h"
-#include "../../renderer/sdl_components.h"
+
+#include "../../game/spritesystem/sprite.h"
+#include "../../game/sdl_components.h"
 
 class Button : public Sprite {
 public:

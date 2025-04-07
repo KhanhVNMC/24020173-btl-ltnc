@@ -25,6 +25,7 @@ inline void initFontSystem() {
     for (size_t i = 0; i < 69; i++) {
         CHAR_MAP[CHAR_LIST[i]] = static_cast<int>(i);
     }
+    cout << "[DEBUG] Loaded all fonts from the bitmap. Loaded chars: " << CHAR_MAP.size() << endl;
 }
 
 /**

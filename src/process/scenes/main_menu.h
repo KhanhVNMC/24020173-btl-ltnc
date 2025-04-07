@@ -8,12 +8,10 @@
 #include <SDL_render.h>
 #include "../gamescene.h"
 #include "../hooker.h"
-#include "../../renderer/sdl_components.h"
-#include "../../renderer/spritesystem/sprite.h"
 #include "../../engine/javalibs/jsystemstd.h"
-#include "../../renderer/tetris_player.h"
-#include "../../sbg.h"
+#include "../bag_generator.h"
 #include "loading_screen.h"
+#include "../../game/tetris_player.h"
 
 class MainMenu : public GameScene {
     ExecutionContext* context;
@@ -81,7 +79,7 @@ class MainMenu : public GameScene {
     void startScene() override {
         // clean current rendering context to begin a new life
         SpritesRenderingPipeline::stopAndCleanCurrentContext();
-        this->hookId = context->hook([&]() { onContextTick(); });
+        this->hookId = context->hook([&]() { onContextTick(); }, "Main Menu");
 
         // The PLAY CAMPAIGN BUTTON
         Button* campaignButton = (new Button(600, 50, "play campaign", 50, -5));

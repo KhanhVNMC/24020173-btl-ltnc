@@ -14,11 +14,7 @@ namespace disk_cache {
      * @return
      */
     SDL_Texture* bmp_load_and_cache(SDL_Renderer* renderer, const string& refName) {
-        #ifdef DEBUG_BUILD
-        string filename = "../assets/" + refName;
-        #else
-        string filename = "assets/" + refName;
-        #endif
+        string filename = std::string(ASSETS_FOLDER) + "/" + refName;
         if (cache.find(filename) != cache.end()) {
             return cache[filename];
         }

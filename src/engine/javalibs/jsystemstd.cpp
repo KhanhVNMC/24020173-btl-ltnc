@@ -55,7 +55,7 @@ namespace SysAudio {
             COUNTDOWN_AUD
     };
     void preloadDefinedAudioFiles() {
-        static const std::string basePath = "../assets/sfxbgm/";
+        static const std::string basePath = std::string(ASSETS_FOLDER) + "/sfxbgm/";
 
         for (const auto& fileName : audioFiles) {
             std::string fullPath = basePath + fileName;
@@ -83,7 +83,7 @@ namespace SysAudio {
     }
 
     void playSoundAsync(const std::string& path, int volume, bool repeat) {
-        static const std::string basePath = "../assets/sfxbgm/";
+        static const std::string basePath = std::string(ASSETS_FOLDER) + "/sfxbgm/";
         const std::string fullPath = basePath + path;
 
         if (soundCache.count(fullPath) == 0) {

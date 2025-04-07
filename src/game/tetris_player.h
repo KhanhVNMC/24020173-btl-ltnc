@@ -15,8 +15,8 @@
 #include "sprites/entities/fairies/WeakenerFairy.h"
 #include "sprites/entities/fairies/DistractorFairy.h"
 #include "sprites/entities/fairies/DisturberFairy.h"
-#include "../game/hooker.h"
-#include "../game/gamescene.h"
+#include "../process/gamescene.h"
+#include "../process/hooker.h"
 
 #ifndef TETRIS_PLAYER_H
 #define TETRIS_PLAYER_H

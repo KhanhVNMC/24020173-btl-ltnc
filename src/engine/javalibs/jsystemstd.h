@@ -73,6 +73,11 @@ extern "C" __declspec(dllimport) int WINAPI SetConsoleMode(void* hConsole, unsig
 
 /* BUILD SYSTEMS */
 #define DEBUG_BUILD
+#ifdef DEBUG_BUILD
+#define ASSETS_FOLDER "../assets"
+#else
+#define ASSETS_FOLDER "assets"
+#endif
 
 namespace System {
     /**
