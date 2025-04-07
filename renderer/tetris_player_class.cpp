@@ -17,7 +17,6 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
         if (firstPiecePlacedTime == -1) {
             firstPiecePlacedTime = System::currentTimeMillis();
         }
-        //
         this->piecesPlaced++;
         this->onMinoLocked(cleared);
     });
@@ -41,7 +40,7 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
 
 TetrisPlayer::~TetrisPlayer() {
     context->unhook(tetrisEngineExecId);
-    delete tetrisEngine; // UH
+    delete tetrisEngine; // this will blow up, gg
 }
 
 void TetrisPlayer::initParallaxBackground() {
