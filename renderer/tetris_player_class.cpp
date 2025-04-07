@@ -615,16 +615,16 @@ void TetrisPlayer::renderTetrisInterface(const int ox, const int oy) {
 void TetrisPlayer::onWaveCompletion() {
     spawnPhysicsBoundText("wave " + to_string(lastWave) + " clear!", 1600, 400, -10, 0, 300, 0, 4, 50, 15, nullptr, MINO_COLORS[2]);
     // rewards
-    this->tetrisEngine->scheduleDelayedTask(90, [&]() {
+    this->tetrisEngine->scheduleDelayedTask(60, [&]() {
         int amount = 2 + lastWaveDifficulty + (rand() % 10);
         bool isArmor = (rand() % 2) == 1;
 
         addStats(!isArmor, amount);
-        spawnPhysicsBoundText("+" + to_string(amount) + " " + (isArmor ? "armor" : "attack") + "!", 1600, 400, -10, 0, 300, 0, 4, 50, 15, nullptr, !isArmor ? MINO_COLORS[5] : 0xc9c9c9);
+        spawnPhysicsBoundText("+" + to_string(amount) + " " + (isArmor ? "armor" : "attack") + "!", 1600, 500, -10, 0, 300, 0, 4, 50, 15, nullptr, !isArmor ? MINO_COLORS[5] : 0xc9c9c9);
     });
 
     // next wave in 4s
-    this->tetrisEngine->scheduleDelayedTask(240, [&]() {
+    this->tetrisEngine->scheduleDelayedTask(180, [&]() {
         this->startWave(lastWave + 1);
     });
 }
