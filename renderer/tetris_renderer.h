@@ -94,7 +94,7 @@ inline struct_render_component puts_mino_at(const int offsetX, const int offsetY
 #define DANGER_THRESHOLD (40 - 17)
 
 // render the entire fucking shit
-inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, TetrisEngine* engine) {
+inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* renderer, TetrisEngine* engine, bool invisibleBoard) {
     // render the board
     // white border around the playfield
     const SDL_Rect borders[4] = {
@@ -156,6 +156,16 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
         }
     }
 
+    if (!engine->holdAllowed()) {
+        // if hold piece is disabled, render a red cross
+        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+        const struct_render_component component = {
+                445, 0, 18, 18,
+                ox - 27, oy + 100, static_cast<int>(18 * 9.7), static_cast<int>(18 * 5.6)
+        };
+        render_component(renderer, cached, component, 1);
+    }
+
     // render the entire NEXT queue (5 pieces visible at once)
     // the X offset of the queue = holdPieceOffsetX + (board width = MINO_SIZE * 10) + padding
     int index = 0;
@@ -182,8 +192,12 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
     for (int y = 0; y < BOARD_HEIGHT; ++y) { // we render 22 rows and 10 columns, hiding 18 lines
         for (int x = 0; x < BOARD_WIDTH; ++x) {
             int rawBuffer = buffer[x][18 + y]; // hide the buffer zone (18 lines above actual playfield)
+            // if the raw buffer is a ghost piece, we will handle it accordingly (ghost pieces DO NOT have color data built in)
+            bool ghostPiece = rawBuffer == GHOST_PIECE_CONVENTION;
+
             // we do not render minoes at 0es (or we must?)
-            if (rawBuffer == 0) {
+            // if the board is set to be invisible, the piece is NOT a ghost piece and is not falling, render a black box
+            if (rawBuffer == 0 || (invisibleBoard && !ghostPiece && rawBuffer > 0)) {
                 // render empty mino (nothing mino with 10% opacity /shrug/)
                 if (y >= 2) { // only render the grid if the thing is lower than the buffer zone
                     render_component_tetromino(renderer, puts_mino_at(ox + PLAYFIELD_RENDER_OFFSET, oy, x, y, 10), 0.6);
@@ -191,8 +205,6 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
                 continue;
             }
 
-            // if the raw buffer is a ghost piece, we will handle it accordingly (ghost pieces DO NOT have color data built in)
-            bool ghostPiece = rawBuffer == GHOST_PIECE_CONVENTION;
             // if the thing is garbage mino (garbage mino has its own color code), we don't do |x| - 1
             // for other colors, we need to do |x| - 1, because 0 is "empty", so the ordinals start at 1
             int colorMinoes = rawBuffer == GARBAGE_MINO_CONVENTION ? rawBuffer : abs(rawBuffer) - 1;

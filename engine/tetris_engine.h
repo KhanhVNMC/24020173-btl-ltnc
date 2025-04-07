@@ -288,8 +288,10 @@ public:
     /**
      * Updates mutable configuration settings for the Tetris Engine based on the current configuration
      * core {@link TetrisConfig}\endlink
+     *
+     * @param mach5Speed is a nonstandard parameter for this game alone, should not be used
      */
-    void updateMutableConfig() {
+    void updateMutableConfig(bool mach5Speed = false) {
         // if the user can press HOLD
         this->holdEnabled = config->holdEnabled;
         // lock delay = |seconds| * tickrate
@@ -297,7 +299,7 @@ public:
         // the soft drop scalar (soft-drop factor)
         this->softDropFactor = abs(config->softDropFactor);
         // update gravity amount
-        this->defaultGravity = abs(config->gravity);
+        this->defaultGravity = abs(config->gravity * (mach5Speed ? 3 : 1));
         this->gravity = defaultGravity;
     }
 
@@ -446,6 +448,14 @@ public:
      */
     bool canUseHold() const {
         return this->holdEnabled && this->canHold;
+    }
+
+    /**
+     * If hold is allowed or not
+     * @return true if allowed
+     */
+    bool holdAllowed() const {
+        return this->holdEnabled;
     }
 
     /**

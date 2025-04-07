@@ -67,7 +67,7 @@ static int MINO_COLORS[7] = {
 
 };
 
-#define X_LANE_PLAYER 780
+#define X_LANE_PLAYER 840
 #define X_LANE_ENEMIES 1400
 
 class TetrisPlayer {
@@ -135,12 +135,24 @@ class TetrisPlayer {
         render_component(renderer, cached, component, 1);
     }
 
+    static void renderDebuffIcon(SDL_Renderer* renderer, const int x, const int y, const int offset) {
+        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+        const struct_render_component component = {
+                340 + (21 * offset), 0, 20, 22,
+                x, y, static_cast<int>(20 * 2.25), static_cast<int>(22 * 2.25)
+        };
+        render_component(renderer, cached, component, 1);
+    }
+
     // internal engine
     TetrisEngine* tetrisEngine;
     deque<int> garbageQueue;
+
+    // statistics
     long long tetrisScore = 0;
     int currentTetrisLevel = 0;
 
+    // timing and keeping track
     long long firstPiecePlacedTime = -1;
     int piecesPlaced = 0;
 
@@ -151,16 +163,52 @@ class TetrisPlayer {
     FlandreScarlet* flandre;
     SDL_Renderer* renderer;
 
-    // attack thingy
 public:
+    // attack thingy
     int currentLane = 0;
     int accumulatedCharge = 30;
     int currentArmorPoints = 10;
 
+    // flags
     bool isMovingToAnotherLane = false;
     bool isAttacking = false;
 
+    // enemies
     NormalEntity* enemyOnLanes[4] = {nullptr, nullptr, nullptr, nullptr}; // 4 lanes, 4 available monsters (initialized as 0)
+
+    // status effects
+    bool sBlinded = false; // board invisible
+    bool sNoHold = false; // cannot hold
+    bool sSuperSonic = false; // mach 5 speed
+    bool sWeakness = false; // reduce output dmg
+    bool sFragile = false; // ineffective armor
+
+    enum Debuff {
+        BLIND,
+        NO_HOLD,
+        SUPER_SONIC,
+        WEAKNESS,
+        FRAGILE
+    };
+
+    void setDebuff(Debuff type, bool value) {
+        switch (type) {
+            case BLIND: sBlinded = value; break;
+            case NO_HOLD: {
+                sNoHold = value;
+                this->tetrisEngine->getCurrentConfig()->setHoldEnabled(!value);
+                this->tetrisEngine->updateMutableConfig(sSuperSonic);
+                break;
+            }
+            case SUPER_SONIC: {
+                sSuperSonic = value;
+                this->tetrisEngine->updateMutableConfig(value);
+                break;
+            }
+            case WEAKNESS: sWeakness = value; break;
+            case FRAGILE: sFragile = value; break;
+        }
+    }
 
     TetrisPlayer(SDL_Renderer* renderer_, TetrisEngine* engine) {
         this->renderer = renderer_;
@@ -192,6 +240,7 @@ public:
         // boot the engine up
         this->tetrisEngine->scheduleDelayedTask(60, [&]() {
             this->tetrisEngine->gameInterrupt(true);
+            setDebuff(Debuff::BLIND, true);
         });
         this->tetrisEngine->gameInterrupt(false);
         this->tetrisEngine->start();
@@ -259,7 +308,7 @@ public:
             return;
         }
 
-        if (currentArmorPoints > 0) {
+        if (currentArmorPoints > 0 && !sFragile) {
             if (currentArmorPoints == 1) {
                 damage *= 0.75;
                 --currentArmorPoints;
@@ -269,6 +318,9 @@ public:
                 currentArmorPoints -= 2;
                 spawnMiscIndicator(270, 55, "-2", 0xc9c9c9);
             }
+        } else if (sFragile) {
+            // ineffective
+            spawnMiscIndicator(270, 55, "-0", 0xc9c9c9);
         }
 
         damage = max(1, damage);
@@ -285,7 +337,7 @@ public:
             return; // if the enemy is attacking, we cannot release damage
         }
 
-        const int finalDamage = accumulatedCharge;
+        const int finalDamage = accumulatedCharge * (sWeakness ? 0.75 : 1); // 25% less effective if weakness
         accumulatedCharge = 0; // reset charges
 
         if (enemyOnLanes[currentLane] == nullptr || enemyOnLanes[currentLane]->isDead || enemyOnLanes[currentLane]->isSpawning) {
@@ -365,7 +417,7 @@ public:
         currentTetrisLevel = min(15, newLevel);
         // increase engine gravity
         this->tetrisEngine->getCurrentConfig()->setGravity(LEVELS_GRAVITY[min(15, currentTetrisLevel)]);
-        this->tetrisEngine->updateMutableConfig();
+        this->tetrisEngine->updateMutableConfig(sSuperSonic);
     }
 
     int clearedLines = 0; // total cleared lines
@@ -556,6 +608,32 @@ public:
             renderArmor(renderer, armorBarX + (25 * i), armorBarY, offset);
         }
 
+        // render status effects
+        int yOffset = 0;
+        const int baseX = 760;
+        const int baseY = 150;
+        const int spacing = 55;
+
+        if (sBlinded) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 0);
+            ++yOffset;
+        }
+        if (sNoHold) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 1);
+            ++yOffset;
+        }
+        if (sSuperSonic) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 2);
+            ++yOffset;
+        }
+        if (sWeakness) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 3);
+            ++yOffset;
+        }
+        if (sFragile) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 4);
+            ++yOffset;
+        }
     }
 
     void renderGarbageQueue(const int ox, const int oy) {
@@ -582,9 +660,16 @@ public:
     }
 
     void renderTetrisInterface(const int ox, const int oy) {
-        int shakeFactor = boardRumble > 0 ? std::sin(SpritesRenderingPipeline::renderPasses()) * 10 : 0;
+        long renderPasses = SpritesRenderingPipeline::renderPasses();
+        int shakeFactor = boardRumble > 0 ? std::sin(renderPasses) * 10 : 0;
+        // if blinded, board is invisible
+        // every 3 seconds, flash it for 1s so player knows what's still there
+        bool isInvisible = sBlinded;
+        if (isInvisible && (renderPasses / 60) % 3 == 0) {
+            isInvisible = false;
+        }
         // render the board body first
-        render_tetris_board(ox + shakeFactor, oy, renderer, this->tetrisEngine);
+        render_tetris_board(ox + shakeFactor, oy, renderer, this->tetrisEngine, isInvisible);
         // and then the statistics
         renderTetrisStatistics(ox, oy);
         // render garbage queue
