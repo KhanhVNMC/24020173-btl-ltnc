@@ -4,20 +4,26 @@
 #include <iostream>
 
 void AttachConsoleToSDL() {
+#ifdef WIN32
     AllocConsole();  // Create a console
     freopen("CONOUT$", "w", stdout);  // Redirect stdout
     freopen("CONOUT$", "w", stderr);  // Redirect stderr
     freopen("CONIN$", "r", stdin);    // Redirect stdin
+#endif
 }
 
 #define WINDOW_HEIGHT 860
 #define WINDOW_WIDTH 1720
 
 int main(int argc, char* argv[]) {
-    AttachConsoleToSDL();
-
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "-console") == 0) {
+            AttachConsoleToSDL();
+            break;
+        }
+    }
     initFontSystem();
-
+    
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Tetris VS: Demo",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,

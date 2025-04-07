@@ -25,6 +25,9 @@ extern "C" __declspec(dllimport) void WINAPI Sleep(DWORD dwMilliseconds);
 extern "C" __declspec(dllimport) void WINAPI timeBeginPeriod(DWORD period);
 extern "C" __declspec(dllimport) void WINAPI timeEndPeriod(DWORD period);
 extern "C" __declspec(dllimport) BOOL WINAPI AllocConsole(void);
+extern "C" __declspec(dllimport) void* WINAPI GetStdHandle(unsigned int);
+extern "C" __declspec(dllimport) int WINAPI GetConsoleMode(void* hConsole, unsigned int* lpMode);
+extern "C" __declspec(dllimport) int WINAPI SetConsoleMode(void* hConsole, unsigned int dwMode);
 #endif
 
 /* Java's long, signed 64-bit integer */

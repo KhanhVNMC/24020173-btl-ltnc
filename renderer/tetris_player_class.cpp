@@ -20,7 +20,6 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
             firstPiecePlacedTime = System::currentTimeMillis();
         }
         this->piecesPlaced++;
-        this->accumulatedCharge = 10;
         this->onMinoLocked(cleared);
     });
     this->tetrisEngine->onComboBreaks([&](const int combo) { });
