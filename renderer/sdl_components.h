@@ -116,6 +116,8 @@ namespace disk_cache {
 
         // cache the bmp file up so that i can call it
         cache[filename] = texture;
+        cout << "[DEBUG] Loaded texture into VRAM " << filename << "" << endl;
+
         return texture;
     }
 }

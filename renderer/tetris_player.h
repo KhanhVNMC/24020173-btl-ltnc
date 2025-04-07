@@ -117,6 +117,7 @@ public:
 
     // start
     long long gameStartTime = -1;
+    bool gameStarted = false;
 
     // timing and keeping track
     long long firstPiecePlacedTime = -1;
@@ -131,8 +132,8 @@ public:
 
     /*** player attacks ***/
     int currentLane = 0;
-    int accumulatedCharge = 30;
-    int currentArmorPoints = 10;
+    int accumulatedCharge = 0;
+    int currentArmorPoints = 0;
 
     // flags to stop shit from exploding
     bool isMovingToAnotherLane = false;
@@ -166,6 +167,8 @@ public:
     const int DAS = 200; // delay before auto-repeat begins (ms)
     const int ARR = 50; // Auto Repeat Rate (interval between moves after the initial DAS)
     /*** end of input handling (ARR, DAS) ***/
+
+    bool showDebug = false;
 
     /**
      * Set a debuff
@@ -363,7 +366,7 @@ public:
         SpritesRenderingPipeline::renderPriority(renderer);
 
         // what the fuck
-        sprintfcdbg(this->tetrisEngine, static_cast<int>(SpritesRenderingPipeline::getSprites().size() + SpritesRenderingPipeline::getPrioritySprites().size()));
+        if (showDebug) sprintfcdbg(this->tetrisEngine, static_cast<int>(SpritesRenderingPipeline::getSprites().size() + SpritesRenderingPipeline::getPrioritySprites().size()));
         SDL_RenderPresent(renderer); // Show updated frame
     }
 };

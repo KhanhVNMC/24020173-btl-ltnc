@@ -25,7 +25,7 @@ void TetrisPlayer::sprintfcdbg(TetrisEngine *tetris, int spriteCount) {
     snprintf(buffer, sizeof(buffer), "spr: %d", spriteCount);
     render_component_string(renderer, xPos, 510 + offset, buffer, 2, 1, fontSize);
 
-    render_component_string(renderer, 1420, 470 + offset, "tengine metrics", 1.5, 1, 20);
+    render_component_string(renderer, 1420, 470 + offset, "teteng metrics", 1.5, 1, 20);
 }
 
 void TetrisPlayer::processSceneInput(SDL_Event &event) {
@@ -72,6 +72,10 @@ void TetrisPlayer::processSceneInput(SDL_Event &event) {
                 moveToLane(3);
                 break;
             default: break;
+            /* BULLSHIT */
+            case SDLK_F3:
+                showDebug = !showDebug;
+                break;
         }
     }
     else if (event.type == SDL_KEYUP) {  // KEY UP

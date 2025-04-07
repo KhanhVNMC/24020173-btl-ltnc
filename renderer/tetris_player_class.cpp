@@ -68,6 +68,7 @@ void TetrisPlayer::startEngineAndGame() {
                 // resume context
                 tetrisEngine->gameInterrupt(false);
                 this->gameStartTime = System::currentTimeMillis();
+                this->gameStarted = true;
                 // resume parallax background
                 for (BackgroundScroll* parallax : parallaxBackgrounds) {
                     if (parallax != nullptr) parallax->scroll = true;
@@ -149,7 +150,7 @@ void TetrisPlayer::spawnEnemyOnLane(int lane, NormalEntity *entity) {
 }
 
 void TetrisPlayer::moveToLane(const int targetLane) {
-    if (this->isMovingToAnotherLane || this->isAttacking) return; // prevent overlapping
+    if (this->isMovingToAnotherLane || this->isAttacking || !this->gameStarted) return; // prevent overlapping
     this->isMovingToAnotherLane = true;
     this->currentLane = targetLane % 4; // prevent overshooting
 
@@ -182,7 +183,7 @@ void TetrisPlayer::onDamageSend(const int damage) {
 }
 
 void TetrisPlayer::inflictDamage(int damage, int oldLane) {
-    if (this->isAttacking || this->isMovingToAnotherLane) return;
+    if (this->isAttacking || this->isMovingToAnotherLane || !this->gameStarted) return;
 
     if (currentLane != oldLane) {
         spawnMiscIndicator(flandre->strictX, Y_LANES[oldLane], "miss!", MINO_COLORS[3]);
@@ -228,7 +229,7 @@ void TetrisPlayer::inflictDebuff(int debuff, int timeInSeconds, int oldLane) {
 }
 
 void TetrisPlayer::releaseDamageOnCurrentLane() {
-    if (isAttacking || isMovingToAnotherLane) return; // currently moving, do NOT attack
+    if (isAttacking || isMovingToAnotherLane || !this->gameStarted) return; // currently moving, do NOT attack
     if (enemyOnLanes[currentLane] != nullptr && enemyOnLanes[currentLane]->isAttacking) {
         return; // if the enemy is attacking, we cannot release damage
     }
