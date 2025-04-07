@@ -24,6 +24,6 @@ add_executable(tetisengine
         renderer/tetris_player.h renderer/tetris_player.cpp renderer/spritesystem/particles.h renderer/spritesystem/particles.h renderer/sprites/player/playerentity.cpp renderer/sprites/player/playerentity.h renderer/sprites/entity_prop.h
         renderer/sprites/entities/Redgga.h
         renderer/sprites/entities/normal_entity.h
-        renderer/sprites/entities/normal_entity.cpp renderer/sprites/entities/Blugga.h renderer/sprites/entities/Grigga.h renderer/sprites/entities/Nigga.h renderer/sprites/entities/Tia.h)
+        renderer/sprites/entities/normal_entity.cpp renderer/sprites/entities/Blugga.h renderer/sprites/entities/Grigga.h renderer/sprites/entities/Nigga.h renderer/sprites/entities/fairies/debuff_fairy.h renderer/sprites/entities/fairies/debuff_fairy.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY} winmm opengl32)

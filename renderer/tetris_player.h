@@ -9,7 +9,7 @@
 #include "sprites/entities/Grigga.h"
 #include "sprites/entities/Blugga.h"
 #include "sprites/entities/Nigga.h"
-#include "sprites/entities/Tia.h"
+#include "sprites/entities/fairies/debuff_fairy.h"
 
 #ifndef TETRIS_PLAYER_H
 #define TETRIS_PLAYER_H
@@ -182,25 +182,21 @@ public:
     bool sSuperSonic = false; // mach 5 speed
     bool sWeakness = false; // reduce output dmg
     bool sFragile = false; // ineffective armor
-
-    enum Debuff {
-        BLIND,
-        NO_HOLD,
-        SUPER_SONIC,
-        WEAKNESS,
-        FRAGILE
-    };
+    // time left for each debuff
+    int sDebuffTime[5] = { 0, 0, 0, 0, 0 };
 
     void setDebuff(Debuff type, bool value) {
         switch (type) {
             case BLIND: sBlinded = value; break;
             case NO_HOLD: {
+                if (sNoHold == value) break;
                 sNoHold = value;
                 this->tetrisEngine->getCurrentConfig()->setHoldEnabled(!value);
                 this->tetrisEngine->updateMutableConfig(sSuperSonic);
                 break;
             }
             case SUPER_SONIC: {
+                if (sSuperSonic == value) break;
                 sSuperSonic = value;
                 this->tetrisEngine->updateMutableConfig(value);
                 break;
@@ -219,7 +215,7 @@ public:
         this->flandre->setAnimation(RUN_FORWARD);
         this->flandre->spawn();
 
-        spawnEnemyOnLane(0, new TiaFairy(this));
+        //spawnEnemyOnLane(0, new TiaFairy(this));
 
 
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
@@ -240,7 +236,10 @@ public:
         // boot the engine up
         this->tetrisEngine->scheduleDelayedTask(60, [&]() {
             this->tetrisEngine->gameInterrupt(true);
-            setDebuff(Debuff::BLIND, true);
+            inflictDebuff(Debuff::BLIND, 20, 0);
+            inflictDebuff(Debuff::WEAKNESS, 15, 0);
+            inflictDebuff(Debuff::SUPER_SONIC, 25, 0);
+            inflictDebuff(Debuff::NO_HOLD, 10, 0);
         });
         this->tetrisEngine->gameInterrupt(false);
         this->tetrisEngine->start();
@@ -327,7 +326,22 @@ public:
         garbageQueue.push_back(damage);
         this->spawnDamageIndicator(getLocation().x + 40, getLocation().y + 20, damage, false);
 
-        this->flandre->damagedAnimation();
+        this->flandre->damagedAnimation(true);
+        boardRumble = 10; // rumble for 10 frames
+    }
+
+    void inflictDebuff(int debuff, int timeInSeconds, int oldLane) {
+        if (this->isAttacking || this->isMovingToAnotherLane) return;
+
+        if (currentLane != oldLane) {
+            spawnMiscIndicator(flandre->strictX, Y_LANES[oldLane], "miss!", MINO_COLORS[3]);
+            return;
+        }
+
+        setDebuff(static_cast<Debuff>(debuff), true); // inflict the debuff
+        sDebuffTime[debuff] = timeInSeconds * 60; // time in frames
+
+        this->flandre->damagedAnimation(false);
         boardRumble = 10; // rumble for 10 frames
     }
 
@@ -610,28 +624,33 @@ public:
 
         // render status effects
         int yOffset = 0;
-        const int baseX = 760;
-        const int baseY = 150;
-        const int spacing = 55;
+        const int baseX = 780;
+        const int baseY = 170;
+        const int spacing = 85;
 
         if (sBlinded) {
             renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 0);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[BLIND] / 60.0), 1.1, 1, 15);
             ++yOffset;
         }
         if (sNoHold) {
             renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 1);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[NO_HOLD] / 60.0), 1.1, 1, 15);
             ++yOffset;
         }
         if (sSuperSonic) {
             renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 2);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[SUPER_SONIC] / 60.0), 1.1, 1, 15);
             ++yOffset;
         }
         if (sWeakness) {
             renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 3);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[WEAKNESS] / 60.0), 1.1, 1, 15);
             ++yOffset;
         }
         if (sFragile) {
             renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 4);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[FRAGILE] / 60.0), 1.1, 1, 15);
             ++yOffset;
         }
     }
@@ -688,6 +707,17 @@ public:
             process_input(_event, this->tetrisEngine);
         }
 
+        // handle debuffs
+        for (int i = 0; i < 5; ++i) {
+            if (sDebuffTime[i] == INT_MIN) continue; // infinite debuff
+            if (sDebuffTime[i] <= 0) {
+                setDebuff(static_cast<Debuff>(i), false);
+                continue;
+            }
+            --sDebuffTime[i];
+        }
+
+        // rendering
         SDL_RenderClear(renderer);
         SpritesRenderingPipeline::renderNormal(renderer);
         renderTetrisInterface(100, 90);

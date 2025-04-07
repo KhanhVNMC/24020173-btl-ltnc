@@ -60,7 +60,7 @@ public:
     void scheduleAnimation(int animation, function<void()> toRunLater, int frameSpeed);
 
     int glowRedUntil = 0;
-    void damagedAnimation();
+    void damagedAnimation(const bool blood = false);
 
     int frameSpeed{};
     int maxOffset{};

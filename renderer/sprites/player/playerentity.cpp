@@ -125,12 +125,13 @@ void FlandreScarlet::scheduleAnimation(int animation, function<void()> toRunLate
     this->animationAfterAttackAnimation = toRunLater;
 }
 
-void FlandreScarlet::damagedAnimation() {
+void FlandreScarlet::damagedAnimation(const bool blood) {
     glowRedUntil = SpritesRenderingPipeline::renderPasses() + 20; // 10 frames
     scheduleAnimation(HURT, [&]() {
         setAnimation(RUN_FORWARD);
     }, 30);
     // blood
+    if (!blood) return;
     // blood animation
     SpriteTexture particleTex = {287, 0, 16, 18};
     ParticleSystem* ps = new ParticleSystem(
