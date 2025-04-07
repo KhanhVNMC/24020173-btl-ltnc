@@ -25,39 +25,40 @@ void TetrisPlayer::sprintfcdbg(TetrisEngine *tetris, int spriteCount) {
     snprintf(buffer, sizeof(buffer), "spr: %d", spriteCount);
     render_component_string(renderer, xPos, 510 + offset, buffer, 2, 1, fontSize);
 
-    render_component_string(renderer, 1420, 470 + offset, "engine metrics", 1.5, 1, 20);
+    render_component_string(renderer, 1420, 470 + offset, "tengine metrics", 1.5, 1, 20);
 }
 
-void TetrisPlayer::process_input(SDL_Event &event, TetrisEngine *engine) {
-    if (event.type == SDL_KEYDOWN && !event.key.repeat) {  // Avoid key repeat events
+void TetrisPlayer::processSceneInput(SDL_Event &event) {
+    if (event.type == SDL_KEYDOWN && !event.key.repeat) {  // avoid key repeat events
+        // uh wtf
         switch (event.key.keysym.sym) {
-            case SDLK_LEFT:
-                engine->moveLeft();
+            case SDLK_LEFT: {
+                // move left one time first
+                tetrisEngine->moveLeft();
+                // and then do DAS
+                leftHeld = true;
+                leftPressTime = System::currentTimeMillis();
+                nextLeftShiftTime = leftPressTime + DAS; // the next time it "repeats" the moving action again
                 break;
-            case SDLK_RIGHT:
-                engine->moveRight();
+            }
+            case SDLK_RIGHT: {
+                // move right one time first
+                tetrisEngine->moveRight();
+                // DAS right
+                rightHeld = true;
+                rightPressTime = System::currentTimeMillis();
+                nextRightShiftTime = rightPressTime + DAS;  // the next time it "repeats" the moving action again
                 break;
-            case SDLK_UP:
-            case SDLK_x:
-                engine->rotateCW();
-                break;
-            case SDLK_z:
-                engine->rotateCCW();
-                break;
-            case SDLK_DOWN:
-                engine->softDropToggle(true);
-                break;
-            case SDLK_SPACE:
-                engine->hardDrop();
-                break;
-            case SDLK_c:
-                engine->hold();
-                break;
-            case SDLK_t:
-                garbageQueue.push_back(1 + std::rand() % 6);
-                break;
-            case SDLK_y:
-                break;
+            }
+            case SDLK_UP: // ^ + x = the same
+            case SDLK_x: { tetrisEngine->rotateCW(); break; }
+            case SDLK_z: { tetrisEngine->rotateCCW(); break; }
+            // gravity *= SDF const
+            case SDLK_DOWN: { tetrisEngine->softDropToggle(true); break; }
+            case SDLK_SPACE: { tetrisEngine->hardDrop(); break; }
+            case SDLK_c: { tetrisEngine->hold(); break; }
+
+            /** HANDLE LANE SWITCHING **/
             case SDLK_1:
                 moveToLane(0);
                 break;
@@ -70,17 +71,32 @@ void TetrisPlayer::process_input(SDL_Event &event, TetrisEngine *engine) {
             case SDLK_4:
                 moveToLane(3);
                 break;
-            default:
-                break;
+            default: break;
         }
     }
-    else if (event.type == SDL_KEYUP) {  // Handle key releases
-        if (event.key.keysym.sym == SDLK_DOWN) {
-            engine->softDropToggle(false);
+    else if (event.type == SDL_KEYUP) {  // KEY UP
+        switch (event.key.keysym.sym) {
+            case SDLK_LEFT: {
+                // no longer holding LEFT
+                leftHeld = false;
+                break;
+            }
+            case SDLK_RIGHT: {
+                // no longer holding RIGHT
+                rightHeld = false;
+                break;
+            }
+            case SDLK_DOWN: {
+                // no speed boost (SDF)
+                tetrisEngine->softDropToggle(false);
+                break;
+            }
+            default: break;
         }
-    } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+    }
+    else if (event.type == SDL_MOUSEBUTTONDOWN) {
         int x = event.button.x;
         int y = event.button.y;
-        std::cout << "Mouse " << x << "," << y << "" << std::endl;
+        std::cout << "[DEBUG] Mouse " << x << "," << y << std::endl;
     }
 }

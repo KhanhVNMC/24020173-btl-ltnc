@@ -6,11 +6,13 @@
 #include "playerentity.h"
 #include "../../spritesystem/particles.h"
 
-void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const function<void()> onComplete, const int speed_) {
+void FlandreScarlet::moveSmooth(const int targetX, const int targetY, const function<void()> onComplete, const int speed_, bool ignoreAnimation) {
     targetMoveX = targetX;
     targetMoveY = targetY;
     this->speed = speed_;
     this->onMovedComplete = onComplete;
+
+    if (ignoreAnimation) return;
 
     if (targetMoveX == strictX && targetMoveY != strictY) {
         setAnimation(targetMoveY < strictY ? RUN_FORWARD : RUN_BACKWARD);
@@ -144,6 +146,11 @@ void FlandreScarlet::damagedAnimation(const bool blood) {
     ps->once = true;
     ps->teleport(strictX + 120, strictY + 120); // Set emitter position
     ps->spawn();
+}
+
+void FlandreScarlet::deathAnimation() {
+    glowRedUntil = SpritesRenderingPipeline::renderPasses() + 20; // 10 frames
+    setAnimation(HURT);
 }
 
 void FlandreScarlet::processMove() {

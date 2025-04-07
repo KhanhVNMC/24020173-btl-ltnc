@@ -188,8 +188,8 @@ public:
 
     // indicates whether the engine is currently started or not
     bool started = false;
-    // whether to start dropping pieces or not
-    bool startedPlaying = false;
+    // whether to allow/disallow dropping pieces or not
+    bool interrupted = false;
     // indicates if the engine has been stopped
     bool stopped = false;
 
@@ -692,10 +692,10 @@ public:
      * Setting it to false pauses the game by preventing new pieces from spawning
      * (will not despawn the current piece)
      *
-     * @param isEnabled true to enable game progression, false to pause it
+     * @param interrupt true to temporarily pause piece spawning
      */
-    void gameInterrupt(bool isEnabled) {
-        this->startedPlaying = isEnabled;
+    void gameInterrupt(bool interrupt) {
+        this->interrupted = interrupt;
     }
 
 public:
@@ -1433,8 +1433,8 @@ inline bool TetrisEngine::gameLoopBody() {
     }
 
     // if the falling piece is null, spawns a new one
-    // only if the clear delay period is not active
-    if (this->fallingPiece == nullptr && !clearDelayActive && startedPlaying) {
+    // only if the clear delay period is not active and NOT interrupted
+    if (this->fallingPiece == nullptr && !clearDelayActive && !interrupted) {
         if (!nextQueue.empty()) {
             MinoTypeEnum *nextMino = nextQueue.front();
             nextQueue.pop();

@@ -10,25 +10,65 @@
 #include <mutex>
 #include <queue>
 #include <condition_variable>
+#include <SDL_events.h>
 
 using namespace std;
 
 class ExecutionContext {
 protected:
     unordered_map<int, function<void()>> ALL_EXECUTION_SCHEDULED;
-    mutex mtx; // lock the cleanup queue
+    mutex mtx; // lock the cleanup queue AND SDL event(s)
+
+    // queue for unhooking tasks
     queue<int> unhookQueue;
 
+    // queue for SDL thingy
+    queue<SDL_Event> eventQueue;
+
+    // the amount of tasks this context received (ever)
     int scheduledTasks = 0;
     bool stopped = false;
 public:
-    void unhook(int execId);
+    /**
+     * Hook a task into this Context
+     * @param function the task
+     * @return the task ID
+     */
     int hook(function<void()> function);
 
+    /**
+     * Unhook a task from this Context
+     * @param execId the task ID (given by hook())
+     */
+    void unhook(int execId);
+
+    /**
+     * @return true if the context is still alive
+     */
     bool isRunning();
+
+    /**
+     * Gracefully kill the context
+     */
     void stop();
 
+    /**
+     * Execute this context (thread safe)
+     */
     void execute();
+
+    /**
+     * Push an SDL Event into the intercom queue (thread safe)
+     * @param event
+     */
+    void pushEvent(SDL_Event event);
+
+    /**
+     * Pop an event out of the intercom queue
+     * @param event the same as SDL_PollEvent()
+     * @return true if exists
+     */
+    bool popEvent(SDL_Event& event);
 };
 
 #endif //TETISENGINE_HOOKER_H

@@ -54,13 +54,14 @@ public:
      * @param onComplete
      * @param speed_ pixel per frame
      */
-    void moveSmooth(const int targetX, const int targetY, const function<void()> onComplete = nullptr, const int speed_ = 5);
+    void moveSmooth(const int targetX, const int targetY, const function<void()> onComplete = nullptr, const int speed_ = 5, const bool ignoreAnimation = false);
 
     function<void()> animationAfterAttackAnimation = nullptr;
     void scheduleAnimation(int animation, function<void()> toRunLater, int frameSpeed);
 
     int glowRedUntil = 0;
     void damagedAnimation(const bool blood = false);
+    void deathAnimation();
 
     int frameSpeed{};
     int maxOffset{};

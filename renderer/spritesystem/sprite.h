@@ -149,6 +149,16 @@ namespace SpritesRenderingPipeline {
     static long renderPasses() {
         return RENDER_PASSES;
     }
+
+    // this could leak memory but fuck it.
+    static void stopAndCleanCurrentContext() {
+        for (auto& sprite : SpritesRenderingPipeline::getSprites()) {
+            sprite.second->discard();
+        }
+        for (auto& sprite : SpritesRenderingPipeline::getPrioritySprites()) {
+            sprite.second->discard();
+        }
+    }
 }
 
 #endif //SPRITE_H

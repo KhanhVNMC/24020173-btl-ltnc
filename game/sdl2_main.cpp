@@ -31,7 +31,8 @@ int main(int argc, char* argv[]) {
     ExecutionContext* context = new ExecutionContext();
 
     auto *tetris = new TetrisEngine(config, generator);
-    (new TetrisPlayer(context, renderer, tetris))->startEngineAndGame();
+    TetrisPlayer* player = (new TetrisPlayer(context, renderer, tetris));
+    player->startEngineAndGame();
 
     thread worker([&]() {
         while (context->isRunning()) {
@@ -39,6 +40,18 @@ int main(int argc, char* argv[]) {
         }
         cout << "[EC: Thread] ExecutionContext halted!\n";
     });
+
+    SDL_Event event;
+    while (context->isRunning()) {
+        // Poll events in the main thread
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                context->stop();  // Gracefully stop the context if the user closes the window
+            }
+            Thread::sleep(1);
+            context->pushEvent(event);
+        }
+    }
 
     // wait for thread to complete
     if (worker.joinable()) {

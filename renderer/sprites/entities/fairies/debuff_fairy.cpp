@@ -4,6 +4,10 @@
 #include "debuff_fairy.h"
 #include "../../../tetris_player.h"
 
+static double randomFloat(double min, double max) {
+    return min + static_cast<double>(rand()) / RAND_MAX * (max - min);
+}
+
 void DebuffFairy::attackPlayer(const void* p) {
     // prerequisite
     if (this->isAttacking) return;

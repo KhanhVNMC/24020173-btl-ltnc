@@ -2,6 +2,7 @@
 // Created by GiaKhanhVN on 3/3/2025.
 //
 #include "tetris_player.h"
+#include "spritesystem/particles.h"
 
 void TetrisPlayer::spawnPhysicsBoundText(
         string str, int x, int y, double randVelX, double randVelY,
@@ -62,6 +63,10 @@ void TetrisPlayer::renderThunderbolt(SDL_Renderer* renderer, const int x, const 
             x, y, static_cast<int>(22 * 1.25), static_cast<int>(30 * 1.25)
     };
     render_component(renderer, cached, component, 1);
+}
+
+void TetrisPlayer::spawnMiddleScreenText(const int x, const int y, string title, const int color, const int life) {
+    spawnPhysicsBoundText(title, x, y, 0.0, 0, life, 0.01, 5, 50, 15, nullptr, color, true);
 }
 
 void TetrisPlayer::renderArmor(SDL_Renderer* renderer, const int x, const int y, const int offset) {
