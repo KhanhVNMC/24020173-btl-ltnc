@@ -73,84 +73,35 @@ static int MINO_COLORS[7] = {
 #define X_LANE_ENEMIES 1400
 
 class TetrisPlayer {
-    static void spawnPhysicsBoundText(string str, int x, int y, double randVelX, double randVelY, int lifetime, double gravity, double scalar, int strgap, int width, const int* colors = nullptr, const int applyThisColorToAll = -1, bool priority = false) {
-        for (int i = 0; i < str.length(); i++) {
-            auto [source, dest] = puts_component_char(x + (strgap * i), y, scalar, str[i], width);
-            const auto part = new Particle(
-                    // texture
-                    {source.x, source.y, source.w, source.h},
-                    // destination
-                    dest.w, dest.h, dest.x, dest.y,
-                    randVelX, randVelY, lifetime, gravity
-            );
-            part->setTextureFile("../assets/font.bmp");
-            if (applyThisColorToAll != -1) part->setTint(applyThisColorToAll);
-            else if (colors != nullptr) part->setTint(colors[i]);
-            part->spawn(priority);
-        }
-    }
+public:
+    static void spawnPhysicsBoundText(string str, int x, int y, double randVelX, double randVelY, int lifetime, double gravity, double scalar, int strgap, int width, const int* colors = nullptr, const int applyThisColorToAll = -1, bool priority = false);
+    static void spawnDamageIndicator(const int x, const int y, const int damage, bool offensive);
+    static void spawnBoardTitle(const int x, const int y, string title, const int* colors = nullptr);
+    static void spawnBoardSubtitle(const int x, const int y, string title, const int color);
+    static void spawnBoardMiniSubtitle(const int x, const int y, string title, const int color);
+    static void spawnMiscIndicator(const int x, const int y, string indicator, const int color);
+    static void spawnPriorityIndicator(const int x, const int y, string indicator, const int color);
+    static void renderThunderbolt(SDL_Renderer* renderer, const int x, const int y, const int offset);
+    static void renderArmor(SDL_Renderer* renderer, const int x, const int y, const int offset);
+    static void renderDebuffIcon(SDL_Renderer* renderer, const int x, const int y, const int offset);
 
-    static void spawnDamageIndicator(const int x, const int y, const int damage, bool offensive) {
-        const string damageStr = std::to_string(damage);
-        const double scalar = 3;
-        const int strgap = 40, width = 18;
-        const double randDmgVelX = randomFloat(-2, 4), randDmgVelY = -randomFloat(-1, 2);
+    /*** internal objects ***/
+    // player & background entities
+    FlandreScarlet* flandre;
+    vector<BackgroundScroll*> parallaxBackgrounds;
 
-        spawnPhysicsBoundText(damageStr, x, y, randDmgVelX, randDmgVelY, 80, 0.05, scalar, strgap, width, nullptr, offensive ? MINO_COLORS[6] : MINO_COLORS[1]);
-    }
+    // SDL
+    SDL_Renderer* renderer;
 
-    static void spawnBoardTitle(const int x, const int y, string title, const int* colors = nullptr) {
-        spawnPhysicsBoundText(title, x, y, -0.1, 0, 60, 0.03, 2.5, 30, 15, colors);
-    }
-
-    static void spawnBoardSubtitle(const int x, const int y, string title, const int color) {
-        spawnPhysicsBoundText(title, x, y, -0.1, 0, 60, 0.03, 2, 20, 15, nullptr, color);
-    }
-
-    static void spawnBoardMiniSubtitle(const int x, const int y, string title, const int color) {
-        spawnPhysicsBoundText(title, x, y, -0.1, 0, 60, 0.03, 1.5, 20, 15, nullptr, color);
-    }
-
-    static void spawnMiscIndicator(const int x, const int y, string indicator, const int color) {
-        spawnPhysicsBoundText(indicator, x, y, 0.5, 0, 60, 0.03, 2, 20, 15, nullptr, color);
-    }
-
-    static void spawnPriorityIndicator(const int x, const int y, string indicator, const int color) {
-        spawnPhysicsBoundText(indicator, x, y, 0, 0.0, 90, -0.03, 3, 20, 15, nullptr, color, true);
-    }
-
-    static void renderThunderbolt(SDL_Renderer* renderer, const int x, const int y, const int offset) {
-        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
-        const struct_render_component component = {
-                58 + (23 * offset), 0, 22, 30,
-                x, y, static_cast<int>(22 * 1.25), static_cast<int>(30 * 1.25)
-        };
-        render_component(renderer, cached, component, 1);
-    }
-
-    static void renderArmor(SDL_Renderer* renderer, const int x, const int y, const int offset) {
-        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
-        const struct_render_component component = {
-                230 + (19 * offset), 0, 18, 18,
-                x, y, static_cast<int>(18 * 1.25), static_cast<int>(18 * 1.25)
-        };
-        render_component(renderer, cached, component, 1);
-    }
-
-    static void renderDebuffIcon(SDL_Renderer* renderer, const int x, const int y, const int offset) {
-        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
-        const struct_render_component component = {
-                340 + (21 * offset), 0, 20, 22,
-                x, y, static_cast<int>(20 * 2.25), static_cast<int>(22 * 2.25)
-        };
-        render_component(renderer, cached, component, 1);
-    }
-
-    // internal engine
+    // engine handler
     TetrisEngine* tetrisEngine;
     deque<int> garbageQueue;
 
-    // statistics
+    // context
+    int tetrisEngineExecId = 0;
+    /*** end of internal objects ***/
+
+    /*** statistics ***/
     long long tetrisScore = 0;
     int currentTetrisLevel = 0;
 
@@ -160,25 +111,22 @@ class TetrisPlayer {
 
     long long firstDamageInflictedTime = -1;
     int totalDamage = 0;
+    /*** end of statistics ***/
 
-    // animation & player entity
-    FlandreScarlet* flandre;
-    SDL_Renderer* renderer;
-
-public:
-    // attack thingy
+    /*** player attacks ***/
     int currentLane = 0;
     int accumulatedCharge = 30;
     int currentArmorPoints = 10;
 
-    // flags
+    // flags to stop shit from exploding
     bool isMovingToAnotherLane = false;
     bool isAttacking = false;
 
     // enemies
     NormalEntity* enemyOnLanes[4] = {nullptr, nullptr, nullptr, nullptr}; // 4 lanes, 4 available monsters (initialized as 0)
+    /*** end of player attacks ***/
 
-    // status effects
+    /*** status effects ***/
     bool sBlinded = false; // board invisible
     bool sNoHold = false; // cannot hold
     bool sSuperSonic = false; // mach 5 speed
@@ -187,86 +135,63 @@ public:
     // time left for each debuff
     int sDebuffTime[5] = { 0, 0, 0, 0, 0 };
 
-    void setDebuff(Debuff type, bool value) {
-        switch (type) {
-            case BLIND: sBlinded = value; break;
-            case NO_HOLD: {
-                if (sNoHold == value) break;
-                sNoHold = value;
-                this->tetrisEngine->getCurrentConfig()->setHoldEnabled(!value);
-                this->tetrisEngine->updateMutableConfig(sSuperSonic);
-                break;
-            }
-            case SUPER_SONIC: {
-                if (sSuperSonic == value) break;
-                sSuperSonic = value;
-                this->tetrisEngine->updateMutableConfig(value);
-                break;
-            }
-            case WEAKNESS: sWeakness = value; break;
-            case FRAGILE: sFragile = value; break;
-        }
-    }
+    /**
+     * Set a debuff
+     * @param type debuff enum
+     * @param value true if grant, false if remove
+     */
+    void setDebuff(Debuff type, bool value);
+    /*** end of status effects ***/
 
-    ExecutionContext* context;
-    TetrisPlayer(ExecutionContext* context, SDL_Renderer* renderer_, TetrisEngine* engine) {
-        this->renderer = renderer_;
-        this->tetrisEngine = engine;
-        this->context = context;
+    // the execution context (nullptr if none)
+    ExecutionContext* context = nullptr;
 
-        this->flandre = new FlandreScarlet();
-        this->flandre->teleportStrict(X_LANE_PLAYER, Y_LANES[currentLane]);
-        this->flandre->setAnimation(RUN_FORWARD);
-        this->flandre->spawn();
+    /**
+     * Initialize a game of Tetris: Diarrhea Edition
+     * @param context the exec context (can be nullptr)
+     * @param sdlRenderer the SDL renderer
+     * @param engine the main engine
+     */
+    TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer, TetrisEngine* engine);
 
-        this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
-        // hook into events
-        this->tetrisEngine->runOnMinoLocked([&](int cleared) {
-            if (firstPiecePlacedTime == -1) {
-                firstPiecePlacedTime = System::currentTimeMillis();
-            }
-            this->piecesPlaced++;
-            this->onMinoLocked(cleared);
-        });
-        //this->tetrisEngine->onComboBreaks([&](const int combo) { onComboBreaks(combo); });
-        this->tetrisEngine->onPlayfieldEvent([&](const PlayfieldEvent& event) { playFieldEvent(event); });
+    /**
+     * Initialize the parallax scrolling task (SIF)
+     */
+    void initParallaxBackground();
 
-        // init gravity to lvl 1
-        updateLevelAndGravity(1);
-    }
+    /**
+     * Start the Tetris game (with countdown)
+     */
+    void startEngineAndGame();
 
-    void startEngineAndGame() {
-        // boot the engine up
-        this->tetrisEngine->scheduleDelayedTask(60, [&]() {
-            this->tetrisEngine->gameInterrupt(true);
-        });
-        this->tetrisEngine->gameInterrupt(false);
-        this->tetrisEngine->start(false);
+    /**
+     * Clean-up this game of Diarrhea (literally)
+     */
+    ~TetrisPlayer();
 
-        // take over the execution context
-        context->hook([&]() { this->tetrisEngine->gameLoopBody(); });
-    }
-
+    /**
+     * @return current screen location of player entity
+     */
     SpriteLoc getLocation() {
         return this->flandre->getLocation();
     }
 
+    /** debug methods **/
     [[maybe_unused]] void sprintfcdbg(TetrisEngine* tetris, int spriteCount);
     void process_input(SDL_Event& event, TetrisEngine* engine);
+    /** end of debug methods **/
 
-    void spawnEnemyOnLane(int lane, NormalEntity* entity) {
-        enemyOnLanes[lane] = entity;
-        // spawn hidden
-        entity->teleportStrict(X_LANE_ENEMIES + 200, Y_LANES_ENEMIES[lane]);
-        // move slowly to its designated position
-        entity->moveSmooth(X_LANE_ENEMIES, Y_LANES_ENEMIES[lane], [&, entity]() {
-            // once arrive, this mob is ready to be fucked
-            entity->isSpawning = false;
-        });
-        entity->setAnimation(ENTITY_IDLE);
-        entity->spawn();
-    }
+    /**
+     * Spawn a motherfucker on a lane
+     * @param lane the lane index (0-3)
+     * @param entity an entity
+     */
+    void spawnEnemyOnLane(int lane, NormalEntity* entity);
 
+    /**
+     * Move to a lane (0-3)
+     * @param targetLane
+     */
     void moveToLane(const int targetLane) {
         if (this->isMovingToAnotherLane || this->isAttacking) return; // prevent overlapping
         this->isMovingToAnotherLane = true;
