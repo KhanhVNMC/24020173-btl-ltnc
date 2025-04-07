@@ -31,7 +31,7 @@ namespace System {
      *
      * @return the current value of the NOT running Java Virtual Machine's
      *         high-resolution time source, in nanoseconds
-     * @warning I copied this from Java's offical doc
+     * @warning I copied this from Java's official doc
      */
     inline static LONG nanoTime() {
         const auto now = std::chrono::high_resolution_clock::now();
@@ -48,7 +48,7 @@ namespace System {
     *
     * @return  the difference, measured in milliseconds, between
     *          the current time and midnight, January 1, 1970 UTC.
-    * @warning I copied this from Java's offical doc
+    * @warning I copied this from Java's official doc
     */
     inline static LONG currentTimeMillis() {
         auto now = std::chrono::system_clock::now();
@@ -64,7 +64,7 @@ namespace Thread {
      * the precision and accuracy of system timers and schedulers.
      *
      * @param  milliseconds the length of time to sleep in milliseconds
-     * @warning I copied this from Java's offical doc
+     * @warning I copied this from Java's official doc
      */
     inline static void sleep(LONG milliseconds) {
     #ifndef _WIN32

@@ -293,15 +293,17 @@ public:
     void renderGarbageQueue(const int ox, const int oy);
     void renderTetrisInterface(const int ox, const int oy);
 
-    // SDL stuff
+    /**
+     * THIS CODE IS VERY DANGEROUS!
+     */
     void endGameAndReturnContext() {
-        SDL_Renderer* renderer = this->renderer;
+        SDL_Renderer* rendererCopied = this->renderer;
         // clear artifacts
         SpritesRenderingPipeline::stopAndCleanCurrentContext();
         delete this;
         // clear frame buffer
-        if (renderer) {
-            SDL_RenderClear(renderer);
+        if (rendererCopied) {
+            SDL_RenderClear(rendererCopied);
         }
     }
 

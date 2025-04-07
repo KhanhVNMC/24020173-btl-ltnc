@@ -26,7 +26,7 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
     // init gravity to lvl 1
     updateLevelAndGravity(1);
     // first lane is 3 (bottom)
-    this->currentLane = 1;
+    this->currentLane = 3;
 
     // init background (it will stay still until the game starts)
     initParallaxBackground();
