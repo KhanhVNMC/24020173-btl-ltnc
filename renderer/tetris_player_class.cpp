@@ -18,6 +18,7 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
             firstPiecePlacedTime = System::currentTimeMillis();
         }
         this->piecesPlaced++;
+        this->accumulatedCharge = 40;
         this->onMinoLocked(cleared);
     });
     this->tetrisEngine->onComboBreaks([&](const int combo) { });
@@ -76,7 +77,7 @@ void TetrisPlayer::startEngineAndGame() {
                 // make player "fly"
                 this->flandre->setAnimation(RUN_FORWARD);
                 // startWave  test
-                startWave(20);
+                startWave(1);
             }
         });
     }
@@ -99,6 +100,12 @@ void TetrisPlayer::onGameOver() {
     // play player's death animation
     this->flandre->deathAnimation();
 
+    // all enemies fly away
+    for (NormalEntity* enemy : enemyOnLanes) {
+        if (enemy == nullptr) continue;
+        enemy->moveSmooth(1800, enemy->strictY);
+    }
+
     // fall down to the bottom of the screen
     tetrisEngine->scheduleDelayedTask(30, [&]() {
         // stop parallax scrolling
@@ -114,6 +121,14 @@ void TetrisPlayer::onGameOver() {
     // the entire board falls down
     tetrisEngine->scheduleDelayedTask(60, [&]() {
         this->boardFallAnimationCount = true;
+        // all enemies remove
+        int i = 0;
+        for (NormalEntity* enemy : enemyOnLanes) {
+            if (enemy == nullptr) continue;
+            enemy->remove();
+            enemyOnLanes[i] = nullptr;
+            i++;
+        }
     });
 }
 
@@ -151,8 +166,14 @@ void TetrisPlayer::spawnEnemyOnLane(int lane, NormalEntity *entity) {
     entity->spawn();
 }
 
+void TetrisPlayer::killEnemyOnLane(int lane) {
+    if (enemyOnLanes[lane] == nullptr) return;
+    enemyOnLanes[lane]->remove();
+    enemyOnLanes[lane] = nullptr;
+};
+
 void TetrisPlayer::moveToLane(const int targetLane) {
-    if (this->isMovingToAnotherLane || this->isAttacking || !this->gameStarted) return; // prevent overlapping
+    if (this->isMovingToAnotherLane || this->isAttacking || !this->gameStarted || this->isGameOver) return; // prevent overlapping
     this->isMovingToAnotherLane = true;
     this->currentLane = targetLane % 4; // prevent overshooting
 
@@ -185,7 +206,7 @@ void TetrisPlayer::onDamageSend(const int damage) {
 }
 
 void TetrisPlayer::inflictDamage(int damage, int oldLane) {
-    if (!this->gameStarted) return;
+    if (!this->gameStarted || this->isGameOver) return;
     if (this->isAttacking || this->isMovingToAnotherLane || currentLane != oldLane) {
         spawnMiscIndicator(flandre->strictX, Y_LANES[oldLane], "miss!", MINO_COLORS[3]);
         return;
@@ -215,7 +236,7 @@ void TetrisPlayer::inflictDamage(int damage, int oldLane) {
 }
 
 void TetrisPlayer::inflictDebuff(int debuff, int timeInSeconds, int oldLane) {
-    if (!this->gameStarted) return;
+    if (!this->gameStarted || this->isGameOver) return;
     if (this->isAttacking || this->isMovingToAnotherLane || currentLane != oldLane) {
         spawnMiscIndicator(flandre->strictX, Y_LANES[oldLane], "miss!", MINO_COLORS[3]);
         return;
@@ -268,6 +289,11 @@ void TetrisPlayer::releaseDamageOnCurrentLane() {
                 addStats(rewards.type == 1, rewards.amount);
                 // free the memory of the thing
                 this->enemyOnLanes[currentLaneRef] = nullptr; // mark the enemy as none
+                // increment the counter
+                waveKilledEnemies++;
+                if (waveKilledEnemies >= 4) {
+                    onWaveCompletion();
+                }
             }
 
             // damage animation
@@ -584,4 +610,21 @@ void TetrisPlayer::renderTetrisInterface(const int ox, const int oy) {
     if (boardRumble > 0) {
         --boardRumble;
     }
+}
+
+void TetrisPlayer::onWaveCompletion() {
+    spawnPhysicsBoundText("wave " + to_string(lastWave) + " clear!", 1600, 400, -10, 0, 300, 0, 4, 50, 15, nullptr, MINO_COLORS[2]);
+    // rewards
+    this->tetrisEngine->scheduleDelayedTask(90, [&]() {
+        int amount = 2 + lastWaveDifficulty + (rand() % 10);
+        bool isArmor = (rand() % 2) == 1;
+
+        addStats(!isArmor, amount);
+        spawnPhysicsBoundText("+" + to_string(amount) + " " + (isArmor ? "armor" : "attack") + "!", 1600, 400, -10, 0, 300, 0, 4, 50, 15, nullptr, !isArmor ? MINO_COLORS[5] : 0xc9c9c9);
+    });
+
+    // next wave in 4s
+    this->tetrisEngine->scheduleDelayedTask(240, [&]() {
+        this->startWave(lastWave + 1);
+    });
 }

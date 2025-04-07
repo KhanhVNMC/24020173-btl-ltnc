@@ -116,6 +116,13 @@ void NormalEntity::die(bool isArmor) {
     this->discard();
 }
 
+void NormalEntity::remove() {
+    this->isDead = true;
+    this->texture.width = 0;
+    this->texture.height = 0;
+    this->discard();
+}
+
 void NormalEntity::onDrawCall() {
     internalClock++; // advance the sprite-bound clock
 

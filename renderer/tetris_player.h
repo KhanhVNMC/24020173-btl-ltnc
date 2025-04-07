@@ -249,6 +249,12 @@ public:
     void spawnEnemyOnLane(int lane, NormalEntity* entity);
 
     /**
+     * Kill a motherfucker on a lane
+     * @param lane the lane index (0-3)
+     */
+    void killEnemyOnLane(int lane);
+
+    /**
      * Move to a lane (0-3)
      * @param targetLane
      */
@@ -310,6 +316,11 @@ public:
     void onGameOver();
 
     /**
+     * (Event) fire when the player finished a wave of monsters
+     */
+    void onWaveCompletion();
+
+    /**
      * (Event) Handle SDL events for this Game Scene
      * @param event SDL Event
      */
@@ -338,6 +349,13 @@ public:
     }
 
     int waveKilledEnemies = 0;
+    int lastWave = 0;
+    WaveDifficulty lastWaveDifficulty = WAVE_EASY;
+
+    /**
+     * Start a wave of monsters
+     * @param wave a valid number from 1 - infinity
+     */
     void startWave(int wave) {
         WaveDifficulty wDifficulty = WAVE_EASY;
         string waveText = "easy";
@@ -346,18 +364,27 @@ public:
         if (wave >= 3 && wave <= 5) {
             wDifficulty = WAVE_MEDIUM;
             waveText = "medium";
-            waveColor = MINO_COLORS[4]; // orange
+            waveColor = MINO_COLORS[6]; // yellow
         } else if (wave > 5) {
             wDifficulty = WAVE_HARD;
             waveText = "hard";
             waveColor = MINO_COLORS[1]; // red
         }
 
+        // sync
+        this->lastWave = wave;
+        this->lastWaveDifficulty = wDifficulty;
+
+        // reset counter back to 0 as a new wave begins
         this->waveKilledEnemies = 0;
         spawnPhysicsBoundText("wave " + to_string(wave) + ": " + waveText, 1600, 400, -10, 0, 300, 0, 4, 50, 15, nullptr, waveColor);
         populateLane(wDifficulty);
     }
 
+    /**
+     * Spawn enemies based on wave difficulty
+     * @param difficulty
+     */
     void populateLane(WaveDifficulty difficulty) {
         vector<NormalEntity*> toSpawn;
         switch (difficulty) {

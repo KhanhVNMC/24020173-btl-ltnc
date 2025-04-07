@@ -94,6 +94,7 @@ public:
     KillRewards damageEntity(int damage);
 
     void die(bool isArmor);
+    void remove();
 
     virtual void attackPlayer(const void* p);
 
