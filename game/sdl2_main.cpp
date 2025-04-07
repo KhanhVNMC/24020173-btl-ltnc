@@ -1,7 +1,7 @@
-#include "sbg.h"
-#include "renderer/tetris_renderer.h"
-#include "renderer/tetris_player.h"
-#include "renderer/spritesystem/particles.h"
+#include "../sbg.h"
+#include "../renderer/tetris_renderer.h"
+#include "../renderer/tetris_player.h"
+#include "hooker.h"
 #include <iostream>
 
 void AttachConsoleToSDL() {
@@ -12,6 +12,7 @@ void AttachConsoleToSDL() {
 }
 
 int main(int argc, char* argv[]) {
+    AttachConsoleToSDL();
     std::srand(std::time(0));
     AttachConsoleToSDL();
     initFontSystem();
@@ -23,27 +24,31 @@ int main(int argc, char* argv[]) {
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     // Main loop
-    int running = 1;
-    SDL_Event event;
-
     auto *generator = new SevenBagGenerator(123);
     TetrisConfig* config = TetrisConfig::builder();
     config->setLineClearsDelay(0.35);
 
-    Sprite* background = new BackgroundScroll(SDL_FLIP_NONE, 0, 0, 2);
-    background->spawn();
-    Sprite* background2 = new BackgroundScroll(SDL_FLIP_NONE, 2048, 0, 2);
-    background2->spawn();
-
-    Sprite* background3 = new BackgroundScroll(SDL_FLIP_HORIZONTAL, 0, 0, 3);
-    background3->spawn();
-
-    Sprite* background4 = new BackgroundScroll(SDL_FLIP_HORIZONTAL, 2048, 0, 3);
-    background4->spawn();
+    ExecutionContext* context = new ExecutionContext();
 
     auto *tetris = new TetrisEngine(config, generator);
-    new TetrisPlayer(renderer, tetris);
+    (new TetrisPlayer(context, renderer, tetris))->startEngineAndGame();
 
+    thread worker([&]() {
+        while (context->isRunning()) {
+            context->execute();
+        }
+        cout << "[EC: Thread] ExecutionContext halted!\n";
+    });
+
+    // wait for thread to complete
+    if (worker.joinable()) {
+        worker.join();
+    }
+
+    // Clean up heap allocation
+    delete context;
+
+    cout << "[MC: Main] Execution complete.\n";
     // Cleanup
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

@@ -13,16 +13,12 @@ enum Debuff {
 
 class DebuffFairy : public NormalEntity {
 public:
+    vector<Debuff> availableDebuffs;
     DebuffFairy(const void* tetrisPlayer) : NormalEntity(tetrisPlayer) {
-        this->setTextureFile("../assets/miniboss_01.bmp"); // blue nigga
-        this->setDamageThresholds(1, 4); // 1-4 dmg
-        this->setAttackSpeed(5); // 30s between attacks
-        this->setDifficulty(MEDIUM); // this is a medium mob
-        this->setMaxHealth(999); // 12HP (3 tetris(s) to clear)
+        this->isMiniboss = true;
         this->defaultFrameSpeed = 10;
+        this->availableDebuffs = { WEAKNESS, FRAGILE };
     }
-
-    virtual vector<Debuff> availableDebuffs() = 0;
 
     void attackPlayer(const void *p);
 };

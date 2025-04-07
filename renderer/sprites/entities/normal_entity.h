@@ -34,6 +34,11 @@ public:
         this->pTetrisPlayer = tetrisPlayer;
     }
 
+    // typedefs
+    bool isMiniboss = false;
+    bool isBoss = false;
+
+    // fields
     int defaultFrameSpeed = 5;
     EnemyDifficulty difficulty = EASY;
 

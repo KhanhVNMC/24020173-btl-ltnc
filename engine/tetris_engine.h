@@ -650,8 +650,16 @@ private:
     /**
 	 * Start the game loop
 	 */
-    void gameLoopStart();
+    void gameLoopStart(bool useCurrentThread);
 
+public:
+    /**
+     * @caution DO NOT USE, UNLESS YOU KNOW WHAT YOU ARE DOING!
+     * @returns FALSE if halted
+     */
+    bool gameLoopBody();
+
+private:
     /**
      * Memory management bullshit, don't use
      */
@@ -672,8 +680,8 @@ public:
     /**
      * Start the Tetris Engine, beginning to accept user inputs
     */
-    void start() {
-        this->gameLoopStart();
+    void start(bool useCurrentThread = true) {
+        this->gameLoopStart(useCurrentThread);
     }
 
     /**
@@ -1392,7 +1400,7 @@ inline void TetrisEngine::putPieceInPlayfield(MinoTypeEnum *type) {
     }
 }
 
-inline void TetrisEngine::gameLoopStart() {
+inline void TetrisEngine::gameLoopStart(bool useCurrentThread) {
     if (this->stopped) throw logic_error("This instance has stopped! You must create a new instance!");
     if (this->started) throw logic_error("This instance is already started");
 
@@ -1403,103 +1411,109 @@ inline void TetrisEngine::gameLoopStart() {
     // the flag to look for
     this->started = true;
 
-    for (;;) {
-        // stop on break signal
-        if (this->stopped) break;
-        // count nanoseconds passed for tick compensation if needed
-        auto tickTimeBegin = System::nanoTime();
-
-        // run the external callback
-        if (this->onTickBeginCallback != nullptr) {
-            try {
-                this->onTickBeginCallback();
-            } catch (exception &e) {
-                cerr << e.what() << endl;
-            }
-        }
-
-        // if the falling piece is null, spawns a new one
-        // only if the clear delay period is not active
-        if (this->fallingPiece == nullptr && !clearDelayActive && startedPlaying) {
-            if (!nextQueue.empty()) {
-                MinoTypeEnum *nextMino = nextQueue.front();
-                nextQueue.pop();
-                this->putPieceInPlayfield(nextMino);
-            }
-        }
-
-        // hold handling
-        if (this->holdButtonPressed) {
-            if (this->fallingPiece != nullptr) {
-                // c++ bullshittery
-                this->onUserHold();
-            }
-            this->holdButtonPressed = false;
-        }
-
-        // run the main internal logic
-        onTickRun();
-
-        // scheduled task handling (this is more primitive than Java because of c++ libs)
-        // find the first key that is strictly greater than ticksPassed
-        auto it = scheduledTasks.upper_bound(ticksPassed);
-        // if it is not the beginning, step back to get the greatest key <= ticksPassed
-        if (it != scheduledTasks.begin()) {
-            --it; // this is so fucking bad, why c++ don't have treemap
-            // ensure that this key is indeed <= ticksPassed
-            if (it->first <= ticksPassed) {
-                // c++ debugger bullshitery
-                LONG key = it->first;
-
-                // remove the key from the map
-                auto node = scheduledTasks.extract(key);
-                vector<function<void()>> tasks = move(node.mapped());
-
-                // execute one by one
-                for (auto &task: tasks) {
-                    task();
-                }
-            }
-        }
-
-        // run the external call
-        if (this->onTickEndCallback != nullptr) {
-            try {
-                this->onTickEndCallback();
-            } catch (exception &e) {
-                cerr << e.what() << endl;
-            }
-        }
-
-        // if top out, execute the onTopOut external call
-        // Usually, onTopOut will be assigned to TetrisEngine#stop(), which will
-        // stop the main game loop, thus trigger the `if (this.stopped) break;` above
-        if (shouldTopOut) {
-            // execute one last time (or not, the user can do sth to prevent `stop()` from being called
-            if (this->onTopOutCallback != nullptr) {
-                this->onTopOutCallback();
-            }
-            this->shouldTopOut = false; // the user may be creative and do something else with this
-
-            // since the last tetromino caused a top-out, we clear memory right now
-            this->freeMemoryOfFallingPiece();
-        }
-
-        // increment tick counter, used for scheduling
-        ticksPassed++;
-
-        // lost-ticks compensation mechanism
-        this->lastTickTime = (System::nanoTime() - tickTimeBegin) / 1000000;
-        double parkPeriod = max(0.0, EngineTimer::TICK_INTERVAL_MS - lastTickTime);
-
-        this->dExpectedSleepTime = parkPeriod;
-        LONG prev = System::currentTimeMillis();
-        // it could be 0, which means: no sleep, execute immediately
-        if (parkPeriod > 0) {
-            Thread::sleep(parkPeriod);
-        } // tick-rate cap
-        this->dActualSleepTime = System::currentTimeMillis() - prev;
+    if (useCurrentThread) for (;;) {
+        // handle the game loop, if false, break
+        if (!this->gameLoopBody()) break;
     }
+}
+
+inline bool TetrisEngine::gameLoopBody() {
+    // stop on break signal
+    if (this->stopped) return false;
+    // count nanoseconds passed for tick compensation if needed
+    auto tickTimeBegin = System::nanoTime();
+
+    // run the external callback
+    if (this->onTickBeginCallback != nullptr) {
+        try {
+            this->onTickBeginCallback();
+        } catch (exception &e) {
+            cerr << e.what() << endl;
+        }
+    }
+
+    // if the falling piece is null, spawns a new one
+    // only if the clear delay period is not active
+    if (this->fallingPiece == nullptr && !clearDelayActive && startedPlaying) {
+        if (!nextQueue.empty()) {
+            MinoTypeEnum *nextMino = nextQueue.front();
+            nextQueue.pop();
+            this->putPieceInPlayfield(nextMino);
+        }
+    }
+
+    // hold handling
+    if (this->holdButtonPressed) {
+        if (this->fallingPiece != nullptr) {
+            // c++ bullshittery
+            this->onUserHold();
+        }
+        this->holdButtonPressed = false;
+    }
+
+    // run the main internal logic
+    onTickRun();
+
+    // scheduled task handling (this is more primitive than Java because of c++ libs)
+    // find the first key that is strictly greater than ticksPassed
+    auto it = scheduledTasks.upper_bound(ticksPassed);
+    // if it is not the beginning, step back to get the greatest key <= ticksPassed
+    if (it != scheduledTasks.begin()) {
+        --it; // this is so fucking bad, why c++ don't have treemap
+        // ensure that this key is indeed <= ticksPassed
+        if (it->first <= ticksPassed) {
+            // c++ debugger bullshitery
+            LONG key = it->first;
+
+            // remove the key from the map
+            auto node = scheduledTasks.extract(key);
+            vector<function<void()>> tasks = move(node.mapped());
+
+            // execute one by one
+            for (auto &task: tasks) {
+                task();
+            }
+        }
+    }
+
+    // run the external call
+    if (this->onTickEndCallback != nullptr) {
+        try {
+            this->onTickEndCallback();
+        } catch (exception &e) {
+            cerr << e.what() << endl;
+        }
+    }
+
+    // if top out, execute the onTopOut external call
+    // Usually, onTopOut will be assigned to TetrisEngine#stop(), which will
+    // stop the main game loop, thus trigger the `if (this.stopped) break;` above
+    if (shouldTopOut) {
+        // execute one last time (or not, the user can do sth to prevent `stop()` from being called
+        if (this->onTopOutCallback != nullptr) {
+            this->onTopOutCallback();
+        }
+        this->shouldTopOut = false; // the user may be creative and do something else with this
+
+        // since the last tetromino caused a top-out, we clear memory right now
+        this->freeMemoryOfFallingPiece();
+    }
+
+    // increment tick counter, used for scheduling
+    ticksPassed++;
+
+    // lost-ticks compensation mechanism
+    this->lastTickTime = (System::nanoTime() - tickTimeBegin) / 1000000;
+    double parkPeriod = max(0.0, EngineTimer::TICK_INTERVAL_MS - lastTickTime);
+
+    this->dExpectedSleepTime = parkPeriod;
+    LONG prev = System::currentTimeMillis();
+    // it could be 0, which means: no sleep, execute immediately
+    if (parkPeriod > 0) {
+        Thread::sleep(parkPeriod);
+    } // tick-rate cap
+    this->dActualSleepTime = System::currentTimeMillis() - prev;
+    return true;
 }
 
 inline void TetrisEngine::printBoard() const {

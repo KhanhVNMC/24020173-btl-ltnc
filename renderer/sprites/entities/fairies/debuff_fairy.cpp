@@ -22,7 +22,7 @@ void DebuffFairy::attackPlayer(const void* p) {
         // move there and attack
         moveSmooth(curLoc.x, curLoc.y, [&, target, toReturn, lastLane]() {
             // inflict debuff
-            target->inflictDamage(static_cast<int>(randomFloat(this->damageBounds[0], this->damageBounds[1] + 1)), lastLane);
+            target->inflictDebuff(availableDebuffs[rand() % availableDebuffs.size()], static_cast<int>(randomFloat(this->damageBounds[0], this->damageBounds[1] + 1)), lastLane);
 
             // attack "animation"
             // return to the spawn point

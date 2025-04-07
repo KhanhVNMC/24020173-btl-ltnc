@@ -10,6 +10,8 @@
 #include "sprites/entities/Blugga.h"
 #include "sprites/entities/Nigga.h"
 #include "sprites/entities/fairies/debuff_fairy.h"
+#include "sprites/entities/fairies/BlinderFairy.h"
+#include "../game/hooker.h"
 
 #ifndef TETRIS_PLAYER_H
 #define TETRIS_PLAYER_H
@@ -206,17 +208,16 @@ public:
         }
     }
 
-    TetrisPlayer(SDL_Renderer* renderer_, TetrisEngine* engine) {
+    ExecutionContext* context;
+    TetrisPlayer(ExecutionContext* context, SDL_Renderer* renderer_, TetrisEngine* engine) {
         this->renderer = renderer_;
         this->tetrisEngine = engine;
+        this->context = context;
 
         this->flandre = new FlandreScarlet();
         this->flandre->teleportStrict(X_LANE_PLAYER, Y_LANES[currentLane]);
         this->flandre->setAnimation(RUN_FORWARD);
         this->flandre->spawn();
-
-        //spawnEnemyOnLane(0, new TiaFairy(this));
-
 
         this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
         // hook into events
@@ -232,17 +233,18 @@ public:
 
         // init gravity to lvl 1
         updateLevelAndGravity(1);
+    }
 
+    void startEngineAndGame() {
         // boot the engine up
         this->tetrisEngine->scheduleDelayedTask(60, [&]() {
             this->tetrisEngine->gameInterrupt(true);
-            inflictDebuff(Debuff::BLIND, 20, 0);
-            inflictDebuff(Debuff::WEAKNESS, 15, 0);
-            inflictDebuff(Debuff::SUPER_SONIC, 25, 0);
-            inflictDebuff(Debuff::NO_HOLD, 10, 0);
         });
         this->tetrisEngine->gameInterrupt(false);
-        this->tetrisEngine->start();
+        this->tetrisEngine->start(false);
+
+        // take over the execution context
+        context->hook([&]() { this->tetrisEngine->gameLoopBody(); });
     }
 
     SpriteLoc getLocation() {

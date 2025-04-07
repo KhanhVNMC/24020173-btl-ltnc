@@ -152,10 +152,18 @@ void NormalEntity::onDrawCall() {
 void NormalEntity::onDrawCallExtended(SDL_Renderer *renderer) {
     // render health icon
     auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
-    const struct_render_component component = {
+    struct_render_component component = {
             1 + (difficulty * 19), 0, 18, 18,
             strictX, strictY, static_cast<int>(18 * 1.25), static_cast<int>(18 * 1.25)
     };
+
+    // special hearts for miniboss / boss
+    if (isMiniboss) {
+        component.source.x = 192;
+    } else if (isBoss) {
+        component.source.x = 173;
+    }
+
     render_component(renderer, cached, component, 1);
 
     // render health bar
