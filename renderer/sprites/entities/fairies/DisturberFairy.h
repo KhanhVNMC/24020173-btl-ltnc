@@ -15,7 +15,7 @@ public:
 
         this->setAttackSpeed(30); // 30s between attacks
         this->setDifficulty(EASY); // this is a hard mini boss
-        this->setMaxHealth(16); // 14HP
+        this->setMaxHealth(18); // 14HP
 
         this->availableDebuffs = { NO_HOLD };
     }

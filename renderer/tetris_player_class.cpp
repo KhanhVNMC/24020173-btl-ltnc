@@ -18,7 +18,6 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
             firstPiecePlacedTime = System::currentTimeMillis();
         }
         this->piecesPlaced++;
-        this->accumulatedCharge = 40;
         this->onMinoLocked(cleared);
     });
     this->tetrisEngine->onComboBreaks([&](const int combo) { });
@@ -156,7 +155,7 @@ void TetrisPlayer::setDebuff(Debuff type, bool value) {
 void TetrisPlayer::spawnEnemyOnLane(int lane, NormalEntity *entity) {
     enemyOnLanes[lane] = entity;
     // spawn hidden
-    entity->teleportStrict(X_LANE_ENEMIES + 200, Y_LANES_ENEMIES[lane]);
+    entity->teleportStrict(X_LANE_ENEMIES + 300, Y_LANES_ENEMIES[lane]);
     // move slowly to its designated position
     entity->moveSmooth(X_LANE_ENEMIES, Y_LANES_ENEMIES[lane], [&, entity]() {
         // once arrive, this mob is ready to be fucked
@@ -252,15 +251,15 @@ void TetrisPlayer::inflictDebuff(int debuff, int timeInSeconds, int oldLane) {
 
 void TetrisPlayer::releaseDamageOnCurrentLane() {
     if (isAttacking || isMovingToAnotherLane || !this->gameStarted) return; // currently moving, do NOT attack
-    if (enemyOnLanes[currentLane] != nullptr && enemyOnLanes[currentLane]->isAttacking) {
-        return; // if the enemy is attacking, we cannot release damage
+    if (enemyOnLanes[currentLane] != nullptr && (enemyOnLanes[currentLane]->isAttacking || enemyOnLanes[currentLane]->isSpawning)) {
+        return; // if the enemy is attacking or playing the spawn animation, we cannot release damage
     }
 
     const int finalDamage = accumulatedCharge * (sWeakness ? 0.75 : 1); // 25% less effective if weakness
     accumulatedCharge = 0; // reset charges
 
     // if there's no enemy on the current lane OR the enemy there is dead, user missed
-    if (enemyOnLanes[currentLane] == nullptr || enemyOnLanes[currentLane]->isDead || enemyOnLanes[currentLane]->isSpawning) {
+    if (enemyOnLanes[currentLane] == nullptr || enemyOnLanes[currentLane]->isDead) {
         spawnMiscIndicator(310, 10, "miss!", MINO_COLORS[1]);
         return;
     }
@@ -615,12 +614,12 @@ void TetrisPlayer::renderTetrisInterface(const int ox, const int oy) {
 void TetrisPlayer::onWaveCompletion() {
     spawnPhysicsBoundText("wave " + to_string(lastWave) + " clear!", 1600, 400, -10, 0, 300, 0, 4, 50, 15, nullptr, MINO_COLORS[2]);
     // rewards
-    this->tetrisEngine->scheduleDelayedTask(60, [&]() {
+    this->tetrisEngine->scheduleDelayedTask(30, [&]() {
         int amount = 2 + lastWaveDifficulty + (rand() % 10);
         bool isArmor = (rand() % 2) == 1;
 
         addStats(!isArmor, amount);
-        spawnPhysicsBoundText("+" + to_string(amount) + " " + (isArmor ? "armor" : "attack") + "!", 1600, 500, -10, 0, 300, 0, 4, 50, 15, nullptr, !isArmor ? MINO_COLORS[5] : 0xc9c9c9);
+        spawnPhysicsBoundText("+" + to_string(amount) + " " + (isArmor ? "armor" : "attack") + "!", 1600, 480, -10, 0, 300, 0, 4, 50, 15, nullptr, !isArmor ? MINO_COLORS[5] : 0xc9c9c9);
     });
 
     // next wave in 4s

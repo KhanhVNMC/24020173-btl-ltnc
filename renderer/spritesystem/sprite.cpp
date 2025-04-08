@@ -52,6 +52,10 @@ SpriteTexture* Sprite::getTexture() {
     return &texture;
 }
 
+Dimension Sprite::getDimension() {
+    return { static_cast<int>(this->width * scalar), static_cast<int>(this->height * scalar) };
+}
+
 void Sprite::teleport(const int x, const int y) {
     this->x = x;
     this->y = y;
@@ -72,17 +76,21 @@ constexpr double PI = 3.14159265358979323846;
 }
 
 void Sprite::render(SDL_Renderer* renderer) {
+    // call events
     this->onDrawCall();
     this->onDrawCallExtended(renderer);
 
     const SDL_Rect source = { this->texture.textureX, this->texture.textureY, this->texture.width, this->texture.height };
     const SDL_Rect dest = { this->x, this->y, static_cast<int>(this->width * scalar), static_cast<int>(this->height * scalar) };
 
-    const auto _textureSDL = disk_cache::bmp_load_and_cache(renderer, textureSheetPath);\
+    const auto _textureSDL = disk_cache::bmp_load_and_cache(renderer, textureSheetPath);
+    // allow modifying the SDL texture before entering the pipeline
     onBeforeTextureDraw(_textureSDL);
 
     if (this->rotationState == 0 && this->sdlFlipState == SDL_FLIP_NONE) {
         SDL_RenderCopy(renderer, _textureSDL, &source, &dest);
+        // reset color
+        SDL_SetTextureColorMod(_textureSDL, 0xFF, 0xFF, 0xFF);
         return;
     }
     SDL_RenderCopyEx(renderer, _textureSDL, &source, &dest, this->rotationState, nullptr,static_cast<const SDL_RendererFlip>(this->sdlFlipState));

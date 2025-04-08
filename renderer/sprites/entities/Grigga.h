@@ -13,7 +13,7 @@ public:
         this->setDamageThresholds(1, 2); // 1-2 dmg
         this->setAttackSpeed(30); // 30s between attacks
         this->setDifficulty(EASY); // this is a easy mob
-        this->setMaxHealth(4); // 4HP (1 tetris to clear)
+        this->setMaxHealth(6); // 6HP (1 tetris + 1 double to clear)
     }
 };
 

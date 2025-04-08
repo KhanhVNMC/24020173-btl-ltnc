@@ -62,7 +62,7 @@ void FlandreScarlet::onBeforeTextureDraw(SDL_Texture *texture) {
             return;
         }
         SDL_SetTextureColorMod(texture, 0xFF, 0, 0);
-    } else SDL_SetTextureColorMod(texture, 0xFF, 0xFF, 0xFF);
+    }
 }
 
 void FlandreScarlet::setAnimation(const int animation) {

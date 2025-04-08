@@ -21,6 +21,11 @@ typedef struct {
     int width, height;
 } SpriteTexture;
 
+typedef struct {
+    int width;
+    int height;
+} Dimension;
+
 class Sprite {
 public:
     virtual ~Sprite() = default;
@@ -33,7 +38,6 @@ protected:
     double scalar = 1;
 
     int originalTextureX = 0, originalTextureY = 0;
-
 public:
     const long spriteId;
 protected:
@@ -71,24 +75,59 @@ public:
     /**
      * @return the texture obj (pointer)
      */
-    [[nodiscard]] SpriteTexture* getTexture();
+    SpriteTexture* getTexture();
 
-    // basic movement & scaling
+    /**
+     * @return the dimension after scaling of the sprite
+     */
+    Dimension getDimension();
+
+    /**
+     * Move this sprite to a specific location on the screen
+     * @param x x coordinate
+     * @param y y coordinate
+     */
     void teleport(int x, int y);
+
+    /**
+     * 360 degrees rotation
+     * @param newRotation
+     */
     void rotate(int newRotation);
+
+    /**
+     * Scale the width and height of the
+     * output sprite (not the texture)
+     * @param newScale
+     */
     void scale(double newScale);
 
-    // advanced
-    [[maybe_unused]] void setDirection(int x, int y);
+    /**
+     * Make the sprite face a specific coordinate
+     * @param x x-coord
+     * @param y y-coord
+     */
+    void setDirection(int x, int y);
+
+    /**
+     * SDL Flip
+     * @param newState
+     */
     void flipSprite(int newState);
 
     // event callers
     virtual void onDrawCall() = 0;
     virtual void onDrawCallExtended(SDL_Renderer* renderer) {};
-    virtual void onBeforeTextureDraw(SDL_Texture* texture) {};
+    virtual void onBeforeTextureDraw(SDL_Texture* sdlTexture) {};
+
+    /**
+     * Internal method
+     * @param renderer the SDL renderer
+     */
     void render(SDL_Renderer* renderer);
 
 private:
+    // if this sprite is allocated on the heap
     bool heapAllocated;
 public:
     static void* operator new(const size_t size) {
@@ -111,14 +150,24 @@ extern std::map<long, Sprite*> PRIORITY_ACTIVE_SPRITES;
 extern std::vector<Sprite*> priorityDeletionQueue;
 
 namespace SpritesRenderingPipeline {
+    /**
+     * @return normal, non prioritized sprites
+     */
     static std::map<long, Sprite*>& getSprites() {
         return ACTIVE_SPRITES;
     }
 
+    /**
+     * @return prioritized sprites
+     */
     static std::map<long, Sprite*>& getPrioritySprites() {
         return PRIORITY_ACTIVE_SPRITES;
     }
 
+    /**
+     * Render the first layer of sprites, overridden by the tetris playfield
+     * @param renderer
+     */
     static void renderNormal(SDL_Renderer* renderer) {
         for (auto&[fst, snd]: ACTIVE_SPRITES) {
             snd->render(renderer);
@@ -133,6 +182,10 @@ namespace SpritesRenderingPipeline {
         RENDER_PASSES++;
     }
 
+    /**
+     * Render the priority layer of sprites, stay on top of everything (Except debug menu)
+     * @param renderer
+     */
     static void renderPriority(SDL_Renderer* renderer) {
         for (auto&[fst, snd]: PRIORITY_ACTIVE_SPRITES) {
             snd->render(renderer);
@@ -146,6 +199,9 @@ namespace SpritesRenderingPipeline {
         priorityDeletionQueue.clear();
     }
 
+    /**
+     * @return How much frames have passed
+     */
     static long renderPasses() {
         return RENDER_PASSES;
     }

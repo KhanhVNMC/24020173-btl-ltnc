@@ -14,7 +14,7 @@ public:
 
         this->setAttackSpeed(28); // 30s between attacks
         this->setDifficulty(HARD); // this is a hard mini boss
-        this->setMaxHealth(11); // 12HP (3 tetris(s) to clear)
+        this->setMaxHealth(12); // 12HP (3 tetris(s) to clear)
 
         this->availableDebuffs = { BLIND };
     }
