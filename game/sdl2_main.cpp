@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
 
     SysAudio::initSoundSystem();
     initFontSystem();
+    SysAudio::preloadDefinedAudioFiles();
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Tetris VS",
