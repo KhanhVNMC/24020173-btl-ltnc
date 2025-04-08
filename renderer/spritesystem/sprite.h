@@ -9,12 +9,11 @@
 #include <map>
 #include <iostream>
 #include <vector>
+#include <functional>
 
 typedef struct {
     int x, y, rot;
 } SpriteLoc;
-
-static long SPRITES_OBJECT_POOL = 0;
 
 typedef struct {
     int textureX, textureY;
@@ -26,24 +25,38 @@ typedef struct {
     int height;
 } Dimension;
 
+// count how many sprites have been spawned so far
+static long SPRITES_OBJECT_POOL = 0;
+
 class Sprite {
 public:
     virtual ~Sprite() = default;
+    const long spriteId;
 protected:
+    // misc stuff
     int x = 0, y = 0;
     int width = 0, height = 0;
     SpriteTexture texture{0, 0, 0, 0};
 
+    // the rotation degrees
     int rotationState = 0;
+    // scaling factor
     double scalar = 1;
 
+    // for animation purposes
     int originalTextureX = 0, originalTextureY = 0;
-public:
-    const long spriteId;
-protected:
+
+    // the texture reference sheet
     std::string textureSheetPath = "../assets/SPRITES.bmp";
+
+    // if this thing is prioritized or not
     bool isPriority = false;
     int sdlFlipState = SDL_FLIP_NONE;
+
+    // event
+    std::function<void(int)> onSpriteClicked = nullptr;
+    std::function<void()> onSpriteHovered = nullptr;
+    bool hovering = false; // track if we're already hovering
 public:
     Sprite(SpriteTexture texture, const int width, const int height, const int initialRotation = 0) : spriteId(SPRITES_OBJECT_POOL++) {
         this->width = width;
@@ -115,9 +128,22 @@ public:
      */
     void flipSprite(int newState);
 
+    /**
+     * Like javascript element.onclick = () => {}
+     * @param onclickFunction callback
+     */
+    void onclick(std::function<void(int)> onclickFunction);
+
+    /**
+     * Like javascript element.hoverEvent
+     * @param onHoverFunction callback
+     */
+    void onhover(std::function<void()> onHoverFunction);
+
     // event callers
     virtual void onDrawCall() = 0;
     virtual void onDrawCallExtended(SDL_Renderer* renderer) {};
+    virtual void onAfterDrawCall(SDL_Renderer* renderer) {};
     virtual void onBeforeTextureDraw(SDL_Texture* sdlTexture) {};
 
     /**
@@ -125,6 +151,8 @@ public:
      * @param renderer the SDL renderer
      */
     void render(SDL_Renderer* renderer);
+    void checkIfClicked(int mouseX, int mouseY, int mouseBtn);
+    void checkIfHovered(int mouseX, int mouseY);
 
 private:
     // if this sprite is allocated on the heap
@@ -206,14 +234,24 @@ namespace SpritesRenderingPipeline {
         return RENDER_PASSES;
     }
 
-    // this could leak memory but fuck it.
+    // fixed, no longer leak everywhere
     static void stopAndCleanCurrentContext() {
-        for (auto& sprite : SpritesRenderingPipeline::getSprites()) {
-            sprite.second->discard();
+        // discard and delete normal sprites
+        for (auto& pair : SpritesRenderingPipeline::getSprites()) {
+            if (pair.second) {
+                delete pair.second;
+            }
         }
-        for (auto& sprite : SpritesRenderingPipeline::getPrioritySprites()) {
-            sprite.second->discard();
+        SpritesRenderingPipeline::getSprites().clear();
+        // discard and delete priority sprites
+        for (auto& pair : SpritesRenderingPipeline::getPrioritySprites()) {
+            if (pair.second) {
+                delete pair.second;
+            }
         }
+        SpritesRenderingPipeline::getPrioritySprites().clear();
+        deletionQueue.clear();
+        priorityDeletionQueue.clear();
     }
 }
 

@@ -14,18 +14,18 @@ using namespace std;
 #define FONT_SHEET "../assets/font.bmp"
 
 // begin text section
-inline char CHAR_LIST[68] = {
+inline char CHAR_LIST[69] = {
         ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.',
         '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=',
         '>', '?', '@','a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j','k', 'l','m','n',
         'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '[',
-        '\\', ']', '^', '_', '{', '|', '}', '~'
+        '\\', ']', '^', '_', '{', '|', '}', '~', '`'
 };
 
 inline std::unordered_map<char, int> CHAR_MAP;
 // initialize the font system before use
 inline void initFontSystem() {
-    for (size_t i = 0; i < 68; i++) {
+    for (size_t i = 0; i < 69; i++) {
         CHAR_MAP[CHAR_LIST[i]] = static_cast<int>(i);
     }
 }

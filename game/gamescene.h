@@ -5,8 +5,12 @@
 #ifndef TETISENGINE_GAMESCENE_H
 #define TETISENGINE_GAMESCENE_H
 
-class Scene {
-    
+class GameScene {
+public:
+    virtual void stopScene() = 0;
+    virtual void startScene() = 0;
+
+    virtual ~GameScene() = default;
 };
 
 #endif //TETISENGINE_GAMESCENE_H

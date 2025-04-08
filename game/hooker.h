@@ -28,6 +28,9 @@ protected:
     // the amount of tasks this context received (ever)
     int scheduledTasks = 0;
     bool stopped = false;
+
+    // function to run
+    unordered_map<int, function<void()>> ON_UNHOOK_SUCCESS_CALLBACK;
 public:
     /**
      * Hook a task into this Context
@@ -39,8 +42,9 @@ public:
     /**
      * Unhook a task from this Context
      * @param execId the task ID (given by hook())
+     * @param onUnhookSuccess the function to run on unhook success (optional)
      */
-    void unhook(int execId);
+    void unhook(int execId, function<void()> onUnhookSuccess = nullptr);
 
     /**
      * @return true if the context is still alive

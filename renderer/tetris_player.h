@@ -16,12 +16,13 @@
 #include "sprites/entities/fairies/WeakenerFairy.h"
 #include "sprites/entities/fairies/DistractorFairy.h"
 #include "sprites/entities/fairies/DisturberFairy.h"
+#include "../game/gamescene.h"
 
 #ifndef TETRIS_PLAYER_H
 #define TETRIS_PLAYER_H
 
 static int TETRIS_SCORE[5] = { 0, 50, 110, 630, 2300 }; // score for each type of line clears
-static int LEVEL_THRESHOLD = 10; // advance every X levels
+static int LEVEL_THRESHOLD = 35; // advance every X lines
 static double LEVELS_GRAVITY[16] = { // speed of each level
         0, // lvl 0 does not exist
         0.01667,
@@ -88,6 +89,11 @@ enum FairyType {
     DISTURBER
 };
 
+enum GameMode {
+    CAMPAIGN,
+    ENDLESS,
+};
+
 /**
  * Choose a random element with a specific RNG bias
  */
@@ -98,7 +104,7 @@ template<typename T> T chooseRandomWithBias(const vector<T>& options) {
     return options[dist(rng)];
 }
 
-class TetrisPlayer {
+class TetrisPlayer : public GameScene {
 public:
     // text
     static void spawnPhysicsBoundText(string str, int x, int y, double randVelX, double randVelY, int lifetime, double gravity, double scalar, int strgap, int width, const int* colors = nullptr, const int applyThisColorToAll = -1, bool priority = false);
@@ -195,6 +201,8 @@ public:
     /*** end of input handling (ARR, DAS) ***/
 
     bool showDebug = false;
+    // gameplay
+    GameMode gamemode = CAMPAIGN;
 
     /**
      * Set a debuff
@@ -213,22 +221,29 @@ public:
      * @param sdlRenderer the SDL renderer
      * @param engine the main engine
      */
-    TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer, TetrisEngine* engine);
+    TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer, TetrisEngine* engine, GameMode gamemode = CAMPAIGN);
+
+    /**
+     * This destructor deletes TetrisEngine, which is very dangerous if left
+     * unchecked
+     */
+    protected: ~TetrisPlayer() override;
 
     /**
      * Initialize the parallax scrolling task (SIF)
      */
-    void initParallaxBackground();
+    public: void initParallaxBackground();
 
     /**
-     * Start the Tetris game (with countdown)
+     * Start the Tetris game, along with the Engine (with countdown),
+     * This action will take over the scene
      */
-    void startEngineAndGame();
+    void startScene() override;
 
     /**
-     * Clean-up this game of Diarrhea (literally)
+     * Release the scene for use again (this will delete TetrisPlayer too)
      */
-    ~TetrisPlayer();
+    void stopScene() override;
 
     /**
      * @return current screen location of player entity
@@ -348,6 +363,7 @@ public:
         }
     }
 
+    int totalKilledEnemies = 0;
     int waveKilledEnemies = 0;
     int lastWave = 0;
     WaveDifficulty lastWaveDifficulty = WAVE_EASY;

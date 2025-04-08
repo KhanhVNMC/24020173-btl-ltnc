@@ -3,11 +3,12 @@
 //
 #include "tetris_player.h"
 
-TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer, TetrisEngine* engine) {
+TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer, TetrisEngine* engine, GameMode gamemode) {
     // register constants
     this->renderer = sdlRenderer;
     this->tetrisEngine = engine;
     this->context = context;
+    this->gamemode = gamemode;
 
     // hook into events
     this->tetrisEngine->runOnTickEnd([&] { onTetrisTick(); });
@@ -27,6 +28,15 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
     updateLevelAndGravity(1);
     // first lane is 3 (bottom)
     this->currentLane = 3;
+}
+
+TetrisPlayer::~TetrisPlayer() {
+    delete this->tetrisEngine; // unhook the tetris engine memory space
+}
+
+void TetrisPlayer::startScene() {
+    // clean current rendering context to begin a new life
+    SpritesRenderingPipeline::stopAndCleanCurrentContext();
 
     // init background (it will stay still until the game starts)
     initParallaxBackground();
@@ -36,26 +46,7 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
     this->flandre->teleportStrict(X_LANE_PLAYER, Y_LANES[currentLane]);
     this->flandre->setAnimation(IDLE);
     this->flandre->spawn();
-}
 
-TetrisPlayer::~TetrisPlayer() {
-    context->unhook(tetrisEngineExecId);
-    delete tetrisEngine; // this will blow up, gg
-}
-
-void TetrisPlayer::initParallaxBackground() {
-    parallaxBackgrounds.push_back(new BackgroundScroll(SDL_FLIP_NONE, 0, 0, 2)); // first layer
-    parallaxBackgrounds.push_back(new BackgroundScroll(SDL_FLIP_NONE, 2048, 0, 2)); // first layer follow up
-
-    parallaxBackgrounds.push_back(new BackgroundScroll(SDL_FLIP_HORIZONTAL, 0, 0, 3));
-    parallaxBackgrounds.push_back(new BackgroundScroll(SDL_FLIP_HORIZONTAL, 2048, 0, 3));
-
-    for (BackgroundScroll* parallax : parallaxBackgrounds) {
-        if (parallax != nullptr) parallax->spawn();
-    }
-}
-
-void TetrisPlayer::startEngineAndGame() {
     // boot the engine up (schedule 5s countdown)
     this->tetrisEngine->gameInterrupt(true); // do not let the game start, wait until cooldown ends
 
@@ -69,23 +60,53 @@ void TetrisPlayer::startEngineAndGame() {
                 tetrisEngine->gameInterrupt(false);
                 this->gameStartTime = System::currentTimeMillis();
                 this->gameStarted = true;
-                // resume parallax background
+
+                // resume parallax background (make it scroll fast again)
                 for (BackgroundScroll* parallax : parallaxBackgrounds) {
                     if (parallax != nullptr) parallax->scroll = true;
                 }
+
                 // make player "fly"
                 this->flandre->setAnimation(RUN_FORWARD);
-                // startWave  test
-                startWave(1);
+
+                // start the first wave of monsters
+                // introduction
+                spawnPhysicsBoundText(gamemode == CAMPAIGN ? "campaign mode!" : "endless mode!", 1600, 400, -10, 0, 300, 0, 4, 50, 15, nullptr, gamemode == CAMPAIGN ? MINO_COLORS[0] : MINO_COLORS[1]);
+                tetrisEngine->scheduleDelayedTask(10, [&]() {
+                    // the subtitle
+                    spawnPhysicsBoundText(gamemode == CAMPAIGN ? "goal: defeat 20 waves" : "goal: survive", 1600, 480, -10, 0, 300, 0, 3.5, 40, 15, nullptr, 0xFFFFFF);
+                    tetrisEngine->scheduleDelayedTask(160, [&]() {
+                        // actually start the wave here
+                        startWave(1);
+                    });
+                });
             }
         });
     }
 
     // start the engine without using main thread, as we will take over the execution context
-    // right below
+    // right below (this will start in interrupted state)
     this->tetrisEngine->start(false);
     // take over the execution context
     this->tetrisEngineExecId = context->hook([&]() { this->tetrisEngine->gameLoopBody(); });
+}
+
+void TetrisPlayer::stopScene() {
+     SDL_Renderer* rendererCopied = this->renderer;
+
+     // unhook the engine from the context, wait for it to unhook, then
+     // delete TetrisPlayer alongside with the Engine (inside ~)
+     context->unhook(tetrisEngineExecId, [this]() {
+         int contextId = this->tetrisEngineExecId;
+         delete this; // I DID THIS BECAUSE I AM ABSOLUTELY SURE ABOUT THE LIFECYCLE OF THIS OBJECT
+         cout << "[TETRIS PLAYER] Deleted this game session successfully! TE Context ID: " << contextId << endl;
+     });
+
+     // clear frame buffer
+     if (rendererCopied) {
+        SDL_RenderClear(rendererCopied);
+        SDL_RenderPresent(rendererCopied);
+    }
 }
 
 void TetrisPlayer::onGameOver() {
@@ -149,6 +170,18 @@ void TetrisPlayer::setDebuff(Debuff type, bool value) {
         }
         case WEAKNESS: sWeakness = value; break;
         case FRAGILE: sFragile = value; break;
+    }
+}
+
+void TetrisPlayer::initParallaxBackground() {
+    parallaxBackgrounds.push_back(new BackgroundScroll(SDL_FLIP_NONE, 0, 0, 2)); // first layer
+    parallaxBackgrounds.push_back(new BackgroundScroll(SDL_FLIP_NONE, 2048, 0, 2)); // first layer follow up
+
+    parallaxBackgrounds.push_back(new BackgroundScroll(SDL_FLIP_HORIZONTAL, 0, 0, 3));
+    parallaxBackgrounds.push_back(new BackgroundScroll(SDL_FLIP_HORIZONTAL, 2048, 0, 3));
+
+    for (BackgroundScroll* parallax : parallaxBackgrounds) {
+        if (parallax != nullptr) parallax->spawn();
     }
 }
 
@@ -250,7 +283,8 @@ void TetrisPlayer::inflictDebuff(int debuff, int timeInSeconds, int oldLane) {
 }
 
 void TetrisPlayer::releaseDamageOnCurrentLane() {
-    if (isAttacking || isMovingToAnotherLane || !this->gameStarted) return; // currently moving, do NOT attack
+    if (!this->gameStarted || this->isGameOver) return; // prerequisite
+    if (isAttacking || isMovingToAnotherLane) return; // currently moving, do NOT attack
     if (enemyOnLanes[currentLane] != nullptr && (enemyOnLanes[currentLane]->isAttacking || enemyOnLanes[currentLane]->isSpawning)) {
         return; // if the enemy is attacking or playing the spawn animation, we cannot release damage
     }
@@ -290,6 +324,7 @@ void TetrisPlayer::releaseDamageOnCurrentLane() {
                 this->enemyOnLanes[currentLaneRef] = nullptr; // mark the enemy as none
                 // increment the counter
                 waveKilledEnemies++;
+                totalKilledEnemies++;
                 if (waveKilledEnemies >= 4) {
                     onWaveCompletion();
                 }
@@ -532,36 +567,67 @@ void TetrisPlayer::renderTetrisStatistics(const int ox, const int oy) {
     }
 
     // render status effects
-    int yOffset = 0;
-    const int baseX = 780;
-    const int baseY = 170;
-    const int spacing = 85;
+    if (!this->isGameOver) {
+        int yOffset = 0;
+        const int baseX = 780;
+        const int baseY = 170;
+        const int spacing = 85;
 
-    if (sBlinded) {
-        renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 0);
-        render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[BLIND] / 60.0), 1.1, 1, 15);
-        ++yOffset;
+        if (sBlinded) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 0);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20,str_printf("%05.2f", sDebuffTime[BLIND] / 60.0), 1.1, 1, 15);
+            ++yOffset;
+        }
+        if (sNoHold) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 1);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20,str_printf("%05.2f", sDebuffTime[NO_HOLD] / 60.0), 1.1, 1, 15);
+            ++yOffset;
+        }
+        if (sSuperSonic) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 2);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20,str_printf("%05.2f", sDebuffTime[SUPER_SONIC] / 60.0), 1.1, 1, 15);
+            ++yOffset;
+        }
+        if (sWeakness) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 3);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20,str_printf("%05.2f", sDebuffTime[WEAKNESS] / 60.0), 1.1, 1, 15);
+            ++yOffset;
+        }
+        if (sFragile) {
+            renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 4);
+            render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20,str_printf("%05.2f", sDebuffTime[FRAGILE] / 60.0), 1.1, 1, 15);
+            ++yOffset;
+        }
     }
-    if (sNoHold) {
-        renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 1);
-        render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[NO_HOLD] / 60.0), 1.1, 1, 15);
-        ++yOffset;
-    }
-    if (sSuperSonic) {
-        renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 2);
-        render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[SUPER_SONIC] / 60.0), 1.1, 1, 15);
-        ++yOffset;
-    }
-    if (sWeakness) {
-        renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 3);
-        render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[WEAKNESS] / 60.0), 1.1, 1, 15);
-        ++yOffset;
-    }
-    if (sFragile) {
-        renderDebuffIcon(renderer, baseX, baseY + (spacing * yOffset), 4);
-        render_component_string(renderer, baseX - 20, baseY + (spacing * yOffset) - 20, str_printf("%05.2f", sDebuffTime[FRAGILE] / 60.0), 1.1, 1, 15);
-        ++yOffset;
-    }
+
+    // render the toast box
+    auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/SPRITES.bmp");
+    const struct_render_component component = {
+            126, 145, 256, 51,
+            1200, 770, static_cast<int>(256 * 3), static_cast<int>(51 * 3)
+    };
+    render_component(renderer, cached, component, 1);
+
+    // render the amount of kills
+    constexpr int gap = 105;
+    render_component_string_rvs(renderer, 1306, 795, "kills", 1.55, 1, 15, 14);
+    render_component_string_rvs(renderer, 1300, 820, str_printf("%04d", totalKilledEnemies), 2, 1, 17, 12);
+
+    // render the current wave
+    render_component_string_rvs(renderer, 1306 + gap, 795, "wave", 1.55, 1, 15, 14);
+    render_component_string_rvs(renderer, 1300 + 6 + gap, 820, str_printf("%04d", lastWave), 2, 1, 17, 12);
+
+    // render the goal
+    render_component_string_rvs(renderer, 1306 + (gap * 2), 795, "goal", 1.55, 1, 15, 14);
+    render_component_string_rvs(renderer, 1300 + (gap * 2) + 6, 820, gamemode == ENDLESS ? "none" : " 20 ", 2, 1, 17, 12);
+
+    // render a small logo
+    auto logo = disk_cache::bmp_load_and_cache(renderer, "../assets/logo.bmp");
+    const struct_render_component logoStruct = {
+            0, 0, 100, 69,
+            1290 + (100 * 3), 795, 100, 69
+    };
+    render_component(renderer, logo, logoStruct, 1);
 }
 
 void TetrisPlayer::renderGarbageQueue(const int ox, const int oy) {

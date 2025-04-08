@@ -3,6 +3,7 @@
 //
 
 #include "hooker.h"
+#include "../renderer/spritesystem/sprite.h"
 
 int ExecutionContext::hook(function<void()> function) {
     lock_guard<mutex> lock(mtx);
@@ -11,9 +12,12 @@ int ExecutionContext::hook(function<void()> function) {
     return execId;
 }
 
-void ExecutionContext::unhook(int execId) {
+void ExecutionContext::unhook(int execId, function<void()> onUnhook) {
     lock_guard<std::mutex> lock(mtx);
     unhookQueue.push(execId);
+    if (onUnhook != nullptr) {
+        ON_UNHOOK_SUCCESS_CALLBACK.insert({ execId, onUnhook });
+    }
 }
 
 void ExecutionContext::execute() {
@@ -30,6 +34,13 @@ void ExecutionContext::execute() {
         localUnhookQueue.pop();
         ALL_EXECUTION_SCHEDULED.erase(execId);
         cout << "Unhooked task with execId: " << execId << endl;
+        auto it = ON_UNHOOK_SUCCESS_CALLBACK.find(execId);
+        if (it != ON_UNHOOK_SUCCESS_CALLBACK.end()) {
+            auto callbackCopy = it->second;
+            // prevent reuse and memory leak
+            ON_UNHOOK_SUCCESS_CALLBACK.erase(it);
+            callbackCopy();
+        }
     }
 
     // execute all tasks left in the queue (could be 0)

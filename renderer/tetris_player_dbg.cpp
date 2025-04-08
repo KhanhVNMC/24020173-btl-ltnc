@@ -57,6 +57,7 @@ void TetrisPlayer::processSceneInput(SDL_Event &event) {
             case SDLK_DOWN: { tetrisEngine->softDropToggle(true); break; }
             case SDLK_SPACE: { tetrisEngine->hardDrop(); break; }
             case SDLK_c: { tetrisEngine->hold(); break; }
+            case SDLK_t: { inflictDamage(12, currentLane); break; }
 
             /** HANDLE LANE SWITCHING **/
             case SDLK_1:

@@ -32,6 +32,14 @@ SpriteLoc Sprite::getLocation() const {
     return { x, y, rotationState };
 }
 
+void Sprite::onclick(std::function<void(int)> onclickFunction) {
+    this->onSpriteClicked = onclickFunction;
+}
+
+void Sprite::onhover(std::function<void()> onHoverFunction) {
+    this->onSpriteHovered = onHoverFunction;
+}
+
 void Sprite::spawn(bool priority) {
     if (!heapAllocated) {
         throw logic_error("YOU CANNOT SPAWN STACK-ALLOCATED OBJECTS!!");
@@ -75,6 +83,30 @@ constexpr double PI = 3.14159265358979323846;
     rotate(static_cast<int>(atan2(y - this->y, x - this->x) * 180.0 / PI) + 90);
 }
 
+void Sprite::checkIfClicked(int mouseX, int mouseY, int mouseBtn) {
+    if (this->onSpriteClicked == nullptr) return;
+    Dimension dim = this->getDimension();
+    if (mouseX >= this->x && mouseX <= this->x + dim.width &&
+        mouseY >= this->y && mouseY <= this->y + dim.height) {
+        this->onSpriteClicked(mouseBtn);
+    }
+}
+
+void Sprite::checkIfHovered(int mouseX, int mouseY) {
+    if (onSpriteHovered == nullptr) return;
+    Dimension dim = this->getDimension();
+    bool isHovering =
+        mouseX >= x && mouseX <= x + dim.width &&
+        mouseY >= y && mouseY <= y + dim.height;
+
+    if (isHovering && !hovering) {
+        hovering = true;
+        onSpriteHovered();
+    } else if (!isHovering) {
+        hovering = false;
+    }
+}
+
 void Sprite::render(SDL_Renderer* renderer) {
     // call events
     this->onDrawCall();
@@ -91,11 +123,14 @@ void Sprite::render(SDL_Renderer* renderer) {
         SDL_RenderCopy(renderer, _textureSDL, &source, &dest);
         // reset color
         SDL_SetTextureColorMod(_textureSDL, 0xFF, 0xFF, 0xFF);
+        // callback
+        this->onAfterDrawCall(renderer);
         return;
     }
     SDL_RenderCopyEx(renderer, _textureSDL, &source, &dest, this->rotationState, nullptr,static_cast<const SDL_RendererFlip>(this->sdlFlipState));
     // reset color
     SDL_SetTextureColorMod(_textureSDL, 0xFF, 0xFF, 0xFF);
+    this->onAfterDrawCall(renderer);
 }
 
 

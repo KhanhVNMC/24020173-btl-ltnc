@@ -134,15 +134,16 @@ public:
     }
 };
 
+// MinoType.h
 namespace MinoType {
-    static MinoTypeEnum T_MINO("T_MINO", {{0, 1, 0}, {1, 1, 1}, {0, 0, 0}}, RenderMatrixMino::T_PIECE, 0);
-    static MinoTypeEnum Z_MINO("Z_MINO", {{1, 1, 0}, {0, 1, 1}, {0, 0, 0}}, RenderMatrixMino::Z_PIECE, 1);
-    static MinoTypeEnum S_MINO("S_MINO", {{0, 1, 1}, {1, 1, 0}, {0, 0, 0}}, RenderMatrixMino::S_PIECE, 2);
-    static MinoTypeEnum L_MINO("L_MINO", {{0, 0, 1}, {1, 1, 1}, {0, 0, 0}}, RenderMatrixMino::L_PIECE, 3);
-    static MinoTypeEnum J_MINO("J_MINO", {{1, 0, 0}, {1, 1, 1}, {0, 0, 0}}, RenderMatrixMino::J_PIECE, 4);
-    static MinoTypeEnum I_MINO("I_MINO", {{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}, RenderMatrixMino::I_PIECE, 5);
-    static MinoTypeEnum O_MINO("O_MINO", {{1, 1}, {1, 1}}, RenderMatrixMino::O_PIECE, 6);
-    static const int valuesLength = 7; // fuck it
+    extern MinoTypeEnum T_MINO;
+    extern MinoTypeEnum Z_MINO;
+    extern MinoTypeEnum S_MINO;
+    extern MinoTypeEnum L_MINO;
+    extern MinoTypeEnum J_MINO;
+    extern MinoTypeEnum I_MINO;
+    extern MinoTypeEnum O_MINO;
+    inline constexpr int valuesLength = 7;
 }
 
 #endif //TETROMINOES_H
