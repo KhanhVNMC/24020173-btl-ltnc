@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
     SysAudio::preloadDefinedAudioFiles();
 
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow("Tetris VS",
+    SDL_Window* window = SDL_CreateWindow("Tetris VS: Demo",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                           WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 
