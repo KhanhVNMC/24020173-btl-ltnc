@@ -62,6 +62,9 @@ void TetrisPlayer::startScene() {
             spawnMiddleScreenText(i == 0 ? 330 : 377, 390, i == 0 ? "go!" : to_string(i), MINO_COLORS[3]);
             // game actually start here
             if (i == 0) {
+                // music
+                SysAudio::playSoundAsync(BGM_AUD, SysAudio::getBGMVolume(), false);
+
                 // resume context
                 tetrisEngine->gameInterrupt(false);
                 this->gameStartTime = System::currentTimeMillis();
@@ -127,7 +130,8 @@ void TetrisPlayer::onGameOver() {
     this->boardRumble = 20;
 
     // topout sound
-    SysAudio::playSoundAsync("topout.wav", SysAudio::getSFXVolume(), false);
+    SysAudio::stopAudio();
+    SysAudio::playSoundAsync(TOP_OUT_AUD, SysAudio::getSFXVolume(), false);
 
     // play player's death animation
     this->flandre->deathAnimation();
@@ -283,7 +287,7 @@ void TetrisPlayer::inflictDamage(int damage, int oldLane) {
     garbageQueue.push_back(damage);
     this->spawnDamageIndicator(getLocation().x + 40, getLocation().y + 20, damage, false);
 
-    SysAudio::playSoundAsync("e_attack.mp3", SysAudio::getSFXVolume(), false);
+    SysAudio::playSoundAsync(ENTITY_ATTACK_AUD, SysAudio::getSFXVolume(), false);
 
     this->flandre->damagedAnimation(true);
     boardRumble = 10; // rumble for 10 frames
@@ -299,7 +303,7 @@ void TetrisPlayer::inflictDebuff(int debuff, int timeInSeconds, int oldLane) {
     setDebuff(static_cast<Debuff>(debuff), true); // inflict the debuff
     sDebuffTime[debuff] = timeInSeconds * 60; // time in frames
 
-    SysAudio::playSoundAsync("e_cursed.ogg", SysAudio::getSFXVolume(), false);
+    SysAudio::playSoundAsync(ENTITY_ATTACK_MAGIC_AUD, SysAudio::getSFXVolume(), false);
 
     spawnMiscIndicator(flandre->strictX, Y_LANES[oldLane], "debuff!", MINO_COLORS[1]);
     this->flandre->damagedAnimation(false);
@@ -357,7 +361,7 @@ void TetrisPlayer::releaseDamageOnCurrentLane() {
             // damage animation
             this->flandre->scheduleAnimation(ATTACK_01, [&, finalDamage]() {
                 // audio
-                SysAudio::playSoundAsync("p_attack.ogg", SysAudio::getSFXVolume(), false);
+                SysAudio::playSoundAsync(PLAYER_ATTACK_AUD, SysAudio::getSFXVolume(), false);
                 // go back to where she was
                 this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
                     this->flandre->setAnimation(RUN_FORWARD);
@@ -447,11 +451,11 @@ void TetrisPlayer::playFieldEvent(const PlayfieldEvent& event) {
     // play audio
     if (cleared > 0) {
         if (event.isSpin()) {
-            SysAudio::playSoundAsync("clearspin.wav", SysAudio::getSFXVolume(), false);
+            SysAudio::playSoundAsync(LC_SPIN_AUD, SysAudio::getSFXVolume(), false);
         } else if (cleared >= 4) {
-            SysAudio::playSoundAsync("clearquad.wav", SysAudio::getSFXVolume(), false);
+            SysAudio::playSoundAsync(LC_QUAD_AUD, SysAudio::getSFXVolume(), false);
         } else {
-            SysAudio::playSoundAsync("clearline.wav", SysAudio::getSFXVolume(), false);
+            SysAudio::playSoundAsync(LC_NORM_AUD, SysAudio::getSFXVolume(), false);
         }
     }
 
@@ -459,7 +463,7 @@ void TetrisPlayer::playFieldEvent(const PlayfieldEvent& event) {
     if (event.isPerfectClear()) {
         baseDamage += 12;
         // TODO: add the thing later
-        SysAudio::playSoundAsync("allclear.wav", SysAudio::getSFXVolume(), false);
+        SysAudio::playSoundAsync(LC_PERFC_AUD, SysAudio::getSFXVolume(), false);
     }
 
     // render text
@@ -744,7 +748,9 @@ void TetrisPlayer::onWaveCompletion() {
 }
 
 void TetrisPlayer::showGameOverScreen(const bool lost) {
-    SysAudio::playSoundAsync("gameover.wav", SysAudio::getSFXVolume(), false);
+    SysAudio::stopAudio();
+    SysAudio::playSoundAsync(GAME_OVER_AUD, SysAudio::getSFXVolume(), false);
+
     // this will hand controls over to the game over screen
     gameOverSceneCallback = [&](ExecutionContext* iContext, SDL_Renderer* iRenderer) {
         auto* gameOver = new GameOverScreen({

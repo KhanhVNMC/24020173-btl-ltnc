@@ -32,6 +32,23 @@ extern "C" __declspec(dllimport) BOOL WINAPI AllocConsole(void);
 /* Java's long, signed 64-bit integer */
 #define LONG int64_t
 
+#define BGM_AUD "bgm.mp3"
+#define UI_CLICK "click.mp3"
+#define TOP_OUT_AUD "topout.wav"
+#define ROTATE_AUD "rotate.wav"
+#define HARD_DROP_AUD "harddrop.wav"
+#define TETRO_MOVE_AUD "move.wav"
+#define GAME_OVER_AUD "gameover.wav"
+#define ENTITY_ATTACK_AUD "e_attack.mp3"
+#define ENTITY_ATTACK_MAGIC_AUD "e_cursed.ogg"
+#define PIECE_HOLD_AUD "hold.wav"
+#define PLAYER_ATTACK_AUD "p_attack.ogg"
+
+#define LC_SPIN_AUD "clearspin.wav"
+#define LC_QUAD_AUD "clearquad.wav"
+#define LC_NORM_AUD "clearline.wav"
+#define LC_PERFC_AUD "allclear.wav"
+
 namespace System {
     /**
      * Returns the current value of the running NOT Java Virtual Machine's

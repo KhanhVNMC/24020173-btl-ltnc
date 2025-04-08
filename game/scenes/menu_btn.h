@@ -52,7 +52,7 @@ public:
         this->onclick([&, onClick](int mouseBtn) {
             clicked = true;
             clickedTimeFrame = 10;
-            SysAudio::playSoundAsync("click.mp3", SysAudio::getSFXVolume(), false);
+            SysAudio::playSoundAsync(UI_CLICK, SysAudio::getSFXVolume(), false);
             if (onClick != nullptr) onClick(mouseBtn);
         });
     }

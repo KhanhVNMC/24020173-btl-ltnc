@@ -904,7 +904,7 @@ public:
             this->invalidateGhostPieceCache();
 
             // only in SDL
-            SysAudio::playSoundAsync("rotate.wav", SysAudio::getSFXVolume(), false);
+            SysAudio::playSoundAsync(ROTATE_AUD, SysAudio::getSFXVolume(), false);
         }
     }
 
@@ -931,7 +931,7 @@ public:
         } while (translateDown());
         this->lockIn();
         // only in SDL
-        SysAudio::playSoundAsync("harddrop.wav", SysAudio::getSFXVolume(), false);
+        SysAudio::playSoundAsync(HARD_DROP_AUD, SysAudio::getSFXVolume(), false);
     }
 
     /**
@@ -952,7 +952,7 @@ public:
         this->invalidateGhostPieceCache();
 
         // only in SDL
-        SysAudio::playSoundAsync("move.wav", SysAudio::getSFXVolume(), false);
+        SysAudio::playSoundAsync(TETRO_MOVE_AUD, SysAudio::getSFXVolume(), false);
         return true;
     }
 
@@ -1171,7 +1171,7 @@ inline void TetrisEngine::onUserHold() {
     this->holdPiece = toHold;
     this->canHold = false; // disable further holding until the next piece is placed
     // only in SDL
-    SysAudio::playSoundAsync("hold.wav", SysAudio::getSFXVolume(), false);
+    SysAudio::playSoundAsync(PIECE_HOLD_AUD, SysAudio::getSFXVolume(), false);
 }
 
 // called when a piece is manipulated (moved, rotated by the player)

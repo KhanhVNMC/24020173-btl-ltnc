@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <algorithm>
 
-int bgmAudioVolume = 100;
+int bgmAudioVolume = 50;
 int sfxAudioVolume = 100;
 
 namespace SysAudio {
@@ -31,6 +31,17 @@ namespace SysAudio {
 
         Mix_AllocateChannels(64);
         return true;
+    }
+
+    void precache(const std::string& path, int volume, bool repeat) {
+        static const std::string basePath = "../assets/sfxbgm/";
+        const std::string fullPath = basePath + path;
+
+        if (soundCache.count(fullPath) == 0) {
+            Mix_Chunk* chunk = Mix_LoadWAV(fullPath.c_str());
+            if (!chunk) return;
+            soundCache[fullPath] = chunk;
+        }
     }
 
     void playSoundAsync(const std::string& path, int volume, bool repeat) {
