@@ -2,6 +2,7 @@
 // Created by GiaKhanhVN on 4/7/2025.
 //
 #include "tetris_player.h"
+#include "../game/scenes/game_over_screen.h"
 
 TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer, TetrisEngine* engine, GameMode gamemode) {
     // register constants
@@ -719,4 +720,19 @@ void TetrisPlayer::onWaveCompletion() {
         }
         this->startWave(lastWave + 1);
     });
+}
+
+void TetrisPlayer::showGameOverScreen(const bool lost) {
+    // this will hand controls over to the game over screen
+    gameOverSceneCallback = [&](ExecutionContext* iContext, SDL_Renderer* iRenderer) {
+        auto* gameOver = new GameOverScreen({
+            tetrisScore, totalKilledEnemies,
+             totalDamage, lastWave - 1, lost, System::currentTimeMillis() - this->gameStartTime,
+             gamemode == ENDLESS
+        }, context, renderer);
+        // this screen takes over
+        gameOver->startScene();
+    };
+    // stop this process
+    this->stopScene();
 }

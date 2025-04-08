@@ -10,11 +10,10 @@
 #include "../hooker.h"
 #include "../../renderer/sdl_components.h"
 #include "../../renderer/spritesystem/sprite.h"
-#include "menu_btn.h"
 #include "../../engine/javalibs/jsystemstd.h"
-#include "loading_screen.h"
 #include "../../renderer/tetris_player.h"
 #include "../../sbg.h"
+#include "loading_screen.h"
 
 class MainMenu : public GameScene {
     ExecutionContext* context;

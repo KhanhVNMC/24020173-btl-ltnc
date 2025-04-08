@@ -1,11 +1,12 @@
 //
 // Created by GiaKhanhVN on 2/26/2025.
 //
+#ifndef GAMEWORLD_CPP
+#define GAMEWORLD_CPP
+
 #include <functional>
 #include "../spritesystem/sprite.h"
 
-#ifndef GAMEWORLD_CPP
-#define GAMEWORLD_CPP
 /**
  * The star-night background (overlay on top of each other for parallax effect)
  */

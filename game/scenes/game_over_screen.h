@@ -11,8 +11,8 @@
 #include "../hooker.h"
 #include "../../renderer/sdl_components.h"
 #include "../../renderer/spritesystem/sprite.h"
-#include "menu_btn.h"
 #include "../../engine/javalibs/jsystemstd.h"
+#include "menu_btn.h"
 
 typedef struct {
     long long score;
@@ -109,8 +109,9 @@ class GameOverScreen : public GameScene {
             // return to menu by switching context
             onSwitchContextCallback = [&](ExecutionContext* ctx, SDL_Renderer* rend) {
                 // back to main menu
-
+                context->contextReturnMainMenu();
             };
+            this->stopScene();
         });
         backButton->onButtonHover([]{});
         backButton->teleport(550, 660);

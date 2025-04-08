@@ -24,9 +24,12 @@ int main(int argc, char* argv[]) {
 
     // Main loop
     ExecutionContext* context = new ExecutionContext();
+    context->contextReturnMainMenu = [&, context, renderer]() {
+        GameScene* menu = new MainMenu(context, renderer);
+        menu->startScene();
+    };
 
-    GameScene* menu = new MainMenu(context, renderer);
-    menu->startScene();
+    context->contextReturnMainMenu();
 
     thread worker([&]() {
         // each thread has its own fucking RNG

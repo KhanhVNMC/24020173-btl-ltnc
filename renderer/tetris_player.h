@@ -12,12 +12,11 @@
 #include "sprites/entities/Nigga.h"
 #include "sprites/entities/fairies/debuff_fairy.h"
 #include "sprites/entities/fairies/BlinderFairy.h"
-#include "../game/hooker.h"
 #include "sprites/entities/fairies/WeakenerFairy.h"
 #include "sprites/entities/fairies/DistractorFairy.h"
 #include "sprites/entities/fairies/DisturberFairy.h"
+#include "../game/hooker.h"
 #include "../game/gamescene.h"
-#include "../game/scenes/game_over_screen.h"
 
 #ifndef TETRIS_PLAYER_H
 #define TETRIS_PLAYER_H
@@ -354,20 +353,7 @@ public:
      * End game or game over
      * @param lost if the player lost/campaign ended
      */
-    void showGameOverScreen(const bool lost = true) {
-        // this will hand controls over to the game over screen
-        gameOverSceneCallback = [&](ExecutionContext* iContext, SDL_Renderer* iRenderer) {
-            auto* gameOver = new GameOverScreen({
-                tetrisScore, totalKilledEnemies,
-                totalDamage, lastWave - 1, lost, System::currentTimeMillis() - this->gameStartTime,
-                gamemode == ENDLESS
-            }, context, renderer);
-            // this screen takes over
-            gameOver->startScene();
-        };
-        // stop this process
-        this->stopScene();
-    }
+    void showGameOverScreen(const bool lost = true);
 
     /**
      * Create a fairy entity using typeset
