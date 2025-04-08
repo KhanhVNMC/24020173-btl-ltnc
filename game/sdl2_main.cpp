@@ -1,9 +1,5 @@
-#include "../sbg.h"
-#include "../renderer/tetris_renderer.h"
-#include "../renderer/tetris_player.h"
 #include "hooker.h"
 #include "scenes/main_menu.h"
-#include "scenes/loading_screen.h"
 #include <iostream>
 
 void AttachConsoleToSDL() {
@@ -20,17 +16,13 @@ int main(int argc, char* argv[]) {
     AttachConsoleToSDL();
     initFontSystem();
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow("Tetris",
+    SDL_Window* window = SDL_CreateWindow("Tetris VS",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                           WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     // Main loop
-    auto *generator = new SevenBagGenerator(123);
-    TetrisConfig* config = TetrisConfig::builder();
-    config->setLineClearsDelay(0.35);
-
     ExecutionContext* context = new ExecutionContext();
 
     GameScene* menu = new MainMenu(context, renderer);

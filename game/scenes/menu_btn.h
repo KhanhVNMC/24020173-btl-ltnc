@@ -18,6 +18,13 @@ public:
             render_component(renderer, texture, puts_component_char(x + (strgap * i), y, scalar, str[i], width), opacity);
         }
     }
+
+    static void renderStringReverse(SDL_Renderer* renderer, const int x, const int y, const string& str, const double scalar = 5, const float opacity = 1.0f, const int strgap = 40, const int width = 18) {
+        const auto texture = disk_cache::bmp_load_and_cache(renderer, FONT_SHEET);
+        for (int i = 0; i < str.length(); i++) {
+            render_component(renderer, texture, puts_component_char(x + (-strgap * i), y, scalar, str[str.length() - i - 1], width), opacity);
+        }
+    }
 private:
     bool clicked = false;
     int clickedTimeFrame = 0;

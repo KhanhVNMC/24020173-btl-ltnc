@@ -30,6 +30,7 @@ class LoadingScreen : public GameScene {
     function<void(ExecutionContext*, SDL_Renderer*)> onLoadingScreenComplete = nullptr;
     int fakeLoadFor = 60; // 60 frames/1s
 
+    SDL_Texture* cachedTexture = nullptr;
     void menuLoop() {
         // stop loading screen
         if (fakeLoadFor <= 0) {
@@ -37,19 +38,23 @@ class LoadingScreen : public GameScene {
             return;
         }
         // render background
-        auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/load_scr.bmp");
+        if (cachedTexture == nullptr) cachedTexture = disk_cache::bmp_load_and_cache(renderer, "../assets/load_scr.bmp");
         const struct_render_component component = {
                 0, 0, 1720, 860,
                 0, 0, 1720, 860
         };
-        render_component(renderer, cached, component, 0.65 + (cos(clock++ / 35.0) * 0.35));
-        // render the logo
+        render_component(renderer, cachedTexture, component, 0.65 + (cos(clock++ / 35.0) * 0.35));
+        // render the loading text
         Button::renderString(renderer, 1200, 750 + (sin(clock++ / 25.0) * 20), "loading...", 4, 1, 45);
+        // decrement IC
         fakeLoadFor--;
     }
 
     void stopScene() override {
-        context->unhook(this->hookId, [&]() { onLoadingScreenComplete(this->context, this->renderer); });
+        context->unhook(this->hookId, [&]() {
+            onLoadingScreenComplete(this->context, this->renderer);
+            delete this;
+        });
     }
 
     void startScene() override {

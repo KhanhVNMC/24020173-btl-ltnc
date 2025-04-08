@@ -218,19 +218,4 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
         }
     }
 }
-
-inline static std::string str_printf(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    int size = std::vsnprintf(nullptr, 0, format, args);
-    va_end(args);
-    if (size < 0) {
-        return "";
-    }
-    std::vector<char> buffer(size + 1);
-    va_start(args, format);
-    std::vsnprintf(buffer.data(), buffer.size(), format, args);
-    va_end(args);
-    return std::string(buffer.data());
-}
 #endif //SDL_INC_H

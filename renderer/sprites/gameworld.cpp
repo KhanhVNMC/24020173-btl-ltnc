@@ -4,6 +4,8 @@
 #include <functional>
 #include "../spritesystem/sprite.h"
 
+#ifndef GAMEWORLD_CPP
+#define GAMEWORLD_CPP
 /**
  * The star-night background (overlay on top of each other for parallax effect)
  */
@@ -31,3 +33,4 @@ public:
 
     ~BackgroundScroll() override = default;
 };
+#endif

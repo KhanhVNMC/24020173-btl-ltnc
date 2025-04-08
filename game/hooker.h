@@ -31,6 +31,8 @@ protected:
 
     // function to run
     unordered_map<int, function<void()>> ON_UNHOOK_SUCCESS_CALLBACK;
+
+    function<void()> contextSignal;
 public:
     /**
      * Hook a task into this Context

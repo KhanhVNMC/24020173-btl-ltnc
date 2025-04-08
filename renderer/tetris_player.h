@@ -17,6 +17,7 @@
 #include "sprites/entities/fairies/DistractorFairy.h"
 #include "sprites/entities/fairies/DisturberFairy.h"
 #include "../game/gamescene.h"
+#include "../game/scenes/game_over_screen.h"
 
 #ifndef TETRIS_PLAYER_H
 #define TETRIS_PLAYER_H
@@ -348,6 +349,26 @@ public:
     void renderGarbageQueue(const int ox, const int oy);
     void renderTetrisInterface(const int ox, const int oy);
 
+    function<void(ExecutionContext*, SDL_Renderer*)> gameOverSceneCallback = nullptr;
+    /**
+     * End game or game over
+     * @param lost if the player lost/campaign ended
+     */
+    void showGameOverScreen(const bool lost = true) {
+        // this will hand controls over to the game over screen
+        gameOverSceneCallback = [&](ExecutionContext* iContext, SDL_Renderer* iRenderer) {
+            auto* gameOver = new GameOverScreen({
+                tetrisScore, totalKilledEnemies,
+                totalDamage, lastWave - 1, lost, System::currentTimeMillis() - this->gameStartTime,
+                gamemode == ENDLESS
+            }, context, renderer);
+            // this screen takes over
+            gameOver->startScene();
+        };
+        // stop this process
+        this->stopScene();
+    }
+
     /**
      * Create a fairy entity using typeset
      * @param type
@@ -503,6 +524,8 @@ public:
     }
 
     int smallClock = 0; // this clock will tick as the board begin to fall
+    int fadeTicks = 60; // 60 ticks for 1-second fade-in
+    int fadeOutTicks = -1; // 60 ticks for 1-second fade-in
     /**
      * (Event) Runs every single tick (60.0TPS)
      */
@@ -555,6 +578,30 @@ public:
 
         // then the high priority ones
         SpritesRenderingPipeline::renderPriority(renderer);
+
+        // fade-in overlay
+        if (fadeTicks > 0) {
+            int alpha = static_cast<int>(255.0f * (fadeTicks / 60.0f)); // fade from 255 to 0
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            // black screen overlay
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, alpha);
+            SDL_Rect fullScreen = {0, 0, 1720, 860};
+            // fill the screen with it
+            SDL_RenderFillRect(renderer, &fullScreen);
+            fadeTicks--;
+        }
+
+        // fade OUT overlay
+        if (fadeOutTicks >= 0) {
+            int alpha = static_cast<int>(255.0f - (255.0f * (fadeOutTicks / 60.0f))); // fade from 0 to 255 over 60 frames
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            // black screen overlay
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, alpha);
+            SDL_Rect fullScreen = {0, 0, 1720, 860};
+            // fill the screen with it
+            SDL_RenderFillRect(renderer, &fullScreen);
+            if (fadeOutTicks > 0) fadeOutTicks--;
+        }
 
         // what the fuck
         if (showDebug) sprintfcdbg(this->tetrisEngine, static_cast<int>(SpritesRenderingPipeline::getSprites().size() + SpritesRenderingPipeline::getPrioritySprites().size()));

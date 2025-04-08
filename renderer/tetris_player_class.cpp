@@ -102,6 +102,9 @@ void TetrisPlayer::stopScene() {
      // unhook the engine from the context, wait for it to unhook, then
      // delete TetrisPlayer alongside with the Engine (inside ~)
      context->unhook(tetrisEngineExecId, [this]() {
+         // return to game over screen
+         if (gameOverSceneCallback) gameOverSceneCallback(this->context, this->renderer);
+         // cleanup afterwards
          int contextId = this->tetrisEngineExecId;
          delete this; // I DID THIS BECAUSE I AM ABSOLUTELY SURE ABOUT THE LIFECYCLE OF THIS OBJECT
          cout << "[TETRIS PLAYER] Deleted this game session successfully! TE Context ID: " << contextId << endl;
@@ -154,6 +157,14 @@ void TetrisPlayer::onGameOver() {
             enemyOnLanes[i] = nullptr;
             i++;
         }
+
+        // show game over screen over a fade effect
+        tetrisEngine->scheduleDelayedTask(60, [&]() {
+            // fade the game out
+            this->fadeOutTicks = 60;
+            // show the screen by removing controls from the engine
+            tetrisEngine->scheduleDelayedTask(80, [&]() { showGameOverScreen(); });
+        });
     });
 }
 
@@ -701,6 +712,11 @@ void TetrisPlayer::onWaveCompletion() {
 
     // next wave in 4s
     this->tetrisEngine->scheduleDelayedTask(180, [&]() {
+        if (lastWave >= 20 && gamemode == CAMPAIGN) { // if this level is 20 and campaign mode, end the game now
+            // the user win
+            this->showGameOverScreen(false);
+            return;
+        }
         this->startWave(lastWave + 1);
     });
 }

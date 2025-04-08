@@ -13,6 +13,8 @@
 #include "menu_btn.h"
 #include "../../engine/javalibs/jsystemstd.h"
 #include "loading_screen.h"
+#include "../../renderer/tetris_player.h"
+#include "../../sbg.h"
 
 class MainMenu : public GameScene {
     ExecutionContext* context;
@@ -27,6 +29,7 @@ class MainMenu : public GameScene {
 
     #define MENU_X_POS 550
     #define MENU_Y_POS 440
+    SDL_Texture* cachedTexture = nullptr;
     void menuLoop() {
         // render the logo
         auto cached = disk_cache::bmp_load_and_cache(renderer, "../assets/logo.bmp");
@@ -54,8 +57,8 @@ class MainMenu : public GameScene {
     }
 
     void openLoadingScreenToTetris(GameMode mode) {
-        LoadingScreen* load = new LoadingScreen(context, renderer);
-        load->fakeLoadFor = 90 + (rand() % 60); // fake load for 90 -> 150frames
+        auto* load = new LoadingScreen(context, renderer);
+        load->fakeLoadFor = 80 + (rand() % 50); // fake load for 90 -> 150frames
 
         // execute the code with the inner scope pointing to the
         // loading screen's references
@@ -70,11 +73,9 @@ class MainMenu : public GameScene {
 
             // start scene first
             player->startScene();
-
-            // remove this memory region
-            delete load;
         };
 
+        // begin the "loading" process
         load->startScene();
     }
 
@@ -82,6 +83,7 @@ class MainMenu : public GameScene {
         // clean current rendering context to begin a new life
         SpritesRenderingPipeline::stopAndCleanCurrentContext();
         this->hookId = context->hook([&]() { onContextTick(); });
+
         // The PLAY CAMPAIGN BUTTON
         Button* campaignButton = (new Button(600, 50, "play campaign", 50, -5));
         campaignButton->onButtonClick([&](int m) {
@@ -118,27 +120,27 @@ class MainMenu : public GameScene {
         // boilerplate
         campaignButton->onButtonHover([]() {});
         endlessButton->onButtonHover([]() {});
-        settingsButton->onButtonHover([]() {});
+        settingsButton->onButtonHover(  []() {});
         quitButton->onButtonHover([]() {});
-
     }
 
     void onContextTick() {
         // begin render the scene
         SDL_RenderClear(renderer);
 
+        // render background
+        if (cachedTexture == nullptr) cachedTexture = disk_cache::bmp_load_and_cache(renderer, "../assets/load_scr.bmp");
+        const struct_render_component bkgComponent = {
+                0, 0, 1720, 860,
+                0, 0, 1720, 860
+        };
+        render_component(renderer, cachedTexture, bkgComponent, 0.25);
+
         // render low priority sprites first
         SpritesRenderingPipeline::renderNormal(renderer);
-
-        // then the tetris board
+        // scene loop
         this->menuLoop();
-
         Thread::sleep(16);
-
-        // then the high priority ones
-        SpritesRenderingPipeline::renderPriority(renderer);
-
-        // what the fuck
         SDL_RenderPresent(renderer); // Show updated frame
     }
 };
