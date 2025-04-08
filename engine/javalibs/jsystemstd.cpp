@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <algorithm>
+#include <vector>
 
 int bgmAudioVolume = 50;
 int sfxAudioVolume = 100;
@@ -33,14 +34,35 @@ namespace SysAudio {
         return true;
     }
 
-    void precache(const std::string& path, int volume, bool repeat) {
+    void preloadDefinedAudioFiles() {
         static const std::string basePath = "../assets/sfxbgm/";
-        const std::string fullPath = basePath + path;
 
-        if (soundCache.count(fullPath) == 0) {
-            Mix_Chunk* chunk = Mix_LoadWAV(fullPath.c_str());
-            if (!chunk) return;
-            soundCache[fullPath] = chunk;
+        const std::vector<std::string> audioFiles = {
+                BGM_AUD,
+                UI_CLICK,
+                TOP_OUT_AUD,
+                ROTATE_AUD,
+                HARD_DROP_AUD,
+                TETRO_MOVE_AUD,
+                GAME_OVER_AUD,
+                ENTITY_ATTACK_AUD,
+                ENTITY_ATTACK_MAGIC_AUD,
+                PIECE_HOLD_AUD,
+                PLAYER_ATTACK_AUD,
+                LC_SPIN_AUD,
+                LC_QUAD_AUD,
+                LC_NORM_AUD,
+                LC_PERFC_AUD
+        };
+
+        for (const auto& fileName : audioFiles) {
+            std::string fullPath = basePath + fileName;
+            if (soundCache.count(fullPath) == 0) {
+                Mix_Chunk* chunk = Mix_LoadWAV(fullPath.c_str());
+                if (chunk) {
+                    soundCache[fullPath] = chunk;
+                }
+            }
         }
     }
 

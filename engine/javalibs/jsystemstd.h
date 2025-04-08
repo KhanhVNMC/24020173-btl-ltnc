@@ -43,7 +43,6 @@ extern "C" __declspec(dllimport) BOOL WINAPI AllocConsole(void);
 #define ENTITY_ATTACK_MAGIC_AUD "e_cursed.ogg"
 #define PIECE_HOLD_AUD "hold.wav"
 #define PLAYER_ATTACK_AUD "p_attack.ogg"
-
 #define LC_SPIN_AUD "clearspin.wav"
 #define LC_QUAD_AUD "clearquad.wav"
 #define LC_NORM_AUD "clearline.wav"
@@ -110,6 +109,7 @@ namespace SysAudio {
     void shutdownSoundSystem(); // optional
     int getBGMVolume();
     int getSFXVolume();
+    void preloadDefinedAudioFiles();
 }
 
 #endif //TETISENGINE_JSYSTEMSTD_H
