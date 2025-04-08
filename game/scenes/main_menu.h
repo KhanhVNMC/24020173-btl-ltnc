@@ -12,6 +12,7 @@
 #include "../../renderer/spritesystem/sprite.h"
 #include "menu_btn.h"
 #include "../../engine/javalibs/jsystemstd.h"
+#include "loading_screen.h"
 
 class MainMenu : public GameScene {
     ExecutionContext* context;
@@ -42,17 +43,39 @@ class MainMenu : public GameScene {
         context->unhook(this->hookId, onNavigation);
     }
 
-    void initAndStartTetrisGame(GameMode mode) {
-        onNavigation = [&]() {
+    void startTetrisGame(GameMode mode) {
+        onNavigation = [&, this]() {
+            openLoadingScreenToTetris(mode);
+            // remove this memory region
+            delete this;
+        };
+        // destroy this scene since there's a new takeover already
+        this->stopScene();
+    }
+
+    void openLoadingScreenToTetris(GameMode mode) {
+        LoadingScreen* load = new LoadingScreen(context, renderer);
+        load->fakeLoadFor = 90 + (rand() % 60); // fake load for 90 -> 150frames
+
+        // execute the code with the inner scope pointing to the
+        // loading screen's references
+        load->onLoadingScreenComplete = [load, mode](ExecutionContext* icontext, SDL_Renderer* irenderer) {
+            // initialize 7 bag gen with seed = current time
             TetrominoGenerator* generator = new SevenBagGenerator(System::currentTimeMillis());
             TetrisConfig* config = TetrisConfig::builder();
             config->setLineClearsDelay(0.35);
 
-            TetrisEngine* engine = new TetrisEngine(config, generator);
-            TetrisPlayer* player = (new TetrisPlayer(context, renderer, engine, mode));
+            auto* engine = new TetrisEngine(config, generator);
+            auto* player = new TetrisPlayer(icontext, irenderer, engine, mode);
+
+            // start scene first
             player->startScene();
+
+            // remove this memory region
+            delete load;
         };
-        this->stopScene();
+
+        load->startScene();
     }
 
     void startScene() override {
@@ -62,7 +85,7 @@ class MainMenu : public GameScene {
         // The PLAY CAMPAIGN BUTTON
         Button* campaignButton = (new Button(600, 50, "play campaign", 50, -5));
         campaignButton->onButtonClick([&](int m) {
-            initAndStartTetrisGame(GameMode::CAMPAIGN);
+            startTetrisGame(GameMode::CAMPAIGN);
         });
         campaignButton->teleport(MENU_X_POS, MENU_Y_POS);
         campaignButton->spawn();
@@ -70,7 +93,7 @@ class MainMenu : public GameScene {
         // PLAY ENDLESS BUTTON
         Button* endlessButton = (new Button(600, 50, "play endless", 60, -5));
         endlessButton->onButtonClick([&](int m) {
-
+            startTetrisGame(GameMode::ENDLESS);
         });
         endlessButton->teleport(MENU_X_POS, MENU_Y_POS + 60);
         endlessButton->spawn();

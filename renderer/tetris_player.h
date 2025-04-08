@@ -495,30 +495,14 @@ public:
         // finalize lane population
         int lane = 0;
         for (NormalEntity* entity : toSpawn) {
-            this->tetrisEngine->scheduleDelayedTask(rand() % 100, [&, entity, lane] {
+            this->tetrisEngine->scheduleDelayedTask(rand() % 80, [&, entity, lane] {
                 this->spawnEnemyOnLane(lane, entity);
             });
             ++lane;
         }
     }
 
-
-    /**
-     * THIS CODE IS VERY DANGEROUS!
-     */
-    void endGameAndReturnContext() {
-        SDL_Renderer* rendererCopied = this->renderer;
-        // clear artifacts
-        SpritesRenderingPipeline::stopAndCleanCurrentContext();
-        delete this;
-        // clear frame buffer
-        if (rendererCopied) {
-            SDL_RenderClear(rendererCopied);
-        }
-    }
-
     int smallClock = 0; // this clock will tick as the board begin to fall
-
     /**
      * (Event) Runs every single tick (60.0TPS)
      */

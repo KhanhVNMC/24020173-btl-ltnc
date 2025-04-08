@@ -26,8 +26,8 @@ TetrisPlayer::TetrisPlayer(ExecutionContext* context, SDL_Renderer* sdlRenderer,
 
     // init gravity to lvl 1
     updateLevelAndGravity(1);
-    // first lane is 3 (bottom)
-    this->currentLane = 3;
+    // first lane is 0 (top)
+    this->currentLane = 0;
 }
 
 TetrisPlayer::~TetrisPlayer() {
@@ -43,9 +43,14 @@ void TetrisPlayer::startScene() {
 
     // register the representative player entity
     this->flandre = new FlandreScarlet();
-    this->flandre->teleportStrict(X_LANE_PLAYER, Y_LANES[currentLane]);
+    this->flandre->teleportStrict(X_LANE_PLAYER, 888);
     this->flandre->setAnimation(IDLE);
     this->flandre->spawn();
+
+    // move her slowly upwards
+    this->flandre->moveSmooth(X_LANE_PLAYER, Y_LANES[currentLane], [&]() {
+        this->flandre->setAnimation(IDLE);
+    }, 8);
 
     // boot the engine up (schedule 5s countdown)
     this->tetrisEngine->gameInterrupt(true); // do not let the game start, wait until cooldown ends
@@ -417,6 +422,12 @@ void TetrisPlayer::playFieldEvent(const PlayfieldEvent& event) {
     baseDamage += max(0, currentBackToBack);
     // combo bonus (primitive)
     baseDamage += static_cast<int>(tetrisEngine->getComboCount() * 0.75);
+
+    // a perfect clear = +12 attack
+    if (event.isPerfectClear()) {
+        baseDamage += 12;
+        // TODO: add the thing later
+    }
 
     // render text
     if (event.isMiniSpin() || event.isSpin()) {

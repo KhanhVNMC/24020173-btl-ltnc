@@ -3,6 +3,7 @@
 #include "../renderer/tetris_player.h"
 #include "hooker.h"
 #include "scenes/main_menu.h"
+#include "scenes/loading_screen.h"
 #include <iostream>
 
 void AttachConsoleToSDL() {
@@ -32,12 +33,8 @@ int main(int argc, char* argv[]) {
 
     ExecutionContext* context = new ExecutionContext();
 
-    auto *tetris = new TetrisEngine(config, generator);
-    TetrisPlayer* player = (new TetrisPlayer(context, renderer, tetris, GameMode::CAMPAIGN));
-    player->startScene();
-
-    //MainMenu* menu = new MainMenu(context, renderer);
-    //menu->startScene();
+    GameScene* menu = new MainMenu(context, renderer);
+    menu->startScene();
 
     thread worker([&]() {
         // each thread has its own fucking RNG
@@ -81,9 +78,9 @@ int main(int argc, char* argv[]) {
                     sprite->checkIfHovered(mouseX, mouseY);
                 }
             }
-            Thread::sleep(1);
             context->pushEvent(event);
         }
+        Thread::sleep(16);
     }
 
     // wait for thread to complete

@@ -8,7 +8,7 @@
 #include "../../renderer/sdl_components.h"
 
 class Button : public Sprite {
-private:
+public:
     /**
      * copied from `tetris_renderer.h`
      */
@@ -18,7 +18,7 @@ private:
             render_component(renderer, texture, puts_component_char(x + (strgap * i), y, scalar, str[i], width), opacity);
         }
     }
-
+private:
     bool clicked = false;
     int clickedTimeFrame = 0;
 public:
