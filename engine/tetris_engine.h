@@ -902,6 +902,9 @@ public:
 
             // invalidate the ghost piece cache, forcing a recalculation
             this->invalidateGhostPieceCache();
+
+            // only in SDL
+            SysAudio::playSoundAsync("rotate.wav", SysAudio::getSFXVolume(), false);
         }
     }
 
@@ -927,6 +930,8 @@ public:
         do {
         } while (translateDown());
         this->lockIn();
+        // only in SDL
+        SysAudio::playSoundAsync("harddrop.wav", SysAudio::getSFXVolume(), false);
     }
 
     /**
@@ -945,6 +950,9 @@ public:
 
         // invalidate the ghost piece cache, forcing a recalculation (ghost pieces do not care about Y)
         this->invalidateGhostPieceCache();
+
+        // only in SDL
+        SysAudio::playSoundAsync("move.wav", SysAudio::getSFXVolume(), false);
         return true;
     }
 
@@ -1162,6 +1170,8 @@ inline void TetrisEngine::onUserHold() {
     // update holdPiece with the current falling piece and disable holding until the next piece is placed.
     this->holdPiece = toHold;
     this->canHold = false; // disable further holding until the next piece is placed
+    // only in SDL
+    SysAudio::playSoundAsync("hold.wav", SysAudio::getSFXVolume(), false);
 }
 
 // called when a piece is manipulated (moved, rotated by the player)

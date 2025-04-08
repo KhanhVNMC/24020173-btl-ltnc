@@ -14,7 +14,10 @@ void AttachConsoleToSDL() {
 
 int main(int argc, char* argv[]) {
     AttachConsoleToSDL();
+
+    SysAudio::initSoundSystem();
     initFontSystem();
+
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Tetris VS",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,

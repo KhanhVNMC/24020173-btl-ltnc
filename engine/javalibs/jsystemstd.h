@@ -9,10 +9,18 @@
 #define TETISENGINE_JSYSTEMSTD_H
 #include <chrono>
 #include <cstdint>
+#include <string>
+
 #ifdef _WIN32
 typedef unsigned long DWORD;
 typedef int BOOL;
 #define WINAPI __stdcall
+typedef const char* LPCSTR;
+typedef void* HMODULE;
+typedef int BOOL;
+typedef unsigned long DWORD;
+#define SND_ASYNC      0x0001
+#define SND_FILENAME   0x00020000
 
 // no fucking windows.h, it fucked up my code
 extern "C" __declspec(dllimport) void WINAPI Sleep(DWORD dwMilliseconds);
@@ -77,4 +85,14 @@ namespace Thread {
     #endif
     }
 }
+
+namespace SysAudio {
+    bool initSoundSystem();
+    void playSoundAsync(const std::string& path, int volume, bool repeat);
+    void stopAudio();
+    void shutdownSoundSystem(); // optional
+    int getBGMVolume();
+    int getSFXVolume();
+}
+
 #endif //TETISENGINE_JSYSTEMSTD_H
