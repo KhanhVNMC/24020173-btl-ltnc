@@ -38,7 +38,7 @@ To run the built application successfully, ensure the following dynamic librarie
 - `SDL2.dll`
 - `SDL2_mixer.dll`
 
-These files are required at runtime. You can obtain them from the official [SDL2](https://www.libsdl.org/download-2.0.php) and [SDL2_mixer](https://www.libsdl.org/projects/SDL_mixer/) distribution websites
+These files are required at runtime. You can obtain them from the official [SDL2](https://github.com/libsdl-org/SDL/releases/tag/release-3.2.10) and [SDL2_mixer](https://github.com/libsdl-org/SDL_mixer/releases/tag/release-2.8.1) distribution websites
 
 ## Reference Source(s)
 
