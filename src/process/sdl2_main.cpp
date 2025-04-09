@@ -16,14 +16,14 @@ void AttachConsoleToSDL() {
 #define WINDOW_WIDTH 1720
 
 int main(int argc, char* argv[]) {
-    // attach console
+    // attach console to this game window
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-console") == 0) {
             AttachConsoleToSDL();
             break;
         }
     }
-    
+
     // SDL initialize for window first
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("Tetris VS: Concept Demo",SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
