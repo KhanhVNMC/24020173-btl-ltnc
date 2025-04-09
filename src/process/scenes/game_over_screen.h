@@ -144,7 +144,7 @@ class GameOverScreen : public GameScene {
         // then the tetris board
         this->menuLoop();
 
-        Thread::sleep(16);
+        Thread::sleep(16); // 60.0FPS, std of the thing
 
         // what the fuck
         SDL_RenderPresent(renderer); // Show updated frame

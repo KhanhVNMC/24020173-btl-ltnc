@@ -34,6 +34,7 @@ extern "C" __declspec(dllimport) int WINAPI SetConsoleMode(void* hConsole, unsig
 #define LONG int64_t
 
 /* AUDIO */
+#define INTRO_AUD "intro.mp3"
 #define BGM_AUD "bgm.mp3"
 #define UI_CLICK "click.mp3"
 #define TOP_OUT_AUD "topout.wav"
@@ -72,7 +73,6 @@ extern "C" __declspec(dllimport) int WINAPI SetConsoleMode(void* hConsole, unsig
 #define FAIRY_WEAKENER_SHEET "f_weakener.bmp"
 
 /* BUILD SYSTEMS */
-#define DEBUG_BUILD
 #ifdef DEBUG_BUILD
 #define ASSETS_FOLDER "../assets"
 #else

@@ -4,7 +4,9 @@
 
 #ifndef TETISENGINE_BAG_GENERATOR_H
 #define TETISENGINE_BAG_GENERATOR_H
-#include "../engine/tetris_engine.h"
+
+#include <cmath>
+#include "../engine/tetromino_gen_blueprint.h"
 
 class SevenBagGenerator : public TetrominoGenerator {
 public:

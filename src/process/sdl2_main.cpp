@@ -42,11 +42,13 @@ int main(int argc, char* argv[]) {
 
     // load shit in
     auto* loadingScreen = new LoadingScreen(context, renderer);
-    loadingScreen->fakeLoadFor = 90 + (rand() % 60); // lmfao, fake loading
+    loadingScreen->fakeLoadFor = 160 + (rand() % 60); // lmfao, fake loading
     // starts to load
     loadingScreen->onLoadingScreenInit = [&, renderer]() {
         SysAudio::initSoundSystem();
         SysAudio::preloadDefinedAudioFiles();
+        // play the intro audio
+        SysAudio::playSoundAsync(INTRO_AUD, SysAudio::getSFXVolume(), false);
         disk_cache::preload_defined_sheets(renderer);
     };
 
@@ -105,7 +107,7 @@ int main(int argc, char* argv[]) {
             }
             context->pushEvent(event);
         }
-        Thread::sleep(16);
+        Thread::sleep(16); // 60.0FPS, std of the thing
     }
 
     // wait for thread to complete

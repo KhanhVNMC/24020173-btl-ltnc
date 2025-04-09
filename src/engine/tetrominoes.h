@@ -2,38 +2,36 @@
 #define TETROMINOES_H
 #include <vector>
 #include <stdexcept>
-
 using namespace std;
 
+/**
+ * Structures for rendering minoes in HOLD and NEXT queue
+ */
 namespace RenderMatrixMino {
-    const vector<vector<int> > T_PIECE = {
-            { 0, 1, 0, 0 },
-            { 1, 1, 1, 0 }
-    };
-    const vector<vector<int> > Z_PIECE = {
-            { 1, 1, 0, 0 },
-            { 0, 1, 1, 0 }
-    };
-    const vector<vector<int> > S_PIECE = {
-            { 0, 1, 1, 0 },
-            { 1, 1, 0, 0 }
-    };
-    const vector<vector<int> > L_PIECE = {
-            { 0, 0, 1, 0 },
-            { 1, 1, 1, 0 }
-    };
-    const vector<vector<int> > J_PIECE = {
-            { 1, 0, 0, 0 },
-            { 1, 1, 1, 0 }
-    };
-    const vector<vector<int> > I_PIECE = {
-            { 0, 0, 0, 0 },
-            { 1, 1, 1, 1 }
-    };
-    const vector<vector<int> > O_PIECE = {
-            { 0, 1, 1, 0 },
-            { 0, 1, 1, 0 }
-    };
+    extern vector<vector<int> > T_PIECE;
+    extern vector<vector<int> > Z_PIECE;
+    extern vector<vector<int> > S_PIECE;
+    extern vector<vector<int> > L_PIECE;
+    extern vector<vector<int> > J_PIECE;
+    extern vector<vector<int> > I_PIECE;
+    extern vector<vector<int> > O_PIECE;
+}
+
+/**
+ * Tetromino enum base class, SRS-compliant basic rotation
+ * (C++ Specifics) MinoType:: => MinoTypeEnum
+ * @author GiaKhanhVN
+ */
+class MinoTypeEnum;
+namespace MinoType {
+    extern MinoTypeEnum T_MINO;
+    extern MinoTypeEnum Z_MINO;
+    extern MinoTypeEnum S_MINO;
+    extern MinoTypeEnum L_MINO;
+    extern MinoTypeEnum J_MINO;
+    extern MinoTypeEnum I_MINO;
+    extern MinoTypeEnum O_MINO;
+    inline constexpr int valuesLength = 7;
 }
 
 class MinoTypeEnum {
@@ -133,17 +131,5 @@ public:
         return rotated;
     }
 };
-
-// MinoType.h
-namespace MinoType {
-    extern MinoTypeEnum T_MINO;
-    extern MinoTypeEnum Z_MINO;
-    extern MinoTypeEnum S_MINO;
-    extern MinoTypeEnum L_MINO;
-    extern MinoTypeEnum J_MINO;
-    extern MinoTypeEnum I_MINO;
-    extern MinoTypeEnum O_MINO;
-    inline constexpr int valuesLength = 7;
-}
 
 #endif //TETROMINOES_H

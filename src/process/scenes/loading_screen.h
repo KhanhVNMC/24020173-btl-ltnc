@@ -78,7 +78,7 @@ class LoadingScreen : public GameScene {
         // begin render the scene
         SDL_RenderClear(renderer);
         this->menuLoop();
-        Thread::sleep(16);
+        Thread::sleep(16); // 60.0FPS, std of the thing
         // what the fuck
         SDL_RenderPresent(renderer); // Show updated frame
     }

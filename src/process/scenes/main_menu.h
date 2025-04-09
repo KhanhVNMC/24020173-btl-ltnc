@@ -35,6 +35,9 @@ class MainMenu : public GameScene {
                 MENU_X_POS + 150, MENU_Y_POS - 320, static_cast<int>(100 * 3), static_cast<int>(69 * 3)
         };
         render_component(renderer, cached, component, 1);
+        // render copyright text
+        Button::renderStringReverse(renderer, 1670, 780, "2025 giakhanhvn", 2, 1, 29);
+        Button::renderStringReverse(renderer, 1670, 820, VERSION_IDF, 2, 1, 29);
     }
 
     function<void()> onNavigation = nullptr;
@@ -54,12 +57,16 @@ class MainMenu : public GameScene {
     }
 
     void openLoadingScreenToTetris(GameMode mode) {
+        // show loading screen (obv fake)
         auto* load = new LoadingScreen(context, renderer);
         load->fakeLoadFor = 40 + (rand() % 40); // fake load for 40 -> 80frames
 
         // execute the code with the inner scope pointing to the
         // loading screen's references
         load->onLoadingScreenComplete = [load, mode](ExecutionContext* icontext, SDL_Renderer* irenderer) {
+            // stop any potential audio overflow
+            SysAudio::stopAudio();
+
             // initialize 7 bag gen with seed = current time
             TetrominoGenerator* generator = new SevenBagGenerator(System::currentTimeMillis());
             TetrisConfig* config = TetrisConfig::builder();
@@ -140,9 +147,11 @@ class MainMenu : public GameScene {
 
         // render low priority sprites first
         SpritesRenderingPipeline::renderNormal(renderer);
+
         // scene loop
         this->menuLoop();
-        Thread::sleep(16);
+
+        Thread::sleep(16); // 60.0FPS, std of the thing
         SDL_RenderPresent(renderer); // Show updated frame
     }
 };

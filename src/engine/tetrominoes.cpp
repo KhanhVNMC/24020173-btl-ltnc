@@ -3,6 +3,45 @@
 //
 #include "tetrominoes.h"
 
+/**
+ * Structures for rendering minoes in HOLD and NEXT queue
+ * (Implementation)
+ */
+namespace RenderMatrixMino {
+    vector<vector<int> > T_PIECE = {
+            { 0, 1, 0, 0 },
+            { 1, 1, 1, 0 }
+    };
+    vector<vector<int> > Z_PIECE = {
+            { 1, 1, 0, 0 },
+            { 0, 1, 1, 0 }
+    };
+    vector<vector<int> > S_PIECE = {
+            { 0, 1, 1, 0 },
+            { 1, 1, 0, 0 }
+    };
+    vector<vector<int> > L_PIECE = {
+            { 0, 0, 1, 0 },
+            { 1, 1, 1, 0 }
+    };
+    vector<vector<int> > J_PIECE = {
+            { 1, 0, 0, 0 },
+            { 1, 1, 1, 0 }
+    };
+    vector<vector<int> > I_PIECE = {
+            { 0, 0, 0, 0 },
+            { 1, 1, 1, 1 }
+    };
+    vector<vector<int> > O_PIECE = {
+            { 0, 1, 1, 0 },
+            { 0, 1, 1, 0 }
+    };
+}
+
+/**
+ * Tetromino IMPL enums, SRS-compliant basic rotation
+ * @author GiaKhanhVN
+ */
 namespace MinoType {
     MinoTypeEnum T_MINO("T_MINO", {{0, 1, 0}, {1, 1, 1}, {0, 0, 0}}, RenderMatrixMino::T_PIECE, 0);
     MinoTypeEnum Z_MINO("Z_MINO", {{1, 1, 0}, {0, 1, 1}, {0, 0, 0}}, RenderMatrixMino::Z_PIECE, 1);

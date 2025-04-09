@@ -132,6 +132,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
     } else {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // white
     }
+
     SDL_RenderFillRects(renderer, borders, 4); // BOARD
     SDL_RenderFillRects(renderer, utilities, 6); // UTILS
     // reset the color to make sure the entire screen isn't white / red
@@ -171,7 +172,7 @@ inline void render_tetris_board(const int ox, const int oy, SDL_Renderer* render
     int index = 0;
     std::queue<MinoTypeEnum* > nextQueue = engine->getNextQueue();
     while (!nextQueue.empty()) {
-        const MinoTypeEnum *piece = nextQueue.front();
+        const MinoTypeEnum* piece = nextQueue.front();
         nextQueue.pop();
         if (index > 4) break; // only renders up to 5 pieces
         auto& renderMatrix = piece->renderMatrix;
