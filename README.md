@@ -1,5 +1,6 @@
 # BTL LTNC 2025  
-**Modern Tetris VS with Challenging PvE Elements**
+**Modern Tetris VS with Challenging PvE Elements**<br>
+This game is not officially licensed by the Tetris® Holdings. For education usage only!
 
 ## Project Overview  
 This project offers a modern take on competitive Tetris (VS mode), enriched with dynamic Player vs Environment (PvE) elements. Departing from traditional Tetris formats, it introduces interactive enemy mechanics alongside contemporary gameplay features such as the Super Rotation System (SRS), Auto-Repeat Rate (ARR), Delayed Auto Shift (DAS), Hold system, Seven-Bag Generator and more. These enhancements create a more engaging and fun experience for players (not so sure about this)
