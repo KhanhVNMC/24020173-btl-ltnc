@@ -2,6 +2,18 @@
 **Modern Tetris VS with Challenging PvE Elements**<br>
 This game is not officially licensed by the Tetris® Holdings. For education usage only!
 
+## Branding Legal Notice
+Tetris® & © 1985 ~ 2025 Tetris Holding.
+
+Tetris logos, Tetris theme song and Tetriminos are trademarks of Tetris Holding.
+The Tetris trade dress is owned by Tetris Holding.
+Licensed to The Tetris Company.
+
+Tetris Game Design by Alexey Pajitnov.
+Tetris Logo Design by Roger Dean.
+
+All Rights Reserved.
+
 ## Project Overview  
 This project offers a modern take on competitive Tetris (VS mode), enriched with dynamic Player vs Environment (PvE) elements. Departing from traditional Tetris formats, it introduces interactive enemy mechanics alongside contemporary gameplay features such as the Super Rotation System (SRS), Auto-Repeat Rate (ARR), Delayed Auto Shift (DAS), Hold system, Seven-Bag Generator and more. These enhancements create a more engaging and fun experience for players (not so sure about this)
 
